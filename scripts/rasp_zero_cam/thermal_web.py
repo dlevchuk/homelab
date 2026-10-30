@@ -1297,6 +1297,13 @@ PAGE = """<!doctype html>
               <span id="sys-disk" class="stat-val" style="font-size:13px">-</span>
               <div class="progress-bar-bg"><div id="sys-disk-bar" class="progress-bar-fill" style="width:0%"></div></div>
             </div>
+            <div class="stat-box" style="grid-column: span 3" title="vcgencmd get_throttled">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="stat-label">Throttled</span>
+                <span id="sys-throttled-raw" class="stat-sub" style="font-family:monospace">-</span>
+              </div>
+              <span id="sys-throttled-val" class="stat-val" style="font-size:12px">-</span>
+            </div>
           </div>
 
           <!-- 40-pin Interactive Pinout -->
@@ -2068,6 +2075,35 @@ async function pollHealth(){
       }
 
       if(document.getElementById('sys-uptime-badge')) document.getElementById('sys-uptime-badge').textContent = `up: ${s.uptime || '-'}`;
+
+      if(s.throttled){
+        const tRaw = document.getElementById('sys-throttled-raw');
+        const tVal = document.getElementById('sys-throttled-val');
+        if(tRaw) tRaw.textContent = s.throttled.available ? (s.throttled.raw || '-') : 'N/A';
+        if(tVal && s.throttled.available){
+          if(s.throttled.ok){
+            tVal.textContent = '✅ OK';
+            tVal.style.color = '#4caf50';
+          } else {
+            const f = s.throttled.flags || {};
+            const active = [];
+            if(f.undervoltage_now)      active.push('⚡ undervoltage');
+            if(f.throttled_now)         active.push('🔥 throttled');
+            if(f.freq_capped_now)       active.push('📉 freq-capped');
+            if(f.soft_temp_limit_now)   active.push('🌡 soft-temp-limit');
+            if(f.undervoltage_occurred) active.push('⚡ uv-occurred');
+            if(f.throttled_occurred)    active.push('🔥 thr-occurred');
+            if(f.freq_capped_occurred)  active.push('📉 fc-occurred');
+            if(f.soft_temp_limit_occurred) active.push('🌡 stl-occurred');
+            tVal.textContent = active.length ? active.join(' · ') : s.throttled.raw;
+            const hasNow = f.undervoltage_now || f.throttled_now || f.freq_capped_now || f.soft_temp_limit_now;
+            tVal.style.color = hasNow ? '#f44336' : '#ffb300';
+          }
+        } else if(tVal && !s.throttled.available){
+          tVal.textContent = s.throttled.error || 'N/A';
+          tVal.style.color = '#888';
+        }
+      }
 
       if(s.gpio){
         updatePinoutState(s.gpio);
