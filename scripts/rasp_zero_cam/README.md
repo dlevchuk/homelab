@@ -31,7 +31,7 @@ Install the required packages and enable SPI:
 
 ```bash
 sudo apt update
-sudo apt install -y ffmpeg python3-spidev python3-gpiozero python3-lgpio
+sudo apt install -y ffmpeg python3-spidev python3-gpiozero python3-lgpio sqlite3
 sudo raspi-config nonint do_spi 0
 sudo reboot
 ```
@@ -75,6 +75,8 @@ Do not connect BME280 to 5 V. `i2cdetect` cannot see this BME280 configuration b
 | `/record/start` | `GET` | Start recording video to `THERMAL_REC_DIR` |
 | `/record/stop` | `GET` | Stop video recording |
 | `/health` | `GET` | JSON status, FPS stats, Y/temp metrics, recording state |
+| `/api/db/bme280?hours=N` | `GET` | BME280 readings from SQLite for last N hours (default 24, max 8760) |
+| `/api/db/outage?days=N` | `GET` | Daily outage statistics from SQLite for last N days (default 30) |
 
 ---
 
@@ -94,6 +96,8 @@ Do not connect BME280 to 5 V. `i2cdetect` cannot see this BME280 configuration b
 | `THERMAL_STALE_SEC` | `3` | Seconds before marking stream as stalled |
 | `THERMAL_TEMP_SCALE` | `""` (none) | Linear calibration multiplier for Y->Temperature conversion |
 | `THERMAL_TEMP_OFFSET` | `0` | Linear calibration offset for Y->Temperature conversion |
+| `THERMAL_DB_PATH` | `~/thermal_recordings/thermal.db` | Path to SQLite database |
+| `BME_DB_INTERVAL` | `300` | Interval in seconds between BME280 DB writes (minimum 60) |
 
 ---
 

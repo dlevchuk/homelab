@@ -23,6 +23,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import urllib.request
 import urllib.parse
 from urllib.parse import urlparse, parse_qs
+import sqlite3
 
 DEVICE = "/dev/video0"
 PORT = int(os.environ.get("THERMAL_PORT", "8080"))
@@ -43,6 +44,9 @@ BME_SPI_BUS = int(os.environ.get("BME_SPI_BUS", "0"))
 BME_SPI_DEVICE = int(os.environ.get("BME_SPI_DEVICE", "0"))
 BME_SPI_SPEED_HZ = int(os.environ.get("BME_SPI_SPEED_HZ", "500000"))
 BME_READ_INTERVAL = float(os.environ.get("BME_READ_INTERVAL", "2"))
+
+DB_PATH = os.environ.get("THERMAL_DB_PATH", os.path.join(REC_DIR, "thermal.db"))
+BME_DB_INTERVAL = max(60, int(os.environ.get("BME_DB_INTERVAL", "300")))
 
 REC_DIR = os.environ.get("THERMAL_REC_DIR", os.path.expanduser("~/thermal_recordings"))
 STATS_FIFO = "/tmp/thermal_signalstats.fifo"
@@ -487,6 +491,104 @@ def get_bme280_reading():
         return dict(bme_last_result)
 
 
+class ThermalDB:
+    """Thread-safe SQLite wrapper для збереження даних BME280 та відключень."""
+
+    def __init__(self, path):
+        self._path = path
+        self._lock = threading.Lock()
+        self._init_db()
+
+    def _connect(self):
+        os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)
+        conn = sqlite3.connect(self._path, timeout=10, check_same_thread=False)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        return conn
+
+    def _init_db(self):
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS bme280_readings (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ts INTEGER NOT NULL,
+                        temperature REAL,
+                        humidity REAL,
+                        pressure REAL
+                    )
+                """)
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_bme_ts ON bme280_readings(ts)")
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS outage_daily (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        date TEXT NOT NULL,
+                        location TEXT NOT NULL,
+                        outage_minutes INTEGER NOT NULL,
+                        power_minutes INTEGER NOT NULL,
+                        periods_count INTEGER NOT NULL,
+                        fetched_ts INTEGER NOT NULL,
+                        UNIQUE(date, location)
+                    )
+                """)
+                conn.commit()
+
+    def insert_bme280(self, temperature, humidity, pressure):
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute(
+                    "INSERT INTO bme280_readings (ts, temperature, humidity, pressure) VALUES (?,?,?,?)",
+                    (int(time.time()), temperature, humidity, pressure)
+                )
+                conn.commit()
+
+    def upsert_outage_daily(self, date, location, outage_minutes, periods_count):
+        power_minutes = max(0, 1440 - outage_minutes)
+        with self._lock:
+            with self._connect() as conn:
+                conn.execute("""
+                    INSERT INTO outage_daily (date, location, outage_minutes, power_minutes, periods_count, fetched_ts)
+                    VALUES (?,?,?,?,?,?)
+                    ON CONFLICT(date, location) DO UPDATE SET
+                        outage_minutes=excluded.outage_minutes,
+                        power_minutes=excluded.power_minutes,
+                        periods_count=excluded.periods_count,
+                        fetched_ts=excluded.fetched_ts
+                """, (date, location, outage_minutes, power_minutes, periods_count, int(time.time())))
+                conn.commit()
+
+    def query_bme280(self, since_ts=None, limit=1000):
+        """Повертає список dict з полями ts, temperature, humidity, pressure."""
+        with self._lock:
+            with self._connect() as conn:
+                if since_ts:
+                    cur = conn.execute(
+                        "SELECT ts, temperature, humidity, pressure FROM bme280_readings WHERE ts >= ? ORDER BY ts ASC LIMIT ?",
+                        (since_ts, limit)
+                    )
+                else:
+                    cur = conn.execute(
+                        "SELECT ts, temperature, humidity, pressure FROM bme280_readings ORDER BY ts DESC LIMIT ?",
+                        (limit,)
+                    )
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+    def query_outage_daily(self, days=30):
+        """Повертає список dict за останні N днів, відсортованих за датою ASC."""
+        with self._lock:
+            with self._connect() as conn:
+                cur = conn.execute(
+                    "SELECT date, location, outage_minutes, power_minutes, periods_count FROM outage_daily ORDER BY date ASC LIMIT ?",
+                    (days,)
+                )
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
+thermal_db = ThermalDB(DB_PATH)
+
+
 
 MIN_KEEP_RECORDINGS = int(os.environ.get("THERMAL_MIN_KEEP_RECORDINGS", "3"))
 
@@ -535,6 +637,25 @@ def auto_cleanup_loop():
         except Exception as e:
             print(f"[AutoCleanup Error] {e}")
         time.sleep(300)
+
+
+_bme_db_last_write = 0.0
+
+
+def bme_db_loop():
+    global _bme_db_last_write
+    while True:
+        try:
+            now = time.time()
+            if now - _bme_db_last_write >= BME_DB_INTERVAL:
+                r = get_bme280_reading()
+                if r.get("available"):
+                    thermal_db.insert_bme280(r["temperature"], r["humidity"], r["pressure"])
+                    _bme_db_last_write = now
+                    print(f"[BME DB] Saved: T={r['temperature']} H={r['humidity']} P={r['pressure']}")
+        except Exception as e:
+            print(f"[BME DB] Error: {e}")
+        time.sleep(30)
 
 
 def build_vf_chain(mode):
@@ -924,6 +1045,17 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
                 data=result,
             )
         save_outage_cache()
+
+        # Persist daily outage summary to SQLite
+        try:
+            thermal_db.upsert_outage_daily(
+                date=today,
+                location=loc_name,
+                outage_minutes=total_minutes,
+                periods_count=len(outages),
+            )
+        except Exception as _e:
+            print(f"[Outage DB] Error: {_e}")
 
         return result
 
@@ -2851,6 +2983,29 @@ class Handler(BaseHTTPRequestHandler):
             self._json(body)
             return
 
+        if path == "/api/db/bme280":
+            qs = parse_qs(urlparse(self.path).query)
+            try:
+                hours = int(qs.get("hours", ["24"])[0])
+                hours = max(1, min(hours, 8760))
+            except (ValueError, IndexError):
+                hours = 24
+            since_ts = int(time.time()) - hours * 3600
+            rows = thermal_db.query_bme280(since_ts=since_ts, limit=2000)
+            self._json({"ok": True, "hours": hours, "count": len(rows), "rows": rows})
+            return
+
+        if path == "/api/db/outage":
+            qs = parse_qs(urlparse(self.path).query)
+            try:
+                days = int(qs.get("days", ["30"])[0])
+                days = max(1, min(days, 365))
+            except (ValueError, IndexError):
+                days = 30
+            rows = thermal_db.query_outage_daily(days=days)
+            self._json({"ok": True, "days": days, "count": len(rows), "rows": rows})
+            return
+
         if path == "/snapshot":
             if not is_camera_enabled():
                 self._json({"error": "camera disabled"}, 503)
@@ -2946,6 +3101,7 @@ if __name__ == "__main__":
     threading.Thread(target=stats_fifo_reader, daemon=True).start()
     threading.Thread(target=ffmpeg_reader, daemon=True).start()
     threading.Thread(target=auto_cleanup_loop, daemon=True).start()
+    threading.Thread(target=bme_db_loop, daemon=True, name="bme-db").start()
 
     srv = ThermalHTTPServer(("0.0.0.0", PORT), Handler)
     print(f"http://0.0.0.0:{PORT}/")
