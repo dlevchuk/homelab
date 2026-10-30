@@ -45,10 +45,9 @@ BME_SPI_DEVICE = int(os.environ.get("BME_SPI_DEVICE", "0"))
 BME_SPI_SPEED_HZ = int(os.environ.get("BME_SPI_SPEED_HZ", "500000"))
 BME_READ_INTERVAL = float(os.environ.get("BME_READ_INTERVAL", "2"))
 
+REC_DIR = os.environ.get("THERMAL_REC_DIR", os.path.expanduser("~/thermal_recordings"))
 DB_PATH = os.environ.get("THERMAL_DB_PATH", os.path.join(REC_DIR, "thermal.db"))
 BME_DB_INTERVAL = max(60, int(os.environ.get("BME_DB_INTERVAL", "300")))
-
-REC_DIR = os.environ.get("THERMAL_REC_DIR", os.path.expanduser("~/thermal_recordings"))
 STATS_FIFO = "/tmp/thermal_signalstats.fifo"
 CONFIG_PATH = os.path.join(REC_DIR, "thermal_config.json")
 
