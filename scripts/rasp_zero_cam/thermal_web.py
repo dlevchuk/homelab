@@ -289,6 +289,41 @@ def get_load_avg():
         return None
 
 
+THROTTLE_FLAGS = {
+    0: "undervoltage_now",
+    1: "freq_capped_now",
+    2: "throttled_now",
+    3: "soft_temp_limit_now",
+    16: "undervoltage_occurred",
+    17: "freq_capped_occurred",
+    18: "throttled_occurred",
+    19: "soft_temp_limit_occurred",
+}
+
+
+def get_throttled_status():
+    """Returns vcgencmd get_throttled result: raw hex value and decoded flags."""
+    try:
+        out = subprocess.check_output(
+            ["vcgencmd", "get_throttled"], text=True, timeout=1, stderr=subprocess.DEVNULL
+        ).strip()
+        m = re.search(r"throttled=(0x[0-9a-fA-F]+)", out)
+        if not m:
+            return {"available": False, "error": f"unexpected output: {out!r}"}
+        raw = int(m.group(1), 16)
+        flags = {name: bool(raw & (1 << bit)) for bit, name in THROTTLE_FLAGS.items()}
+        return {
+            "available": True,
+            "raw": hex(raw),
+            "flags": flags,
+            "ok": raw == 0,
+        }
+    except FileNotFoundError:
+        return {"available": False, "error": "vcgencmd not found"}
+    except Exception as e:
+        return {"available": False, "error": str(e)}
+
+
 def get_gpio_status():
     """Reads hardware GPIO states using pinctrl or raspi-gpio."""
     pins = {}
@@ -2774,6 +2809,7 @@ class Handler(BaseHTTPRequestHandler):
                 "disk": get_disk_usage("/"),
                 "load": get_load_avg(),
                 "uptime": uptime,
+                "throttled": get_throttled_status(),
                 "gpio": get_gpio_status(),
             }
             self._json(body)
