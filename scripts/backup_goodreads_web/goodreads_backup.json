@@ -1,7 +1,7 @@
 {
   "user_id": "76529348",
-  "scraped_at": "2026-10-18 06:57:58 UTC",
-  "total_books": 1004,
+  "scraped_at": "2026-10-25 07:16:42 UTC",
+  "total_books": 789,
   "books": [
     {
       "id": "54785515",
@@ -80,7 +80,7 @@
       ],
       "date_read": "Sep 26, 2026",
       "date_added": "Sep 26, 2026",
-      "avg_rating": "3.72",
+      "avg_rating": "3.71",
       "pages": "231\n        pp",
       "review": ""
     },
@@ -364,7 +364,7 @@
       ],
       "date_read": "Aug 16, 2026",
       "date_added": "Aug 16, 2026",
-      "avg_rating": "3.72",
+      "avg_rating": "3.71",
       "pages": "54\n        pp",
       "review": ""
     },
@@ -396,7 +396,7 @@
       ],
       "date_read": "Aug 16, 2026",
       "date_added": "Aug 16, 2026",
-      "avg_rating": "3.97",
+      "avg_rating": "3.96",
       "pages": "38\n        pp",
       "review": ""
     },
@@ -771,7 +771,7 @@
       ],
       "date_read": "May 10, 2026",
       "date_added": "May 10, 2026",
-      "avg_rating": "4.35",
+      "avg_rating": "4.36",
       "pages": "272\n        pp",
       "review": ""
     },
@@ -870,7 +870,7 @@
       ],
       "date_read": "Apr 05, 2026",
       "date_added": "Apr 05, 2026",
-      "avg_rating": "4.37",
+      "avg_rating": "4.39",
       "pages": "368\n        pp",
       "review": ""
     },
@@ -1137,7 +1137,7 @@
       ],
       "date_read": "Dec 30, 2025",
       "date_added": "Dec 30, 2025",
-      "avg_rating": "3.58",
+      "avg_rating": "3.57",
       "pages": "192\n        pp",
       "review": ""
     },
@@ -2187,7 +2187,7 @@
       ],
       "date_read": "Apr 05, 2025",
       "date_added": "Apr 05, 2025",
-      "avg_rating": "3.93",
+      "avg_rating": "3.94",
       "pages": "248\n        pp",
       "review": ""
     },
@@ -2302,7 +2302,7 @@
       ],
       "date_read": "Feb 04, 2025",
       "date_added": "Feb 04, 2025",
-      "avg_rating": "4.16",
+      "avg_rating": "4.17",
       "pages": "620\n        pp",
       "review": ""
     },
@@ -2574,7 +2574,7 @@
       ],
       "date_read": "not set",
       "date_added": "Jan 22, 2025",
-      "avg_rating": "4.50",
+      "avg_rating": "4.51",
       "pages": "656\n        pp",
       "review": ""
     },
@@ -3152,7 +3152,7 @@
       ],
       "date_read": "not set",
       "date_added": "Jan 08, 2025",
-      "avg_rating": "3.04",
+      "avg_rating": "3.05",
       "pages": "15\n        pp",
       "review": ""
     },
@@ -3169,7 +3169,7 @@
       ],
       "date_read": "Jan 08, 2025",
       "date_added": "Jan 08, 2025",
-      "avg_rating": "4.26",
+      "avg_rating": "4.25",
       "pages": "200\n        pp",
       "review": ""
     },
@@ -3201,7 +3201,7 @@
       ],
       "date_read": "not set",
       "date_added": "Jan 05, 2025",
-      "avg_rating": "3.76",
+      "avg_rating": "3.75",
       "pages": "416\n        pp",
       "review": ""
     },
@@ -3297,7 +3297,7 @@
       ],
       "date_read": "not set",
       "date_added": "Jan 04, 2025",
-      "avg_rating": "3.82",
+      "avg_rating": "3.81",
       "pages": "4\n        pp",
       "review": ""
     },
@@ -3742,7 +3742,7 @@
       ],
       "date_read": "Nov 11, 2024",
       "date_added": "Nov 11, 2024",
-      "avg_rating": "4.23",
+      "avg_rating": "4.24",
       "pages": "207\n        pp",
       "review": ""
     },
@@ -4050,7 +4050,7 @@
       ],
       "date_read": "not set",
       "date_added": "Oct 23, 2024",
-      "avg_rating": "3.72",
+      "avg_rating": "3.71",
       "pages": "228\n        pp",
       "review": ""
     },
@@ -4067,7 +4067,7 @@
       ],
       "date_read": "Oct 22, 2024",
       "date_added": "Oct 22, 2024",
-      "avg_rating": "4.38",
+      "avg_rating": "4.37",
       "pages": "488\n        pp",
       "review": ""
     },
@@ -4522,7 +4522,7 @@
       ],
       "date_read": "Aug 03, 2024",
       "date_added": "Aug 04, 2024",
-      "avg_rating": "4.37",
+      "avg_rating": "4.38",
       "pages": "568\n        pp",
       "review": ""
     },
@@ -4624,7 +4624,7 @@
       ],
       "date_read": "Jul 07, 2024",
       "date_added": "Jul 20, 2024",
-      "avg_rating": "4.52",
+      "avg_rating": "4.51",
       "pages": "536\n        pp",
       "review": ""
     },
@@ -4656,7 +4656,7 @@
       ],
       "date_read": "Jun 30, 2024",
       "date_added": "Jun 30, 2024",
-      "avg_rating": "4.38",
+      "avg_rating": "4.39",
       "pages": "608\n        pp",
       "review": ""
     },
@@ -4834,7 +4834,7 @@
       ],
       "date_read": "Jan 13, 2024",
       "date_added": "Jan 13, 2024",
-      "avg_rating": "3.12",
+      "avg_rating": "3.13",
       "pages": "7\n        pp",
       "review": ""
     },
@@ -4914,7 +4914,7 @@
       ],
       "date_read": "Dec 31, 2023",
       "date_added": "Dec 31, 2023",
-      "avg_rating": "3.93",
+      "avg_rating": "3.92",
       "pages": "76\n        pp",
       "review": ""
     },
@@ -5090,7 +5090,7 @@
       ],
       "date_read": "Nov 17, 2023",
       "date_added": "Nov 17, 2023",
-      "avg_rating": "3.84",
+      "avg_rating": "3.85",
       "pages": "66\n        pp",
       "review": ""
     },
@@ -5218,7 +5218,7 @@
       ],
       "date_read": "Nov 14, 2023",
       "date_added": "Nov 14, 2023",
-      "avg_rating": "3.68",
+      "avg_rating": "3.67",
       "pages": "30\n        pp",
       "review": ""
     },
@@ -5346,7 +5346,7 @@
       ],
       "date_read": "Nov 14, 2023",
       "date_added": "Nov 14, 2023",
-      "avg_rating": "3.49",
+      "avg_rating": "3.50",
       "pages": "10\n        pp",
       "review": ""
     },
@@ -5426,7 +5426,7 @@
       ],
       "date_read": "Nov 14, 2023",
       "date_added": "Nov 14, 2023",
-      "avg_rating": "3.33",
+      "avg_rating": "3.32",
       "pages": "10\n        pp",
       "review": ""
     },
@@ -5442,7 +5442,7 @@
       ],
       "date_read": "Nov 14, 2023",
       "date_added": "Nov 14, 2023",
-      "avg_rating": "2.29",
+      "avg_rating": "2.30",
       "pages": "9\n        pp",
       "review": ""
     },
@@ -5490,7 +5490,7 @@
       ],
       "date_read": "Nov 14, 2023",
       "date_added": "Nov 14, 2023",
-      "avg_rating": "2.82",
+      "avg_rating": "2.83",
       "pages": "7\n        pp",
       "review": ""
     },
@@ -5586,7 +5586,7 @@
       ],
       "date_read": "Nov 09, 2023",
       "date_added": "Nov 09, 2023",
-      "avg_rating": "3.98",
+      "avg_rating": "3.97",
       "pages": "42\n        pp",
       "review": ""
     },
@@ -5892,7 +5892,7 @@
       ],
       "date_read": "Jun 03, 2023",
       "date_added": "Jun 03, 2023",
-      "avg_rating": "3.91",
+      "avg_rating": "3.90",
       "pages": "240\n        pp",
       "review": ""
     },
@@ -6056,7 +6056,7 @@
       ],
       "date_read": "Mar 12, 2023",
       "date_added": "Mar 12, 2023",
-      "avg_rating": "3.91",
+      "avg_rating": "3.92",
       "pages": "288\n        pp",
       "review": ""
     },
@@ -6339,7 +6339,7 @@
       ],
       "date_read": "Oct 13, 2022",
       "date_added": "Feb 26, 2023",
-      "avg_rating": "3.86",
+      "avg_rating": "3.87",
       "pages": "160\n        pp",
       "review": "Борітеся - поборете!"
     },
@@ -6374,7 +6374,7 @@
       ],
       "date_read": "Feb 18, 2023",
       "date_added": "Feb 18, 2023",
-      "avg_rating": "4.65",
+      "avg_rating": "4.64",
       "pages": "496\n        pp",
       "review": "Гарно систематизує попередні знання."
     },
@@ -6621,7 +6621,7 @@
       ],
       "date_read": "Jun 22, 2022",
       "date_added": "Dec 29, 2022",
-      "avg_rating": "4.44",
+      "avg_rating": "4.47",
       "pages": "432\n        pp",
       "review": ""
     },
@@ -6637,7 +6637,7 @@
       ],
       "date_read": "May 29, 2022",
       "date_added": "Dec 29, 2022",
-      "avg_rating": "4.38",
+      "avg_rating": "4.40",
       "pages": "416\n        pp",
       "review": ""
     },
@@ -6653,7 +6653,7 @@
       ],
       "date_read": "Sep 24, 2020",
       "date_added": "Dec 29, 2022",
-      "avg_rating": "4.33",
+      "avg_rating": "4.34",
       "pages": "416\n        pp",
       "review": ""
     },
@@ -6701,7 +6701,7 @@
       ],
       "date_read": "not set",
       "date_added": "Dec 29, 2022",
-      "avg_rating": "4.36",
+      "avg_rating": "4.37",
       "pages": "480\n        pp",
       "review": ""
     },
@@ -6813,7 +6813,7 @@
       ],
       "date_read": "Dec 09, 2022",
       "date_added": "Dec 29, 2022",
-      "avg_rating": "4.58",
+      "avg_rating": "4.59",
       "pages": "480\n        pp",
       "review": ""
     },
@@ -7025,7 +7025,7 @@
       ],
       "date_read": "Feb 16, 2022",
       "date_added": "Dec 08, 2022",
-      "avg_rating": "4.11",
+      "avg_rating": "4.12",
       "pages": "339\n        pp",
       "review": ""
     },
@@ -7202,7 +7202,7 @@
       ],
       "date_read": "Nov 29, 2022",
       "date_added": "Nov 29, 2022",
-      "avg_rating": "4.38",
+      "avg_rating": "4.37",
       "pages": "448\n        pp",
       "review": ""
     },
@@ -7298,7 +7298,7 @@
       ],
       "date_read": "not set",
       "date_added": "Sep 04, 2022",
-      "avg_rating": "4.25",
+      "avg_rating": "4.28",
       "pages": "248\n        pp",
       "review": ""
     },
@@ -7330,7 +7330,7 @@
       ],
       "date_read": "not set",
       "date_added": "Sep 04, 2022",
-      "avg_rating": "3.38",
+      "avg_rating": "3.39",
       "pages": "407\n        pp",
       "review": ""
     },
@@ -7538,7 +7538,7 @@
       ],
       "date_read": "Feb 01, 2022",
       "date_added": "Feb 01, 2022",
-      "avg_rating": "3.75",
+      "avg_rating": "3.96",
       "pages": "396\n        pp",
       "review": ""
     },
@@ -7890,7 +7890,7 @@
       ],
       "date_read": "not set",
       "date_added": "Mar 09, 2021",
-      "avg_rating": "3.92",
+      "avg_rating": "3.93",
       "pages": "224\n        pp",
       "review": ""
     },
@@ -8370,7 +8370,7 @@
       ],
       "date_read": "not set",
       "date_added": "Mar 09, 2021",
-      "avg_rating": "3.74",
+      "avg_rating": "3.75",
       "pages": "432\n        pp",
       "review": ""
     },
@@ -8802,7 +8802,7 @@
       ],
       "date_read": "not set",
       "date_added": "Mar 09, 2021",
-      "avg_rating": "4.14",
+      "avg_rating": "4.15",
       "pages": "1392\n        pp",
       "review": ""
     },
@@ -9912,7 +9912,7 @@
       ],
       "date_read": "not set",
       "date_added": "May 19, 2026",
-      "avg_rating": "3.81",
+      "avg_rating": "3.82",
       "pages": "not set",
       "review": ""
     },
@@ -9977,7 +9977,7 @@
       ],
       "date_read": "not set",
       "date_added": "Apr 21, 2026",
-      "avg_rating": "4.06",
+      "avg_rating": "4.07",
       "pages": "1104\n        pp",
       "review": ""
     },
@@ -9993,7 +9993,7 @@
       ],
       "date_read": "not set",
       "date_added": "Feb 27, 2026",
-      "avg_rating": "3.68",
+      "avg_rating": "3.67",
       "pages": "176\n        pp",
       "review": ""
     },
@@ -10219,7 +10219,7 @@
       ],
       "date_read": "not set",
       "date_added": "Nov 20, 2025",
-      "avg_rating": "4.23",
+      "avg_rating": "4.24",
       "pages": "783\n        pp",
       "review": ""
     },
@@ -10235,7 +10235,7 @@
       ],
       "date_read": "not set",
       "date_added": "Nov 20, 2025",
-      "avg_rating": "4.25",
+      "avg_rating": "4.26",
       "pages": "592\n        pp",
       "review": ""
     },
@@ -10267,7 +10267,7 @@
       ],
       "date_read": "not set",
       "date_added": "Oct 31, 2025",
-      "avg_rating": "3.72",
+      "avg_rating": "3.70",
       "pages": "160\n        pp",
       "review": ""
     },
@@ -10283,7 +10283,7 @@
       ],
       "date_read": "not set",
       "date_added": "Oct 30, 2025",
-      "avg_rating": "4.23",
+      "avg_rating": "4.22",
       "pages": "340\n        pp",
       "review": ""
     },
@@ -10460,7 +10460,7 @@
       ],
       "date_read": "not set",
       "date_added": "Apr 19, 2025",
-      "avg_rating": "4.20",
+      "avg_rating": "4.21",
       "pages": "267\n        pp",
       "review": ""
     },
@@ -10988,7 +10988,7 @@
       ],
       "date_read": "not set",
       "date_added": "Apr 19, 2025",
-      "avg_rating": "4.27",
+      "avg_rating": "4.26",
       "pages": "249\n        pp",
       "review": ""
     },
@@ -11084,7 +11084,7 @@
       ],
       "date_read": "not set",
       "date_added": "Apr 19, 2025",
-      "avg_rating": "4.44",
+      "avg_rating": "4.43",
       "pages": "544\n        pp",
       "review": ""
     },
@@ -11793,7 +11793,7 @@
       ],
       "date_read": "not set",
       "date_added": "Apr 19, 2025",
-      "avg_rating": "4.54",
+      "avg_rating": "4.55",
       "pages": "632\n        pp",
       "review": ""
     },
@@ -11997,7 +11997,7 @@
       ],
       "date_read": "not set",
       "date_added": "Apr 19, 2025",
-      "avg_rating": "4.73",
+      "avg_rating": "4.72",
       "pages": "256\n        pp",
       "review": ""
     },
@@ -12580,7 +12580,7 @@
       ],
       "date_read": "not set",
       "date_added": "Apr 10, 2025",
-      "avg_rating": "4.74",
+      "avg_rating": "4.76",
       "pages": "224\n        pp",
       "review": ""
     },
@@ -12764,22 +12764,6 @@
       "review": ""
     },
     {
-      "id": "16634",
-      "title": "The Glass Bead Game",
-      "url": "https://www.goodreads.com/book/show/16634.The_Glass_Bead_Game",
-      "author": "Hermann Hesse",
-      "isbn": "0312278497",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 04, 2025",
-      "avg_rating": "4.11",
-      "pages": "558\n        pp",
-      "review": ""
-    },
-    {
       "id": "6452731",
       "title": "Justice: What's the Right Thing to Do?",
       "url": "https://www.goodreads.com/book/show/6452731-justice",
@@ -12808,7 +12792,7 @@
       ],
       "date_read": "not set",
       "date_added": "Dec 31, 2024",
-      "avg_rating": "4.25",
+      "avg_rating": "4.22",
       "pages": "256\n        pp",
       "review": ""
     },
@@ -12844,3462 +12828,6 @@
       "date_added": "Dec 31, 2024",
       "avg_rating": "4.23",
       "pages": "208\n        pp",
-      "review": ""
-    },
-    {
-      "id": "19083",
-      "title": "Politics",
-      "url": "https://www.goodreads.com/book/show/19083.Politics",
-      "author": "Aristotle",
-      "isbn": "0486414248",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 27, 2024",
-      "avg_rating": "4.00",
-      "pages": "368\n        pp",
-      "review": ""
-    },
-    {
-      "id": "91950",
-      "title": "The Myth of Sisyphus",
-      "url": "https://www.goodreads.com/book/show/91950.The_Myth_of_Sisyphus",
-      "author": "Albert Camus",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 27, 2024",
-      "avg_rating": "4.22",
-      "pages": "192\n        pp",
-      "review": ""
-    },
-    {
-      "id": "113934",
-      "title": "The Goal: A Process of Ongoing Improvement",
-      "url": "https://www.goodreads.com/book/show/113934.The_Goal",
-      "author": "Eliyahu M. Goldratt",
-      "isbn": "0884271781",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 25, 2024",
-      "avg_rating": "4.05",
-      "pages": "384\n        pp",
-      "review": ""
-    },
-    {
-      "id": "57193101",
-      "title": "War as an Inner Experience",
-      "url": "https://www.goodreads.com/book/show/57193101-war-as-an-inner-experience",
-      "author": "Ernst Jünger",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 24, 2024",
-      "avg_rating": "4.35",
-      "pages": "103\n        pp",
-      "review": ""
-    },
-    {
-      "id": "28510277",
-      "title": "Повість про санаторійну зону",
-      "url": "https://www.goodreads.com/book/show/28510277",
-      "author": "Микола Хвильовий",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "ua"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 12, 2024",
-      "avg_rating": "3.96",
-      "pages": "132\n        pp",
-      "review": ""
-    },
-    {
-      "id": "203956715",
-      "title": "On Freedom",
-      "url": "https://www.goodreads.com/book/show/203956715-on-freedom",
-      "author": "Timothy Snyder",
-      "isbn": "0593728726",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2024",
-      "avg_rating": "4.24",
-      "pages": "368\n        pp",
-      "review": ""
-    },
-    {
-      "id": "54479",
-      "title": "Around the World in Eighty Days",
-      "url": "https://www.goodreads.com/book/show/54479.Around_the_World_in_Eighty_Days",
-      "author": "Jules Verne",
-      "isbn": "014044906X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 23, 2024",
-      "avg_rating": "3.95",
-      "pages": "252\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18405",
-      "title": "Gone with the Wind",
-      "url": "https://www.goodreads.com/book/show/18405.Gone_with_the_Wind",
-      "author": "Margaret Mitchell",
-      "isbn": "0446365386",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 23, 2024",
-      "avg_rating": "4.30",
-      "pages": "1037\n        pp",
-      "review": ""
-    },
-    {
-      "id": "370493",
-      "title": "The Giving Tree",
-      "url": "https://www.goodreads.com/book/show/370493.The_Giving_Tree",
-      "author": "Shel Silverstein",
-      "isbn": "0060256656",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 23, 2024",
-      "avg_rating": "4.39",
-      "pages": "64\n        pp",
-      "review": ""
-    },
-    {
-      "id": "16069036",
-      "title": "Мина Мазайло",
-      "url": "https://www.goodreads.com/book/show/16069036",
-      "author": "Mykola Kulish",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "ua"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 23, 2024",
-      "avg_rating": "4.30",
-      "pages": "144\n        pp",
-      "review": ""
-    },
-    {
-      "id": "15645",
-      "title": "Inferno",
-      "url": "https://www.goodreads.com/book/show/15645.Inferno",
-      "author": "Dante Alighieri",
-      "isbn": "0812970063",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 19, 2024",
-      "avg_rating": "4.03",
-      "pages": "490\n        pp",
-      "review": ""
-    },
-    {
-      "id": "46787",
-      "title": "Uncle Tom’s Cabin",
-      "url": "https://www.goodreads.com/book/show/46787.Uncle_Tom_s_Cabin",
-      "author": "Harriet Beecher Stowe",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 12, 2024",
-      "avg_rating": "3.89",
-      "pages": "438\n        pp",
-      "review": ""
-    },
-    {
-      "id": "11174414",
-      "title": "Залишенець",
-      "url": "https://www.goodreads.com/book/show/11174414",
-      "author": "Vasyl Shkliar",
-      "isbn": "9661406626",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 01, 2024",
-      "avg_rating": "4.41",
-      "pages": "384\n        pp",
-      "review": ""
-    },
-    {
-      "id": "17841",
-      "title": "Foucault’s Pendulum",
-      "url": "https://www.goodreads.com/book/show/17841.Foucault_s_Pendulum",
-      "author": "Umberto Eco",
-      "isbn": "015603297X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 24, 2024",
-      "avg_rating": "3.92",
-      "pages": "623\n        pp",
-      "review": ""
-    },
-    {
-      "id": "35161395",
-      "title": "Цивілізація. Як Захід став успішним",
-      "url": "https://www.goodreads.com/book/show/35161395",
-      "author": "Niall Ferguson",
-      "isbn": "6177279783",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "history"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 09, 2024",
-      "avg_rating": "4.16",
-      "pages": "488\n        pp",
-      "review": ""
-    },
-    {
-      "id": "212121810",
-      "title": "Symbiosis - Episode One: Poiesis",
-      "url": "https://www.goodreads.com/book/show/212121810-symbiosis---episode-one",
-      "author": "Valentina Kay",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Aug 28, 2024",
-      "avg_rating": "3.62",
-      "pages": "79\n        pp",
-      "review": ""
-    },
-    {
-      "id": "32604942",
-      "title": "The Devops Handbook: Bonus Material",
-      "url": "https://www.goodreads.com/book/show/32604942-the-devops-handbook",
-      "author": "Gene Kim",
-      "isbn": "194278807X",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Aug 06, 2024",
-      "avg_rating": "4.27",
-      "pages": "51\n        pp",
-      "review": ""
-    },
-    {
-      "id": "122576014",
-      "title": "Нещасна земля",
-      "url": "https://www.goodreads.com/book/show/122576014",
-      "author": "Tony Judt",
-      "isbn": "6179518874",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 31, 2024",
-      "avg_rating": "4.13",
-      "pages": "224\n        pp",
-      "review": ""
-    },
-    {
-      "id": "20765842",
-      "title": "Кто бы мог подумать! Как мозг заставляет нас делать глупости",
-      "url": "https://www.goodreads.com/book/show/20765842",
-      "author": "Ася Казанцева",
-      "isbn": "5170823789",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 06, 2024",
-      "avg_rating": "4.17",
-      "pages": "320\n        pp",
-      "review": ""
-    },
-    {
-      "id": "4982",
-      "title": "The Sirens of Titan",
-      "url": "https://www.goodreads.com/book/show/4982.The_Sirens_of_Titan",
-      "author": "Kurt Vonnegut Jr.",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 03, 2024",
-      "avg_rating": "4.16",
-      "pages": "224\n        pp",
-      "review": ""
-    },
-    {
-      "id": "25222096",
-      "title": "Как устроена экономика",
-      "url": "https://www.goodreads.com/book/show/25222096",
-      "author": "Ha-Joon Chang",
-      "isbn": "5000574338",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 17, 2024",
-      "avg_rating": "4.05",
-      "pages": "304\n        pp",
-      "review": ""
-    },
-    {
-      "id": "35166510",
-      "title": "Спасите заложника. Как разрешать конфликты и влиять на людей",
-      "url": "https://www.goodreads.com/book/show/35166510",
-      "author": "George Kohlrieser",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 17, 2024",
-      "avg_rating": "4.08",
-      "pages": "384\n        pp",
-      "review": ""
-    },
-    {
-      "id": "25644973",
-      "title": "Talking to Crazy: How to Deal with the Irrational and Impossible People in Your Life",
-      "url": "https://www.goodreads.com/book/show/25644973-talking-to-crazy",
-      "author": "Mark Goulston",
-      "isbn": "0814436366",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 17, 2024",
-      "avg_rating": "3.84",
-      "pages": "272\n        pp",
-      "review": ""
-    },
-    {
-      "id": "251633",
-      "title": "The Invincible",
-      "url": "https://www.goodreads.com/book/show/251633.The_Invincible",
-      "author": "Stanisław Lem",
-      "isbn": "0283979623",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 28, 2024",
-      "avg_rating": "4.14",
-      "pages": "223\n        pp",
-      "review": ""
-    },
-    {
-      "id": "35193535",
-      "title": "Точка нуль",
-      "url": "https://www.goodreads.com/book/show/35193535",
-      "author": "Artem Chekh",
-      "isbn": "6176909384",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Nov 05, 2023",
-      "avg_rating": "4.60",
-      "pages": "224\n        pp",
-      "review": ""
-    },
-    {
-      "id": "41018853",
-      "title": "Грязь [*khaki]",
-      "url": "https://www.goodreads.com/book/show/41018853-khaki",
-      "author": "Сергей Сергеевич Saigon",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Nov 05, 2023",
-      "avg_rating": "4.64",
-      "pages": "320\n        pp",
-      "review": ""
-    },
-    {
-      "id": "15997",
-      "title": "Paradise Lost",
-      "url": "https://www.goodreads.com/book/show/15997.Paradise_Lost",
-      "author": "John Milton",
-      "isbn": "0140424393",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 22, 2023",
-      "avg_rating": "3.85",
-      "pages": "453\n        pp",
-      "review": ""
-    },
-    {
-      "id": "56183795",
-      "title": "Кінчай! Твоє право на задоволення",
-      "url": "https://www.goodreads.com/book/show/56183795",
-      "author": "Laurie Mintz",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 14, 2023",
-      "avg_rating": "4.34",
-      "pages": "304\n        pp",
-      "review": ""
-    },
-    {
-      "id": "52283963",
-      "title": "The Mom Test: How to talk to customers & learn if your business is a good idea when everyone is lying to you",
-      "url": "https://www.goodreads.com/book/show/52283963-the-mom-test",
-      "author": "Rob  Fitzpatrick",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Aug 04, 2023",
-      "avg_rating": "4.35",
-      "pages": "138\n        pp",
-      "review": ""
-    },
-    {
-      "id": "39933",
-      "title": "How to Read Literature Like a Professor: A Lively and Entertaining Guide to Reading Between the Lines",
-      "url": "https://www.goodreads.com/book/show/39933.How_to_Read_Literature_Like_a_Professor",
-      "author": "Thomas C. Foster",
-      "isbn": "006000942X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Aug 04, 2023",
-      "avg_rating": "3.55",
-      "pages": "314\n        pp",
-      "review": ""
-    },
-    {
-      "id": "16069099",
-      "title": "Хазяїн",
-      "url": "https://www.goodreads.com/book/show/16069099",
-      "author": "Іван Карпенко-Карий",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "ua"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 26, 2023",
-      "avg_rating": "4.00",
-      "pages": "65\n        pp",
-      "review": ""
-    },
-    {
-      "id": "28862",
-      "title": "The Prince",
-      "url": "https://www.goodreads.com/book/show/28862.The_Prince",
-      "author": "Niccolò Machiavelli",
-      "isbn": "0937832383",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 07, 2023",
-      "avg_rating": "3.85",
-      "pages": "144\n        pp",
-      "review": ""
-    },
-    {
-      "id": "3170310",
-      "title": "Neuropath",
-      "url": "https://www.goodreads.com/book/show/3170310-neuropath",
-      "author": "R. Scott Bakker",
-      "isbn": "0752882791",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 07, 2023",
-      "avg_rating": "3.53",
-      "pages": "375\n        pp",
-      "review": ""
-    },
-    {
-      "id": "22376808",
-      "title": "Наталка Полтавка",
-      "url": "https://www.goodreads.com/book/show/22376808",
-      "author": "Ivan Kotliarevsky",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 05, 2023",
-      "avg_rating": "3.75",
-      "pages": "36\n        pp",
-      "review": ""
-    },
-    {
-      "id": "35300158",
-      "title": "Довгі часи",
-      "url": "https://www.goodreads.com/book/show/35300158",
-      "author": "Volodymyr Rafeyenko",
-      "isbn": "6176793874",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 05, 2023",
-      "avg_rating": "4.11",
-      "pages": "272\n        pp",
-      "review": ""
-    },
-    {
-      "id": "58987576",
-      "title": "Матера вам не наймичка, або Чому діти — це прекрасно...",
-      "url": "https://www.goodreads.com/book/show/58987576",
-      "author": "Катя Бльостка",
-      "isbn": "6177960278",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 05, 2023",
-      "avg_rating": "4.37",
-      "pages": "328\n        pp",
-      "review": ""
-    },
-    {
-      "id": "88432",
-      "title": "Life and Fate",
-      "url": "https://www.goodreads.com/book/show/88432.Life_and_Fate",
-      "author": "Vasily Grossman",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.43",
-      "pages": "864\n        pp",
-      "review": ""
-    },
-    {
-      "id": "2175",
-      "title": "Madame Bovary",
-      "url": "https://www.goodreads.com/book/show/2175.Madame_Bovary",
-      "author": "Gustave Flaubert",
-      "isbn": "0192840398",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.71",
-      "pages": "329\n        pp",
-      "review": ""
-    },
-    {
-      "id": "153747",
-      "title": "Moby-Dick or, The Whale",
-      "url": "https://www.goodreads.com/book/show/153747.Moby_Dick_or_The_Whale",
-      "author": "Herman Melville",
-      "isbn": "0142437247",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.55",
-      "pages": "720\n        pp",
-      "review": ""
-    },
-    {
-      "id": "2623",
-      "title": "Great Expectations",
-      "url": "https://www.goodreads.com/book/show/2623.Great_Expectations",
-      "author": "Charles Dickens",
-      "isbn": "0192833596",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.79",
-      "pages": "544\n        pp",
-      "review": ""
-    },
-    {
-      "id": "6656",
-      "title": "The Divine Comedy: Inferno - Purgatorio - Paradiso",
-      "url": "https://www.goodreads.com/book/show/6656.The_Divine_Comedy",
-      "author": "Dante Alighieri",
-      "isbn": "0679433139",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.09",
-      "pages": "798\n        pp",
-      "review": ""
-    },
-    {
-      "id": "27037",
-      "title": "Confessions",
-      "url": "https://www.goodreads.com/book/show/27037.Confessions",
-      "author": "Augustine of Hippo",
-      "isbn": "0192833723",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.98",
-      "pages": "341\n        pp",
-      "review": ""
-    },
-    {
-      "id": "12914",
-      "title": "The Aeneid",
-      "url": "https://www.goodreads.com/book/show/12914.The_Aeneid",
-      "author": "Virgil",
-      "isbn": "0679729526",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.86",
-      "pages": "442\n        pp",
-      "review": ""
-    },
-    {
-      "id": "30289",
-      "title": "The Republic",
-      "url": "https://www.goodreads.com/book/show/30289.The_Republic",
-      "author": "Plato",
-      "isbn": "0140449140",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.97",
-      "pages": "416\n        pp",
-      "review": ""
-    },
-    {
-      "id": "73945",
-      "title": "Apology",
-      "url": "https://www.goodreads.com/book/show/73945.Apology",
-      "author": "Plato",
-      "isbn": "0865163480",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.22",
-      "pages": "127\n        pp",
-      "review": ""
-    },
-    {
-      "id": "7728",
-      "title": "Antigone (Theban Plays, #3)",
-      "url": "https://www.goodreads.com/book/show/7728.Antigone",
-      "author": "Sophocles",
-      "isbn": "1580493882",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.71",
-      "pages": "80\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1554",
-      "title": "Oedipus Rex  (The Theban Plays, #1)",
-      "url": "https://www.goodreads.com/book/show/1554.Oedipus_Rex",
-      "author": "Sophocles",
-      "isbn": "1580495931",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.74",
-      "pages": "75\n        pp",
-      "review": ""
-    },
-    {
-      "id": "36072",
-      "title": "The 7 Habits of Highly Effective People: Powerful Lessons in Personal Change",
-      "url": "https://www.goodreads.com/book/show/36072.The_7_Habits_of_Highly_Effective_People",
-      "author": "Stephen R. Covey",
-      "isbn": "0743269519",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.16",
-      "pages": "372\n        pp",
-      "review": ""
-    },
-    {
-      "id": "4865",
-      "title": "How to Win Friends & Influence People",
-      "url": "https://www.goodreads.com/book/show/4865.How_to_Win_Friends_Influence_People",
-      "author": "Dale Carnegie",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.21",
-      "pages": "288\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1052",
-      "title": "The Richest Man in Babylon",
-      "url": "https://www.goodreads.com/book/show/1052.The_Richest_Man_in_Babylon",
-      "author": "George S. Clason",
-      "isbn": "0451205367",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.25",
-      "pages": "194\n        pp",
-      "review": ""
-    },
-    {
-      "id": "381364",
-      "title": "The Financier (Trilogy of Desire, #1)",
-      "url": "https://www.goodreads.com/book/show/381364.The_Financier",
-      "author": "Theodore Dreiser",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.27",
-      "pages": "460\n        pp",
-      "review": ""
-    },
-    {
-      "id": "929782",
-      "title": "Martin Eden",
-      "url": "https://www.goodreads.com/book/show/929782.Martin_Eden",
-      "author": "Jack London",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "4.47",
-      "pages": "480\n        pp",
-      "review": ""
-    },
-    {
-      "id": "662",
-      "title": "Atlas Shrugged",
-      "url": "https://www.goodreads.com/book/show/662.Atlas_Shrugged",
-      "author": "Ayn Rand",
-      "isbn": "0452011876",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.67",
-      "pages": "1168\n        pp",
-      "review": ""
-    },
-    {
-      "id": "78250",
-      "title": "The Teachings of Don Juan: A Yaqui Way of Knowledge",
-      "url": "https://www.goodreads.com/book/show/78250.The_Teachings_of_Don_Juan",
-      "author": "Carlos Castaneda",
-      "isbn": "0671227424",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 04, 2023",
-      "avg_rating": "3.95",
-      "pages": "288\n        pp",
-      "review": ""
-    },
-    {
-      "id": "25131230",
-      "title": "Rationality: From AI to Zombies",
-      "url": "https://www.goodreads.com/book/show/25131230-rationality",
-      "author": "Eliezer Yudkowsky",
-      "isbn": "1939311152",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 19, 2023",
-      "avg_rating": "4.33",
-      "pages": "1813\n        pp",
-      "review": ""
-    },
-    {
-      "id": "49247266",
-      "title": "To Hold Up the Sky",
-      "url": "https://www.goodreads.com/book/show/49247266-to-hold-up-the-sky",
-      "author": "Liu Cixin",
-      "isbn": "1250306086",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 14, 2023",
-      "avg_rating": "3.78",
-      "pages": "336\n        pp",
-      "review": ""
-    },
-    {
-      "id": "3828902",
-      "title": "Thinking In Systems: A Primer",
-      "url": "https://www.goodreads.com/book/show/3828902-thinking-in-systems",
-      "author": "Donella H. Meadows",
-      "isbn": "1603580557",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 17, 2023",
-      "avg_rating": "4.15",
-      "pages": "218\n        pp",
-      "review": ""
-    },
-    {
-      "id": "52901216",
-      "title": "How Linux Works: What Every Superuser Should Know",
-      "url": "https://www.goodreads.com/book/show/52901216-how-linux-works",
-      "author": "Brian  Ward",
-      "isbn": "1718500408",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 17, 2023",
-      "avg_rating": "4.18",
-      "pages": "464\n        pp",
-      "review": ""
-    },
-    {
-      "id": "32109569",
-      "title": "We Are Legion (We Are Bob) (Bobiverse, #1)",
-      "url": "https://www.goodreads.com/book/show/32109569-we-are-legion-we-are-bob",
-      "author": "Dennis E. Taylor",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 17, 2023",
-      "avg_rating": "4.25",
-      "pages": "322\n        pp",
-      "review": ""
-    },
-    {
-      "id": "25602743",
-      "title": "Effective Devops: Building a Culture of Collaboration, Affinity, and Tooling at Scale",
-      "url": "https://www.goodreads.com/book/show/25602743-effective-devops",
-      "author": "Jennifer       Davis",
-      "isbn": "1491926309",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2023",
-      "avg_rating": "3.41",
-      "pages": "408\n        pp",
-      "review": ""
-    },
-    {
-      "id": "8686650",
-      "title": "Continuous delivery",
-      "url": "https://www.goodreads.com/book/show/8686650-continuous-delivery",
-      "author": "Jez Humble",
-      "isbn": "0321601912",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2023",
-      "avg_rating": "4.20",
-      "pages": "463\n        pp",
-      "review": ""
-    },
-    {
-      "id": "30646587",
-      "title": "The Simple Path to Wealth: Your Road Map to Financial Independence and a Rich, Free Life",
-      "url": "https://www.goodreads.com/book/show/30646587-the-simple-path-to-wealth",
-      "author": "J.L. Collins",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "finance"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 20, 2023",
-      "avg_rating": "4.40",
-      "pages": "286\n        pp",
-      "review": ""
-    },
-    {
-      "id": "78428",
-      "title": "Your Money or Your Life",
-      "url": "https://www.goodreads.com/book/show/78428.Your_Money_or_Your_Life",
-      "author": "Joe Domínguez",
-      "isbn": "0140286780",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "finance"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 20, 2023",
-      "avg_rating": "3.98",
-      "pages": "400\n        pp",
-      "review": ""
-    },
-    {
-      "id": "40242274",
-      "title": "A Random Walk Down Wall Street: The Time-Tested Strategy for Successful Investing",
-      "url": "https://www.goodreads.com/book/show/40242274-a-random-walk-down-wall-street",
-      "author": "Burton G. Malkiel",
-      "isbn": "1324002182",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "finance"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 20, 2023",
-      "avg_rating": "4.18",
-      "pages": "432\n        pp",
-      "review": ""
-    },
-    {
-      "id": "40180021",
-      "title": "Naked Economics: Undressing the Dismal Science",
-      "url": "https://www.goodreads.com/book/show/40180021-naked-economics",
-      "author": "Charles Wheelan",
-      "isbn": "0393356493",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "finance"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 20, 2023",
-      "avg_rating": "4.02",
-      "pages": "400\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18736925",
-      "title": "Capital in the Twenty First Century",
-      "url": "https://www.goodreads.com/book/show/18736925-capital-in-the-twenty-first-century",
-      "author": "Thomas Piketty",
-      "isbn": "067443000X",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "finance"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 20, 2023",
-      "avg_rating": "4.05",
-      "pages": "685\n        pp",
-      "review": ""
-    },
-    {
-      "id": "12651",
-      "title": "The Social Contract",
-      "url": "https://www.goodreads.com/book/show/12651.The_Social_Contract",
-      "author": "Jean-Jacques Rousseau",
-      "isbn": "0143037498",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 18, 2023",
-      "avg_rating": "3.80",
-      "pages": "168\n        pp",
-      "review": ""
-    },
-    {
-      "id": "21413662",
-      "title": "What If?: Serious Scientific Answers to Absurd Hypothetical Questions",
-      "url": "https://www.goodreads.com/book/show/21413662-what-if",
-      "author": "Randall Munroe",
-      "isbn": "0544272994",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 05, 2023",
-      "avg_rating": "4.13",
-      "pages": "303\n        pp",
-      "review": ""
-    },
-    {
-      "id": "51807884",
-      "title": "Fight Club 3",
-      "url": "https://www.goodreads.com/book/show/51807884-fight-club-3",
-      "author": "Chuck Palahniuk",
-      "isbn": "1506711782",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "2.78",
-      "pages": "328\n        pp",
-      "review": ""
-    },
-    {
-      "id": "21857933",
-      "title": "The Last Empire: The Final Days of the Soviet Union",
-      "url": "https://www.goodreads.com/book/show/21857933-the-last-empire",
-      "author": "Serhii Plokhy",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "history",
-        "ua"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "4.19",
-      "pages": "522\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1455973",
-      "title": "Stalin's Empire of Memory: Russian-Ukrainian Relations in the Soviet Historical Imagination",
-      "url": "https://www.goodreads.com/book/show/1455973.Stalin_s_Empire_of_Memory",
-      "author": "Serhy Yekelchyk",
-      "isbn": "0802088082",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "history",
-        "ua"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "4.10",
-      "pages": "230\n        pp",
-      "review": ""
-    },
-    {
-      "id": "23905478",
-      "title": "Від Малоросії до України: парадокси запізнілого націєтворення",
-      "url": "https://www.goodreads.com/book/show/23905478",
-      "author": "Mykola Riabchuk",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "ua",
-        "history"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "4.27",
-      "pages": "304\n        pp",
-      "review": ""
-    },
-    {
-      "id": "24463069",
-      "title": "Чернобыльская молитва",
-      "url": "https://www.goodreads.com/book/show/24463069",
-      "author": "Svetlana Alexievich",
-      "isbn": "5969111465",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "ua"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "4.61",
-      "pages": "304\n        pp",
-      "review": ""
-    },
-    {
-      "id": "12766950",
-      "title": "Страсті за націоналізмом: стара історія на новий лад",
-      "url": "https://www.goodreads.com/book/show/12766950",
-      "author": "Yaroslav Hrytsak",
-      "isbn": "9668978501",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "history",
-        "ua"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "4.55",
-      "pages": "350\n        pp",
-      "review": ""
-    },
-    {
-      "id": "58351005",
-      "title": "Українські світи Речі Посполитої. Історії про історію",
-      "url": "https://www.goodreads.com/book/show/58351005",
-      "author": "Наталя Старченко",
-      "isbn": "6177313639",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "ua",
-        "history"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "4.80",
-      "pages": "616\n        pp",
-      "review": ""
-    },
-    {
-      "id": "59643256",
-      "title": "Подолати минуле: глобальна історія України",
-      "url": "https://www.goodreads.com/book/show/59643256",
-      "author": "Yaroslav Hrytsak",
-      "isbn": "6177925510",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "ua",
-        "history"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 29, 2023",
-      "avg_rating": "4.63",
-      "pages": "432\n        pp",
-      "review": ""
-    },
-    {
-      "id": "2761",
-      "title": "The Denial of Death",
-      "url": "https://www.goodreads.com/book/show/2761.The_Denial_of_Death",
-      "author": "Ernest Becker",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 24, 2023",
-      "avg_rating": "4.05",
-      "pages": "336\n        pp",
-      "review": ""
-    },
-    {
-      "id": "88077",
-      "title": "The Magic Mountain",
-      "url": "https://www.goodreads.com/book/show/88077.The_Magic_Mountain",
-      "author": "Thomas Mann",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 13, 2023",
-      "avg_rating": "4.12",
-      "pages": "706\n        pp",
-      "review": ""
-    },
-    {
-      "id": "20527133",
-      "title": "Superintelligence: Paths, Dangers, Strategies",
-      "url": "https://www.goodreads.com/book/show/20527133-superintelligence",
-      "author": "Nick Bostrom",
-      "isbn": "0199678111",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 11, 2023",
-      "avg_rating": "3.85",
-      "pages": "352\n        pp",
-      "review": ""
-    },
-    {
-      "id": "12321",
-      "title": "Beyond Good and Evil",
-      "url": "https://www.goodreads.com/book/show/12321.Beyond_Good_and_Evil",
-      "author": "Friedrich Nietzsche",
-      "isbn": "014044923X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 03, 2023",
-      "avg_rating": "4.04",
-      "pages": "240\n        pp",
-      "review": ""
-    },
-    {
-      "id": "286957",
-      "title": "The Yellow Wall-Paper",
-      "url": "https://www.goodreads.com/book/show/286957.The_Yellow_Wall_Paper",
-      "author": "Charlotte Perkins Gilman",
-      "isbn": "1558611584",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 03, 2023",
-      "avg_rating": "4.09",
-      "pages": "62\n        pp",
-      "review": ""
-    },
-    {
-      "id": "23289",
-      "title": "The Dead",
-      "url": "https://www.goodreads.com/book/show/23289.The_Dead",
-      "author": "James Joyce",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 03, 2023",
-      "avg_rating": "4.02",
-      "pages": "100\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18630",
-      "title": "The Player of Games (Culture, #2)",
-      "url": "https://www.goodreads.com/book/show/18630.The_Player_of_Games",
-      "author": "Iain M. Banks",
-      "isbn": "0061053562",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 03, 2023",
-      "avg_rating": "4.27",
-      "pages": "293\n        pp",
-      "review": ""
-    },
-    {
-      "id": "8935689",
-      "title": "Consider Phlebas (Culture, #1)",
-      "url": "https://www.goodreads.com/book/show/8935689-consider-phlebas",
-      "author": "Iain M. Banks",
-      "isbn": "1857231384",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 03, 2023",
-      "avg_rating": "3.85",
-      "pages": "467\n        pp",
-      "review": ""
-    },
-    {
-      "id": "40631",
-      "title": "Europe: A History",
-      "url": "https://www.goodreads.com/book/show/40631.Europe",
-      "author": "Norman Davies",
-      "isbn": "0060974680",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jan 02, 2023",
-      "avg_rating": "4.20",
-      "pages": "1392\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1391817",
-      "title": "The Minds of Billy Milligan",
-      "url": "https://www.goodreads.com/book/show/1391817.The_Minds_of_Billy_Milligan",
-      "author": "Daniel Keyes",
-      "isbn": "0394519434",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 27, 2022",
-      "avg_rating": "4.25",
-      "pages": "374\n        pp",
-      "review": ""
-    },
-    {
-      "id": "49464",
-      "title": "Save the Cat: The Last Book on Screenwriting You'll Ever Need",
-      "url": "https://www.goodreads.com/book/show/49464.Save_the_Cat",
-      "author": "Blake Snyder",
-      "isbn": "1932907009",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 23, 2022",
-      "avg_rating": "3.99",
-      "pages": "195\n        pp",
-      "review": ""
-    },
-    {
-      "id": "49537653",
-      "title": "Берлін Александерплац",
-      "url": "https://www.goodreads.com/book/show/49537653",
-      "author": "Alfred Döblin",
-      "isbn": "6177585132",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 21, 2022",
-      "avg_rating": "4.16",
-      "pages": "568\n        pp",
-      "review": ""
-    },
-    {
-      "id": "56117320",
-      "title": "Радость жизни. Философия стоицизма для XXI века",
-      "url": "https://www.goodreads.com/book/show/56117320-xxi",
-      "author": "William B. Irvine",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "philosophy"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2022",
-      "avg_rating": "4.31",
-      "pages": "304\n        pp",
-      "review": ""
-    },
-    {
-      "id": "166190",
-      "title": "Computer Networks",
-      "url": "https://www.goodreads.com/book/show/166190.Computer_Networks",
-      "author": "Andrew S. Tanenbaum",
-      "isbn": "0130661023",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2022",
-      "avg_rating": "4.12",
-      "pages": "950\n        pp",
-      "review": ""
-    },
-    {
-      "id": "166193",
-      "title": "Operating Systems Design and Implementation",
-      "url": "https://www.goodreads.com/book/show/166193.Operating_Systems_Design_and_Implementation",
-      "author": "Andrew S. Tanenbaum",
-      "isbn": "0131429388",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2022",
-      "avg_rating": "4.10",
-      "pages": "1088\n        pp",
-      "review": ""
-    },
-    {
-      "id": "8772005",
-      "title": "UNIX and Linux System Administration Handbook",
-      "url": "https://www.goodreads.com/book/show/8772005-unix-and-linux-system-administration-handbook",
-      "author": "Evi Nemeth",
-      "isbn": "0132117363",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2022",
-      "avg_rating": "4.42",
-      "pages": "1327\n        pp",
-      "review": ""
-    },
-    {
-      "id": "13629",
-      "title": "The Mythical Man-Month: Essays on Software Engineering",
-      "url": "https://www.goodreads.com/book/show/13629.The_Mythical_Man_Month",
-      "author": "Frederick P. Brooks Jr.",
-      "isbn": "0201835959",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2022",
-      "avg_rating": "4.00",
-      "pages": "322\n        pp",
-      "review": ""
-    },
-    {
-      "id": "26083308",
-      "title": "The DevOps Handbook: How to Create World-Class Agility, Reliability, and Security in Technology Organizations",
-      "url": "https://www.goodreads.com/book/show/26083308-the-devops-handbook",
-      "author": "Gene Kim",
-      "isbn": "1942788002",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2022",
-      "avg_rating": "4.27",
-      "pages": "442\n        pp",
-      "review": ""
-    },
-    {
-      "id": "44333183",
-      "title": "The Unicorn Project",
-      "url": "https://www.goodreads.com/book/show/44333183-the-unicorn-project",
-      "author": "Gene Kim",
-      "isbn": "1942788762",
-      "rating": 0,
-      "shelves": [
-        "to-read",
-        "tech"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 07, 2022",
-      "avg_rating": "4.00",
-      "pages": "352\n        pp",
-      "review": ""
-    },
-    {
-      "id": "56784706",
-      "title": "Стоицизм на каждый день. 366 размышлений о мудрости, воле и искусстве жить",
-      "url": "https://www.goodreads.com/book/show/56784706-366",
-      "author": "Ryan Holiday",
-      "isbn": "500169342X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 03, 2022",
-      "avg_rating": "4.19",
-      "pages": "464\n        pp",
-      "review": ""
-    },
-    {
-      "id": "39096163",
-      "title": "Как быть стоиком: Античная философия и современная жизнь",
-      "url": "https://www.goodreads.com/book/show/39096163",
-      "author": "Massimo Pigliucci",
-      "isbn": "5961451089",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Dec 03, 2022",
-      "avg_rating": "4.19",
-      "pages": "261\n        pp",
-      "review": ""
-    },
-    {
-      "id": "368118",
-      "title": "Way to Wisdom: An Introduction to Philosophy",
-      "url": "https://www.goodreads.com/book/show/368118.Way_to_Wisdom",
-      "author": "Karl Jaspers",
-      "isbn": "0300097352",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Nov 11, 2022",
-      "avg_rating": "3.76",
-      "pages": "224\n        pp",
-      "review": ""
-    },
-    {
-      "id": "417015",
-      "title": "The Question of German Guilt",
-      "url": "https://www.goodreads.com/book/show/417015.The_Question_of_German_Guilt",
-      "author": "Karl Jaspers",
-      "isbn": "0823220699",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Nov 11, 2022",
-      "avg_rating": "4.00",
-      "pages": "117\n        pp",
-      "review": ""
-    },
-    {
-      "id": "177068",
-      "title": "The Fabric of Reality: The Science of Parallel Universes--and Its Implications",
-      "url": "https://www.goodreads.com/book/show/177068.The_Fabric_of_Reality",
-      "author": "David Deutsch",
-      "isbn": "014027541X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 27, 2022",
-      "avg_rating": "4.13",
-      "pages": "390\n        pp",
-      "review": ""
-    },
-    {
-      "id": "10569",
-      "title": "On Writing: A Memoir of the Craft",
-      "url": "https://www.goodreads.com/book/show/10569.On_Writing",
-      "author": "Stephen  King",
-      "isbn": "0743455967",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 26, 2022",
-      "avg_rating": "4.33",
-      "pages": "320\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1675985",
-      "title": "Норма",
-      "url": "https://www.goodreads.com/book/show/1675985._",
-      "author": "Vladimir Sorokin",
-      "isbn": "3770144821",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 09, 2022",
-      "avg_rating": "4.08",
-      "pages": "413\n        pp",
-      "review": ""
-    },
-    {
-      "id": "761281",
-      "title": "Голубое сало",
-      "url": "https://www.goodreads.com/book/show/761281._",
-      "author": "Vladimir Sorokin",
-      "isbn": "5933210048",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Oct 09, 2022",
-      "avg_rating": "3.72",
-      "pages": "350\n        pp",
-      "review": ""
-    },
-    {
-      "id": "33260044",
-      "title": "На службе зла (Cormoran Strike, #3)",
-      "url": "https://www.goodreads.com/book/show/33260044",
-      "author": "Robert Galbraith",
-      "isbn": "5389112202",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 28, 2022",
-      "avg_rating": "4.29",
-      "pages": "544\n        pp",
-      "review": ""
-    },
-    {
-      "id": "35167718",
-      "title": "\"What Do You Care What Other People Think?\": Further Adventures of a Curious Character",
-      "url": "https://www.goodreads.com/book/show/35167718-what-do-you-care-what-other-people-think",
-      "author": "Richard P. Feynman",
-      "isbn": "0393355640",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 20, 2022",
-      "avg_rating": "4.11",
-      "pages": "288\n        pp",
-      "review": ""
-    },
-    {
-      "id": "117047",
-      "title": "The Blind Watchmaker: Why the Evidence of Evolution Reveals a Universe Without Design",
-      "url": "https://www.goodreads.com/book/show/117047.The_Blind_Watchmaker",
-      "author": "Richard Dawkins",
-      "isbn": "0141026162",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 17, 2022",
-      "avg_rating": "4.09",
-      "pages": "466\n        pp",
-      "review": ""
-    },
-    {
-      "id": "50155421",
-      "title": "Twilight of Democracy: The Seductive Lure of Authoritarianism",
-      "url": "https://www.goodreads.com/book/show/50155421-twilight-of-democracy",
-      "author": "Anne Applebaum",
-      "isbn": "0771005857",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 11, 2022",
-      "avg_rating": "3.86",
-      "pages": "224\n        pp",
-      "review": ""
-    },
-    {
-      "id": "17349",
-      "title": "The Demon-Haunted World: Science as a Candle in the Dark",
-      "url": "https://www.goodreads.com/book/show/17349.The_Demon_Haunted_World",
-      "author": "Carl Sagan",
-      "isbn": "0345409469",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 11, 2022",
-      "avg_rating": "4.27",
-      "pages": "459\n        pp",
-      "review": ""
-    },
-    {
-      "id": "61672",
-      "title": "Bonjour tristesse",
-      "url": "https://www.goodreads.com/book/show/61672.Bonjour_tristesse",
-      "author": "Françoise Sagan",
-      "isbn": "2266127748",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 08, 2022",
-      "avg_rating": "3.78",
-      "pages": "154\n        pp",
-      "review": ""
-    },
-    {
-      "id": "23756",
-      "title": "Berlin Diary: The Journal of a Foreign Correspondent 1934-1941",
-      "url": "https://www.goodreads.com/book/show/23756.Berlin_Diary",
-      "author": "William L. Shirer",
-      "isbn": "0801870569",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 03, 2022",
-      "avg_rating": "4.30",
-      "pages": "627\n        pp",
-      "review": ""
-    },
-    {
-      "id": "119073",
-      "title": "The Name of the Rose",
-      "url": "https://www.goodreads.com/book/show/119073.The_Name_of_the_Rose",
-      "author": "Umberto Eco",
-      "isbn": "0156001314",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 02, 2022",
-      "avg_rating": "4.14",
-      "pages": "552\n        pp",
-      "review": ""
-    },
-    {
-      "id": "23919",
-      "title": "The Complete Stories and Poems",
-      "url": "https://www.goodreads.com/book/show/23919.The_Complete_Stories_and_Poems",
-      "author": "Edgar Allan Poe",
-      "isbn": "0385074077",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Sep 01, 2022",
-      "avg_rating": "4.39",
-      "pages": "821\n        pp",
-      "review": ""
-    },
-    {
-      "id": "41786",
-      "title": "Joel on Software",
-      "url": "https://www.goodreads.com/book/show/41786.Joel_on_Software",
-      "author": "Joel Spolsky",
-      "isbn": "1590593898",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Aug 08, 2022",
-      "avg_rating": "4.12",
-      "pages": "362\n        pp",
-      "review": ""
-    },
-    {
-      "id": "767171",
-      "title": "The Rise and Fall of the Third Reich: A History of Nazi Germany",
-      "url": "https://www.goodreads.com/book/show/767171.The_Rise_and_Fall_of_the_Third_Reich",
-      "author": "William L. Shirer",
-      "isbn": "0671728687",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Aug 08, 2022",
-      "avg_rating": "4.20",
-      "pages": "1147\n        pp",
-      "review": ""
-    },
-    {
-      "id": "44569367",
-      "title": "0,05 Доказательная медицина от магии до поисков бессмертия",
-      "url": "https://www.goodreads.com/book/show/44569367-0-05",
-      "author": "Петр Талантов",
-      "isbn": "5171141118",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Aug 08, 2022",
-      "avg_rating": "4.65",
-      "pages": "560\n        pp",
-      "review": ""
-    },
-    {
-      "id": "28118106",
-      "title": "Сумма биотехнологии. Руководство по борьбе с мифами о генетической модификации растений, животных и людей",
-      "url": "https://www.goodreads.com/book/show/28118106",
-      "author": "Александр Панчин",
-      "isbn": "5170936028",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 10, 2022",
-      "avg_rating": "4.36",
-      "pages": "432\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18194",
-      "title": "The Cyberiad",
-      "url": "https://www.goodreads.com/book/show/18194.The_Cyberiad",
-      "author": "Stanisław Lem",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 10, 2022",
-      "avg_rating": "4.17",
-      "pages": "295\n        pp",
-      "review": ""
-    },
-    {
-      "id": "22613",
-      "title": "Simulacra and Simulation",
-      "url": "https://www.goodreads.com/book/show/22613.Simulacra_and_Simulation",
-      "author": "Jean Baudrillard",
-      "isbn": "0472065211",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 08, 2022",
-      "avg_rating": "4.02",
-      "pages": "164\n        pp",
-      "review": ""
-    },
-    {
-      "id": "16111596",
-      "title": "Улица тёмных лавок",
-      "url": "https://www.goodreads.com/book/show/16111596",
-      "author": "Patrick Modiano",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.63",
-      "pages": "192\n        pp",
-      "review": ""
-    },
-    {
-      "id": "29853390",
-      "title": "Давно хотела тебе сказать",
-      "url": "https://www.goodreads.com/book/show/29853390",
-      "author": "Alice Munro",
-      "isbn": "5389085507",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.00",
-      "pages": "288\n        pp",
-      "review": ""
-    },
-    {
-      "id": "28926051",
-      "title": "Скромный герой",
-      "url": "https://www.goodreads.com/book/show/28926051",
-      "author": "Mario Vargas Llosa",
-      "isbn": "5389080661",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.14",
-      "pages": "384\n        pp",
-      "review": ""
-    },
-    {
-      "id": "6542588",
-      "title": "Дом тишины",
-      "url": "https://www.goodreads.com/book/show/6542588",
-      "author": "Pamuk O.",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.64",
-      "pages": "480\n        pp",
-      "review": ""
-    },
-    {
-      "id": "26875465",
-      "title": "Детство Иисуса",
-      "url": "https://www.goodreads.com/book/show/26875465",
-      "author": "J.M. Coetzee",
-      "isbn": "5699831231",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.71",
-      "pages": "320\n        pp",
-      "review": ""
-    },
-    {
-      "id": "34940378",
-      "title": "Дети нашей улицы",
-      "url": "https://www.goodreads.com/book/show/34940378",
-      "author": "Naguib Mahfouz",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.74",
-      "pages": "448\n        pp",
-      "review": ""
-    },
-    {
-      "id": "14428",
-      "title": "The Inheritors",
-      "url": "https://www.goodreads.com/book/show/14428.The_Inheritors",
-      "author": "William Golding",
-      "isbn": "0156443791",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.55",
-      "pages": "233\n        pp",
-      "review": ""
-    },
-    {
-      "id": "718666",
-      "title": "The Family Moskat",
-      "url": "https://www.goodreads.com/book/show/718666.The_Family_Moskat",
-      "author": "Isaac Bashevis Singer",
-      "isbn": "0374530645",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.25",
-      "pages": "624\n        pp",
-      "review": ""
-    },
-    {
-      "id": "561413",
-      "title": "The Tree of Man",
-      "url": "https://www.goodreads.com/book/show/561413.The_Tree_of_Man",
-      "author": "Patrick White",
-      "isbn": "0099324512",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.96",
-      "pages": "480\n        pp",
-      "review": ""
-    },
-    {
-      "id": "69882",
-      "title": "Billiards at Half-Past Nine",
-      "url": "https://www.goodreads.com/book/show/69882.Billiards_at_Half_Past_Nine",
-      "author": "Heinrich Böll",
-      "isbn": "0140187243",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.96",
-      "pages": "280\n        pp",
-      "review": ""
-    },
-    {
-      "id": "197170",
-      "title": "Only Yesterday",
-      "url": "https://www.goodreads.com/book/show/197170.Only_Yesterday",
-      "author": "S.Y. Agnon",
-      "isbn": "0691095442",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.16",
-      "pages": "688\n        pp",
-      "review": ""
-    },
-    {
-      "id": "11991",
-      "title": "The Fall",
-      "url": "https://www.goodreads.com/book/show/11991.The_Fall",
-      "author": "Albert Camus",
-      "isbn": "0679720227",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.06",
-      "pages": "147\n        pp",
-      "review": ""
-    },
-    {
-      "id": "70105",
-      "title": "The Counterfeiters",
-      "url": "https://www.goodreads.com/book/show/70105.The_Counterfeiters",
-      "author": "André Gide",
-      "isbn": "0394718429",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.88",
-      "pages": "467\n        pp",
-      "review": ""
-    },
-    {
-      "id": "70101",
-      "title": "The Immoralist",
-      "url": "https://www.goodreads.com/book/show/70101.The_Immoralist",
-      "author": "André Gide",
-      "isbn": "0142180025",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.60",
-      "pages": "144\n        pp",
-      "review": ""
-    },
-    {
-      "id": "16631",
-      "title": "Steppenwolf",
-      "url": "https://www.goodreads.com/book/show/16631.Steppenwolf",
-      "author": "Hermann Hesse",
-      "isbn": "0140282580",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.15",
-      "pages": "256\n        pp",
-      "review": ""
-    },
-    {
-      "id": "103159",
-      "title": "The Forsyte Saga (The Forsyte Chronicles, #1-3)",
-      "url": "https://www.goodreads.com/book/show/103159.The_Forsyte_Saga",
-      "author": "John Galsworthy",
-      "isbn": "0192838628",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.18",
-      "pages": "872\n        pp",
-      "review": ""
-    },
-    {
-      "id": "11376",
-      "title": "Main Street",
-      "url": "https://www.goodreads.com/book/show/11376.Main_Street",
-      "author": "Sinclair Lewis",
-      "isbn": "0375753141",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "3.78",
-      "pages": "454\n        pp",
-      "review": ""
-    },
-    {
-      "id": "28938492",
-      "title": "Плоды земли",
-      "url": "https://www.goodreads.com/book/show/28938492",
-      "author": "Knut Hamsun",
-      "isbn": "5170622201",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.30",
-      "pages": "382\n        pp",
-      "review": ""
-    },
-    {
-      "id": "7929943",
-      "title": "Крестоносцы",
-      "url": "https://www.goodreads.com/book/show/7929943",
-      "author": "Henryk Sienkiewicz",
-      "isbn": "5389056558",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.11",
-      "pages": "704\n        pp",
-      "review": ""
-    },
-    {
-      "id": "56032512",
-      "title": "Брак и мораль",
-      "url": "https://www.goodreads.com/book/show/56032512",
-      "author": "Bertrand Russell",
-      "isbn": "5170786980",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.22",
-      "pages": "320\n        pp",
-      "review": ""
-    },
-    {
-      "id": "830502",
-      "title": "It",
-      "url": "https://www.goodreads.com/book/show/830502.It",
-      "author": "Stephen  King",
-      "isbn": "0450411435",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.27",
-      "pages": "1184\n        pp",
-      "review": ""
-    },
-    {
-      "id": "11588",
-      "title": "The Shining (The Shining, #1)",
-      "url": "https://www.goodreads.com/book/show/11588.The_Shining",
-      "author": "Stephen  King",
-      "isbn": "0450040186",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.28",
-      "pages": "497\n        pp",
-      "review": ""
-    },
-    {
-      "id": "4980",
-      "title": "Breakfast of Champions",
-      "url": "https://www.goodreads.com/book/show/4980.Breakfast_of_Champions",
-      "author": "Kurt Vonnegut Jr.",
-      "isbn": "0385334206",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jul 05, 2022",
-      "avg_rating": "4.07",
-      "pages": "303\n        pp",
-      "review": ""
-    },
-    {
-      "id": "57981",
-      "title": "The End of History and the Last Man",
-      "url": "https://www.goodreads.com/book/show/57981.The_End_of_History_and_the_Last_Man",
-      "author": "Francis Fukuyama",
-      "isbn": "0743284550",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 28, 2022",
-      "avg_rating": "3.61",
-      "pages": "464\n        pp",
-      "review": ""
-    },
-    {
-      "id": "51985",
-      "title": "Existentialism is a Humanism",
-      "url": "https://www.goodreads.com/book/show/51985.Existentialism_is_a_Humanism",
-      "author": "Jean-Paul Sartre",
-      "isbn": "0300115466",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 27, 2022",
-      "avg_rating": "4.03",
-      "pages": "122\n        pp",
-      "review": ""
-    },
-    {
-      "id": "55030",
-      "title": "Cosmos",
-      "url": "https://www.goodreads.com/book/show/55030.Cosmos",
-      "author": "Carl Sagan",
-      "isbn": "0375508325",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 27, 2022",
-      "avg_rating": "4.39",
-      "pages": "384\n        pp",
-      "review": ""
-    },
-    {
-      "id": "2068",
-      "title": "Darwin's Dangerous Idea: Evolution and the Meanings of Life",
-      "url": "https://www.goodreads.com/book/show/2068.Darwin_s_Dangerous_Idea",
-      "author": "Daniel C. Dennett",
-      "isbn": "068482471X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 22, 2022",
-      "avg_rating": "4.07",
-      "pages": "588\n        pp",
-      "review": ""
-    },
-    {
-      "id": "2067",
-      "title": "Breaking the Spell: Religion as a Natural Phenomenon",
-      "url": "https://www.goodreads.com/book/show/2067.Breaking_the_Spell",
-      "author": "Daniel C. Dennett",
-      "isbn": "067003472X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 22, 2022",
-      "avg_rating": "3.89",
-      "pages": "464\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18774981",
-      "title": "Waking Up: A Guide to Spirituality Without Religion",
-      "url": "https://www.goodreads.com/book/show/18774981-waking-up",
-      "author": "Sam Harris",
-      "isbn": "1451636016",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 19, 2022",
-      "avg_rating": "3.87",
-      "pages": "256\n        pp",
-      "review": ""
-    },
-    {
-      "id": "14743",
-      "title": "The God Delusion: A Study of Religious Belief and Skepticism",
-      "url": "https://www.goodreads.com/book/show/14743.The_God_Delusion",
-      "author": "Richard Dawkins",
-      "isbn": "0618680004",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 19, 2022",
-      "avg_rating": "3.88",
-      "pages": "374\n        pp",
-      "review": ""
-    },
-    {
-      "id": "59145",
-      "title": "Père Goriot",
-      "url": "https://www.goodreads.com/book/show/59145.P_re_Goriot",
-      "author": "Honoré de Balzac",
-      "isbn": "039397166X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 17, 2022",
-      "avg_rating": "3.89",
-      "pages": "384\n        pp",
-      "review": ""
-    },
-    {
-      "id": "238953",
-      "title": "Das Kapital",
-      "url": "https://www.goodreads.com/book/show/238953.Das_Kapital",
-      "author": "Karl Marx",
-      "isbn": "089526711X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 17, 2022",
-      "avg_rating": "3.91",
-      "pages": "356\n        pp",
-      "review": ""
-    },
-    {
-      "id": "30474",
-      "title": "The Communist Manifesto",
-      "url": "https://www.goodreads.com/book/show/30474.The_Communist_Manifesto",
-      "author": "Karl Marx",
-      "isbn": "0140447571",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 17, 2022",
-      "avg_rating": "3.70",
-      "pages": "288\n        pp",
-      "review": ""
-    },
-    {
-      "id": "130440",
-      "title": "Doctor Zhivago",
-      "url": "https://www.goodreads.com/book/show/130440.Doctor_Zhivago",
-      "author": "Boris Pasternak",
-      "isbn": "0679774386",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 17, 2022",
-      "avg_rating": "4.03",
-      "pages": "592\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18045891",
-      "title": "Sharp Objects",
-      "url": "https://www.goodreads.com/book/show/18045891-sharp-objects",
-      "author": "Gillian Flynn",
-      "isbn": "0297851535",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 16, 2022",
-      "avg_rating": "4.03",
-      "pages": "254\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18288",
-      "title": "Critique of Pure Reason",
-      "url": "https://www.goodreads.com/book/show/18288.Critique_of_Pure_Reason",
-      "author": "Immanuel Kant",
-      "isbn": "0521657296",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Jun 16, 2022",
-      "avg_rating": "3.95",
-      "pages": "785\n        pp",
-      "review": ""
-    },
-    {
-      "id": "92307",
-      "title": "Being and Time",
-      "url": "https://www.goodreads.com/book/show/92307.Being_and_Time",
-      "author": "Martin Heidegger",
-      "isbn": "0060638508",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 22, 2022",
-      "avg_rating": "4.03",
-      "pages": "589\n        pp",
-      "review": ""
-    },
-    {
-      "id": "22586916",
-      "title": "Троецарствие",
-      "url": "https://www.goodreads.com/book/show/22586916",
-      "author": "Luo Guanzhong",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 21, 2022",
-      "avg_rating": "4.30",
-      "pages": "not set",
-      "review": ""
-    },
-    {
-      "id": "3869",
-      "title": "A Brief History of Time",
-      "url": "https://www.goodreads.com/book/show/3869.A_Brief_History_of_Time",
-      "author": "Stephen W. Hawking",
-      "isbn": "0553380168",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 18, 2022",
-      "avg_rating": "4.21",
-      "pages": "226\n        pp",
-      "review": ""
-    },
-    {
-      "id": "30659",
-      "title": "Meditations",
-      "url": "https://www.goodreads.com/book/show/30659.Meditations",
-      "author": "Marcus Aurelius",
-      "isbn": "0140449337",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 18, 2022",
-      "avg_rating": "4.29",
-      "pages": "254\n        pp",
-      "review": ""
-    },
-    {
-      "id": "97411",
-      "title": "Letters from a Stoic",
-      "url": "https://www.goodreads.com/book/show/97411.Letters_from_a_Stoic",
-      "author": "Seneca",
-      "isbn": "0140442103",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 17, 2022",
-      "avg_rating": "4.31",
-      "pages": "352\n        pp",
-      "review": ""
-    },
-    {
-      "id": "230817",
-      "title": "The Art of Always Being Right",
-      "url": "https://www.goodreads.com/book/show/230817.The_Art_of_Always_Being_Right",
-      "author": "Arthur Schopenhauer",
-      "isbn": "1903933617",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 30, 2022",
-      "avg_rating": "3.67",
-      "pages": "138\n        pp",
-      "review": ""
-    },
-    {
-      "id": "48855",
-      "title": "The Diary of a Young Girl",
-      "url": "https://www.goodreads.com/book/show/48855.The_Diary_of_a_Young_Girl",
-      "author": "Anne Frank",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.20",
-      "pages": "340\n        pp",
-      "review": ""
-    },
-    {
-      "id": "332613",
-      "title": "One Flew Over the Cuckoo’s Nest",
-      "url": "https://www.goodreads.com/book/show/332613.One_Flew_Over_the_Cuckoo_s_Nest",
-      "author": "Ken Kesey",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.20",
-      "pages": "325\n        pp",
-      "review": ""
-    },
-    {
-      "id": "52036",
-      "title": "Siddhartha",
-      "url": "https://www.goodreads.com/book/show/52036.Siddhartha",
-      "author": "Hermann Hesse",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.08",
-      "pages": "152\n        pp",
-      "review": ""
-    },
-    {
-      "id": "149267",
-      "title": "The Stand",
-      "url": "https://www.goodreads.com/book/show/149267.The_Stand",
-      "author": "Stephen  King",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.35",
-      "pages": "1152\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1934",
-      "title": "Little Women (Little Women, #1)",
-      "url": "https://www.goodreads.com/book/show/1934.Little_Women",
-      "author": "Louisa May Alcott",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.18",
-      "pages": "449\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1953",
-      "title": "A Tale of Two Cities",
-      "url": "https://www.goodreads.com/book/show/1953.A_Tale_of_Two_Cities",
-      "author": "Charles Dickens",
-      "isbn": "0141439602",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "3.87",
-      "pages": "489\n        pp",
-      "review": ""
-    },
-    {
-      "id": "24213",
-      "title": "Alice’s Adventures in Wonderland / Through the Looking-Glass",
-      "url": "https://www.goodreads.com/book/show/24213.Alice_s_Adventures_in_Wonderland_Through_the_Looking_Glass",
-      "author": "Lewis Carroll",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.07",
-      "pages": "239\n        pp",
-      "review": ""
-    },
-    {
-      "id": "19063",
-      "title": "The Book Thief",
-      "url": "https://www.goodreads.com/book/show/19063.The_Book_Thief",
-      "author": "Markus Zusak",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.38",
-      "pages": "592\n        pp",
-      "review": ""
-    },
-    {
-      "id": "4406",
-      "title": "East of Eden",
-      "url": "https://www.goodreads.com/book/show/4406.East_of_Eden",
-      "author": "John Steinbeck",
-      "isbn": "0142000655",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.44",
-      "pages": "601\n        pp",
-      "review": ""
-    },
-    {
-      "id": "10210",
-      "title": "Jane Eyre",
-      "url": "https://www.goodreads.com/book/show/10210.Jane_Eyre",
-      "author": "Charlotte Brontë",
-      "isbn": "0142437204",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "4.15",
-      "pages": "532\n        pp",
-      "review": ""
-    },
-    {
-      "id": "36577139",
-      "title": "NGINX Cookbook",
-      "url": "https://www.goodreads.com/book/show/36577139-nginx-cookbook",
-      "author": "Derek DeJonghe",
-      "isbn": "1491968931",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "3.76",
-      "pages": "161\n        pp",
-      "review": ""
-    },
-    {
-      "id": "4050126",
-      "title": "Python for Unix and Linux System Administration",
-      "url": "https://www.goodreads.com/book/show/4050126-python-for-unix-and-linux-system-administration",
-      "author": "Noah Gift",
-      "isbn": "0596515820",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 29, 2022",
-      "avg_rating": "3.77",
-      "pages": "433\n        pp",
-      "review": ""
-    },
-    {
-      "id": "35714082",
-      "title": "Project Management for Humans",
-      "url": "https://www.goodreads.com/book/show/35714082-project-management-for-humans",
-      "author": "Brett Harned",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 27, 2022",
-      "avg_rating": "3.73",
-      "pages": "not set",
-      "review": ""
-    },
-    {
-      "id": "54865353",
-      "title": "Ловушка счастья. Перестаем переживать — начинаем жить",
-      "url": "https://www.goodreads.com/book/show/54865353",
-      "author": "Russ Harris",
-      "isbn": "5040971648",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Apr 27, 2022",
-      "avg_rating": "4.16",
-      "pages": "480\n        pp",
-      "review": ""
-    },
-    {
-      "id": "1199688",
-      "title": "Babel-17",
-      "url": "https://www.goodreads.com/book/show/1199688.Babel_17",
-      "author": "Samuel R. Delany",
-      "isbn": "0839823282",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 25, 2022",
-      "avg_rating": "3.73",
-      "pages": "192\n        pp",
-      "review": ""
-    },
-    {
-      "id": "40651883",
-      "title": "Snow Crash",
-      "url": "https://www.goodreads.com/book/show/40651883-snow-crash",
-      "author": "Neal Stephenson",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 22, 2022",
-      "avg_rating": "4.02",
-      "pages": "559\n        pp",
-      "review": ""
-    },
-    {
-      "id": "24820354",
-      "title": "Спотыкаясь о счастье",
-      "url": "https://www.goodreads.com/book/show/24820354",
-      "author": "Daniel Todd Gilbert",
-      "isbn": "5961449254",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 18, 2022",
-      "avg_rating": "3.67",
-      "pages": "320\n        pp",
-      "review": ""
-    },
-    {
-      "id": "32944167",
-      "title": "Маленькая жизнь",
-      "url": "https://www.goodreads.com/book/show/32944167",
-      "author": "Hanya Yanagihara",
-      "isbn": "5170971192",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 18, 2022",
-      "avg_rating": "4.37",
-      "pages": "688\n        pp",
-      "review": ""
-    },
-    {
-      "id": "3636",
-      "title": "The Giver (Giver, #1)",
-      "url": "https://www.goodreads.com/book/show/3636.The_Giver",
-      "author": "Lois Lowry",
-      "isbn": "0385732554",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.12",
-      "pages": "208\n        pp",
-      "review": ""
-    },
-    {
-      "id": "22371411",
-      "title": "Страдания юного Вертера",
-      "url": "https://www.goodreads.com/book/show/22371411",
-      "author": "Johann Wolfgang von Goethe",
-      "isbn": "5271411222",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.77",
-      "pages": "192\n        pp",
-      "review": ""
-    },
-    {
-      "id": "24280",
-      "title": "Les Misérables",
-      "url": "https://www.goodreads.com/book/show/24280.Les_Mis_rables",
-      "author": "Victor Hugo",
-      "isbn": "0451525264",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.19",
-      "pages": "1488\n        pp",
-      "review": ""
-    },
-    {
-      "id": "12505",
-      "title": "The Idiot",
-      "url": "https://www.goodreads.com/book/show/12505.The_Idiot",
-      "author": "Fyodor Dostoevsky",
-      "isbn": "0679642420",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.22",
-      "pages": "667\n        pp",
-      "review": ""
-    },
-    {
-      "id": "4934",
-      "title": "The Brothers Karamazov",
-      "url": "https://www.goodreads.com/book/show/4934.The_Brothers_Karamazov",
-      "author": "Fyodor Dostoevsky",
-      "isbn": "0374528373",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.38",
-      "pages": "796\n        pp",
-      "review": ""
-    },
-    {
-      "id": "135479",
-      "title": "Cat’s Cradle",
-      "url": "https://www.goodreads.com/book/show/135479.Cat_s_Cradle",
-      "author": "Kurt Vonnegut Jr.",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.17",
-      "pages": "306\n        pp",
-      "review": ""
-    },
-    {
-      "id": "22288",
-      "title": "Haunted",
-      "url": "https://www.goodreads.com/book/show/22288.Haunted",
-      "author": "Chuck Palahniuk",
-      "isbn": "1400032822",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.60",
-      "pages": "419\n        pp",
-      "review": ""
-    },
-    {
-      "id": "55852318",
-      "title": "Все свободны: История о том, как в 1996 году в России закончились выборы",
-      "url": "https://www.goodreads.com/book/show/55852318",
-      "author": "Михаил Зыгарь",
-      "isbn": "5961439836",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.41",
-      "pages": "424\n        pp",
-      "review": ""
-    },
-    {
-      "id": "76171",
-      "title": "We",
-      "url": "https://www.goodreads.com/book/show/76171.We",
-      "author": "Yevgeny Zamyatin",
-      "isbn": "0140185852",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.90",
-      "pages": "256\n        pp",
-      "review": ""
-    },
-    {
-      "id": "61666",
-      "title": "Contact",
-      "url": "https://www.goodreads.com/book/show/61666.Contact",
-      "author": "Carl Sagan",
-      "isbn": "2266079999",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.15",
-      "pages": "580\n        pp",
-      "review": ""
-    },
-    {
-      "id": "216363",
-      "title": "The Man in the High Castle",
-      "url": "https://www.goodreads.com/book/show/216363.The_Man_in_the_High_Castle",
-      "author": "Philip K. Dick",
-      "isbn": "0679740678",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.63",
-      "pages": "259\n        pp",
-      "review": ""
-    },
-    {
-      "id": "41804",
-      "title": "I, Robot (Robot, #0.1)",
-      "url": "https://www.goodreads.com/book/show/41804.I_Robot",
-      "author": "Isaac Asimov",
-      "isbn": "0553803700",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.22",
-      "pages": "224\n        pp",
-      "review": ""
-    },
-    {
-      "id": "7604",
-      "title": "Lolita",
-      "url": "https://www.goodreads.com/book/show/7604.Lolita",
-      "author": "Vladimir Nabokov",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.87",
-      "pages": "368\n        pp",
-      "review": ""
-    },
-    {
-      "id": "890",
-      "title": "Of Mice and Men",
-      "url": "https://www.goodreads.com/book/show/890.Of_Mice_and_Men",
-      "author": "John Steinbeck",
-      "isbn": "0142000671",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.89",
-      "pages": "107\n        pp",
-      "review": ""
-    },
-    {
-      "id": "13023",
-      "title": "Alice in Wonderland",
-      "url": "https://www.goodreads.com/book/show/13023.Alice_in_Wonderland",
-      "author": "Jane Carruth",
-      "isbn": "0517223627",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.03",
-      "pages": "96\n        pp",
-      "review": ""
-    },
-    {
-      "id": "853510",
-      "title": "Murder on the Orient Express (Hercule Poirot, #10)",
-      "url": "https://www.goodreads.com/book/show/853510.Murder_on_the_Orient_Express",
-      "author": "Agatha Christie",
-      "isbn": "0007119313",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "4.21",
-      "pages": "347\n        pp",
-      "review": ""
-    },
-    {
-      "id": "2696",
-      "title": "The Canterbury Tales",
-      "url": "https://www.goodreads.com/book/show/2696.The_Canterbury_Tales",
-      "author": "Geoffrey Chaucer",
-      "isbn": "0140424385",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.52",
-      "pages": "504\n        pp",
-      "review": ""
-    },
-    {
-      "id": "70401",
-      "title": "On the Road",
-      "url": "https://www.goodreads.com/book/show/70401.On_the_Road",
-      "author": "Jack Kerouac",
-      "isbn": "0140042598",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 09, 2021",
-      "avg_rating": "3.63",
-      "pages": "307\n        pp",
-      "review": ""
-    },
-    {
-      "id": "25614994",
-      "title": "Fight Club 2",
-      "url": "https://www.goodreads.com/book/show/25614994-fight-club-2",
-      "author": "Chuck Palahniuk",
-      "isbn": "1616559454",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Mar 02, 2021",
-      "avg_rating": "3.04",
-      "pages": "276\n        pp",
-      "review": ""
-    },
-    {
-      "id": "27972394",
-      "title": "Шелкопряд",
-      "url": "https://www.goodreads.com/book/show/27972394",
-      "author": "Robert Galbraith",
-      "isbn": "5389092244",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.29",
-      "pages": "636\n        pp",
-      "review": ""
-    },
-    {
-      "id": "56098498",
-      "title": "Дурная кровь (Корморан Страйк, #5)",
-      "url": "https://www.goodreads.com/book/show/56098498",
-      "author": "Robert Galbraith",
-      "isbn": "5389188365",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.56",
-      "pages": "960\n        pp",
-      "review": ""
-    },
-    {
-      "id": "44166865",
-      "title": "Смертельная белизна (Корморан Страйк, #4)",
-      "url": "https://www.goodreads.com/book/show/44166865",
-      "author": "Robert Galbraith",
-      "isbn": "5389160290",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.21",
-      "pages": "672\n        pp",
-      "review": ""
-    },
-    {
-      "id": "20636069",
-      "title": "Зов кукушки (Cormoran Strike, #1)",
-      "url": "https://www.goodreads.com/book/show/20636069",
-      "author": "Robert Galbraith",
-      "isbn": "5389067355",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.02",
-      "pages": "480\n        pp",
-      "review": ""
-    },
-    {
-      "id": "604635",
-      "title": "Naïve. Super",
-      "url": "https://www.goodreads.com/book/show/604635.Na_ve_Super",
-      "author": "Erlend Loe",
-      "isbn": "1841956724",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "3.89",
-      "pages": "208\n        pp",
-      "review": ""
-    },
-    {
-      "id": "29044",
-      "title": "The Secret History",
-      "url": "https://www.goodreads.com/book/show/29044.The_Secret_History",
-      "author": "Donna Tartt",
-      "isbn": "1400031702",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.15",
-      "pages": "559\n        pp",
-      "review": ""
-    },
-    {
-      "id": "18774964",
-      "title": "A Man Called Ove",
-      "url": "https://www.goodreads.com/book/show/18774964-a-man-called-ove",
-      "author": "Fredrik Backman",
-      "isbn": "1476738017",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.35",
-      "pages": "337\n        pp",
-      "review": ""
-    },
-    {
-      "id": "320",
-      "title": "One Hundred Years of Solitude",
-      "url": "https://www.goodreads.com/book/show/320.One_Hundred_Years_of_Solitude",
-      "author": "Gabriel García Márquez",
-      "isbn": "",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.10",
-      "pages": "417\n        pp",
-      "review": ""
-    },
-    {
-      "id": "52382796",
-      "title": "Shōgun (Asian Saga, #1)",
-      "url": "https://www.goodreads.com/book/show/52382796-sh-gun",
-      "author": "James Clavell",
-      "isbn": "1982603844",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.41",
-      "pages": "1152\n        pp",
-      "review": ""
-    },
-    {
-      "id": "77566",
-      "title": "Hyperion (Hyperion Cantos, #1)",
-      "url": "https://www.goodreads.com/book/show/77566.Hyperion",
-      "author": "Dan Simmons",
-      "isbn": "0553283685",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.27",
-      "pages": "482\n        pp",
-      "review": ""
-    },
-    {
-      "id": "6892870",
-      "title": "The Girl Who Kicked the Hornet’s Nest (Millennium, #3)",
-      "url": "https://www.goodreads.com/book/show/6892870-the-girl-who-kicked-the-hornet-s-nest",
-      "author": "Stieg Larsson",
-      "isbn": "030726999X",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.23",
-      "pages": "576\n        pp",
-      "review": ""
-    },
-    {
-      "id": "5060378",
-      "title": "The Girl Who Played with Fire (Millennium #2)",
-      "url": "https://www.goodreads.com/book/show/5060378-the-girl-who-played-with-fire",
-      "author": "Stieg Larsson",
-      "isbn": "0307269981",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.25",
-      "pages": "503\n        pp",
-      "review": ""
-    },
-    {
-      "id": "2429135",
-      "title": "The Girl With the Dragon Tattoo (Millennium, #1)",
-      "url": "https://www.goodreads.com/book/show/2429135.The_Girl_With_the_Dragon_Tattoo",
-      "author": "Stieg Larsson",
-      "isbn": "0670069019",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.18",
-      "pages": "480\n        pp",
-      "review": ""
-    },
-    {
-      "id": "10644930",
-      "title": "11/22/63",
-      "url": "https://www.goodreads.com/book/show/10644930-11-22-63",
-      "author": "Stephen  King",
-      "isbn": "1451627289",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.34",
-      "pages": "849\n        pp",
-      "review": ""
-    },
-    {
-      "id": "6139677",
-      "title": "Цветы для Элджернона",
-      "url": "https://www.goodreads.com/book/show/6139677",
-      "author": "Daniel Keyes",
-      "isbn": "5699157441",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.60",
-      "pages": "320\n        pp",
-      "review": ""
-    },
-    {
-      "id": "3219241",
-      "title": "Таинственный остров",
-      "url": "https://www.goodreads.com/book/show/3219241",
-      "author": "Jules Verne",
-      "isbn": "5955502971",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "Feb 25, 2021",
-      "avg_rating": "4.48",
-      "pages": "624\n        pp",
-      "review": ""
-    },
-    {
-      "id": "51299",
-      "title": "Letter to a Christian Nation",
-      "url": "https://www.goodreads.com/book/show/51299.Letter_to_a_Christian_Nation",
-      "author": "Sam Harris",
-      "isbn": "0307265773",
-      "rating": 0,
-      "shelves": [
-        "to-read"
-      ],
-      "date_read": "not set",
-      "date_added": "May 08, 2019",
-      "avg_rating": "3.98",
-      "pages": "96\n        pp",
       "review": ""
     }
   ]
