@@ -1,0 +1,35 @@
+---
+- name: Ensure OpenSSH server is installed
+  ansible.builtin.apt:
+    name: openssh-server
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure SSH key is authorized for the ansible user
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ ssh_authorized_key }}"
+    state: present
+  when: ssh_authorized_key | length > 0
+
+- name: Harden sshd (key-only login)
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/00-ansible.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+  when:
+    - sshd_harden | bool
+    - ssh_authorized_key | length > 0
+  notify: Restart sshd
+
+- name: Ensure ssh service is enabled and running
+  ansible.builtin.service:
+    name: ssh
+    state: started
+    enabled: true

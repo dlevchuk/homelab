@@ -1,13 +1,12 @@
 ---
 # Default variables for common role
 
+enable_ssh_setup: true
 enable_initial_setup: true
 enable_ping_reboot: true
 enable_hardware_watchdog: false
-enable_install_docker: false
 
-docker_version: "latest"
-docker_install_recommends: false
-docker_install_compose: true
-docker_users:
-  - 'pi'
+# SSH: public key is taken from env (CI exports SSH_PUBLIC_KEY from the private key)
+ssh_authorized_key: "{{ lookup('env', 'SSH_PUBLIC_KEY') }}"
+# Hardening is applied only when ssh_authorized_key is not empty (no lockout)
+sshd_harden: true

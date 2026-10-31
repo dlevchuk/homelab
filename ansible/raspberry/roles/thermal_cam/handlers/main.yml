@@ -1,0 +1,14 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart thermal-web
+  ansible.builtin.systemd:
+    name: thermal-web.service
+    state: restarted
+
+- name: Reboot thermal Pi
+  ansible.builtin.reboot:
+    connect_timeout: 30
+    reboot_timeout: 300

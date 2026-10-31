@@ -3,6 +3,11 @@
     connect_timeout: 30
     reboot_timeout: 300
 
+- name: Restart sshd
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+
 - name: Restart watchdog
   ansible.builtin.service:
     name: watchdog

@@ -1,10 +1,28 @@
 ---
-- name: configure and deploy the raspberry
-  hosts: all
-  remote_user: pi
-  gather_facts: True
+- name: common setup - main raspberry
+  hosts: raspberry_main
+  gather_facts: true
   become: true
-
   roles:
-#    - common
+    - common
+
+- name: common setup - pi5
+  hosts: raspberry_pi5
+  gather_facts: true
+  become: true
+  roles:
+    - common
+
+- name: main raspberry - docker apps
+  hosts: raspberry_main
+  gather_facts: true
+  become: true
+  roles:
     - docker_apps
+
+- name: zero raspberry - thermal camera
+  hosts: raspberry_zero
+  gather_facts: true
+  become: true
+  roles:
+    - thermal_cam
