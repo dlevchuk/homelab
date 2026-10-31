@@ -1,0 +1,20 @@
+---
+- name: Cron task "backup thunderbird"
+  ansible.builtin.cron:
+    name: "backup thunderbird"
+    state: "{{ 'present' if (enable_thunderbird | default(false) | bool) else 'absent' }}"
+    weekday: "2"
+    minute: "0"
+    hour: "0"
+    user: root
+    job: "mkdir -p {{ docker_dir }}/syncthing/sync/backup/thunderbird_backup && tar -zcf {{ docker_dir }}/syncthing/sync/backup/thunderbird_backup/thunderbird_profile_rasp.tar.gz {{ docker_dir }}/thunderbird/ > /dev/null 2>&1"
+
+- name: Cron task "backup docker"
+  ansible.builtin.cron:
+    name: "backup docker"
+    state: "{{ 'present' if (enable_docker_backup | default(true) | bool) else 'absent' }}"
+    weekday: "2"
+    minute: "0"
+    hour: "1"
+    user: root
+    job: "mkdir -p {{ docker_dir }}/syncthing/sync/backup_docker && tar -zcf {{ docker_dir }}/syncthing/sync/backup_docker/docker_apps.tar.gz {{ docker_dir }}/ > /dev/null 2>&1"

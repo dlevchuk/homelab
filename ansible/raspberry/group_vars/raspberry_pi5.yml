@@ -1,0 +1,5 @@
+---
+homepage_allowed_hosts: "pi5.tail72e9f.ts.net:3005"
+
+# Uptime Kuma працює тільки на pi4
+enable_uptime_kuma: false

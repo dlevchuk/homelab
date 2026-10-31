@@ -7,11 +7,11 @@ on:
     paths:
       - ansible/**
   workflow_dispatch:
-#    inputs:
-#      limit:
-#        description: "Ansible --limit (all, rpi-main, rpi-zero, rpi-pi5)"
-#        required: false
-#        default: "all"
+    inputs:
+      limit:
+        description: "Ansible --limit (all, rpi-pi4, rpi-zero, rpi-pi5)"
+        required: false
+        default: "all"
 
 env:
   REMOTE_USER: ${{ secrets.REMOTE_USER }}
@@ -25,7 +25,6 @@ env:
 
 jobs:
   ansible_deploy:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -67,21 +66,21 @@ jobs:
           ssh-keygen -y -f ~/.ssh/id_ansible > ~/.ssh/id_ansible.pub
           echo "SSH_PUBLIC_KEY=$(cat ~/.ssh/id_ansible.pub)" >> "$GITHUB_ENV"
 
-          MAIN_PORT="${REMOTE_PORT:-7722}"
+          PI4_PORT="${REMOTE_PORT:-7722}"
           ZERO_PORT="${THERMAL_REMOTE_PORT:-22}"
           PI5_PORT="${PI5_REMOTE_PORT:-22}"
           SSH_USER="${REMOTE_USER:-pi}"
 
           touch ~/.ssh/known_hosts
-          ssh-keyscan -p "$MAIN_PORT" -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -p "$PI4_PORT" -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           ssh-keyscan -p "$ZERO_PORT" -H "$THERMAL_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           ssh-keyscan -p "$PI5_PORT" -H "$PI5_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 600 ~/.ssh/known_hosts
 
           # Dynamic inventory: 3 physical Pis
           cat > hosts.ini <<EOF
-          [raspberry_main]
-          rpi-main ansible_host=${REMOTE_HOST} ansible_port=${MAIN_PORT}
+          [raspberry_pi4]
+          rpi-pi4 ansible_host=${REMOTE_HOST} ansible_port=${PI4_PORT}
 
           [raspberry_zero]
           rpi-zero ansible_host=${THERMAL_REMOTE_HOST} ansible_port=${ZERO_PORT}
@@ -90,7 +89,7 @@ jobs:
           rpi-pi5 ansible_host=${PI5_REMOTE_HOST} ansible_port=${PI5_PORT}
 
           [raspberry:children]
-          raspberry_main
+          raspberry_pi4
           raspberry_zero
           raspberry_pi5
 

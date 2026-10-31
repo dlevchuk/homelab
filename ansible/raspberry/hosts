@@ -1,5 +1,5 @@
-[raspberry_main]
-rpi-main ansible_host=raspberrypi.tail72e9f.ts.net ansible_port=7722
+[raspberry_pi4]
+rpi-pi4 ansible_host=raspberrypi.tail72e9f.ts.net ansible_port=7722
 
 [raspberry_zero]
 rpi-zero ansible_host=zero.tail72e9f.ts.net ansible_port=22
@@ -8,6 +8,6 @@ rpi-zero ansible_host=zero.tail72e9f.ts.net ansible_port=22
 rpi-pi5 ansible_host=pi5.tail72e9f.ts.net ansible_port=22
 
 [raspberry:children]
-raspberry_main
+raspberry_pi4
 raspberry_zero
 raspberry_pi5

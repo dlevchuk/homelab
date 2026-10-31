@@ -1,0 +1,4 @@
+---
+homepage_allowed_hosts: "raspberrypi.tail72e9f.ts.net:3005"
+
+enable_uptime_kuma: true

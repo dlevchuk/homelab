@@ -30,7 +30,7 @@
       - /var/run/docker.sock:/var/run/docker.sock
       - "{{ docker_dir }}/homepage:/app/config"
     env:
-      HOMEPAGE_ALLOWED_HOSTS: "raspberrypi.tail72e9f.ts.net:3005"
+      HOMEPAGE_ALLOWED_HOSTS: "{{ homepage_allowed_hosts }}"
       PUID: "0"
       PGID: "0"
     ports:

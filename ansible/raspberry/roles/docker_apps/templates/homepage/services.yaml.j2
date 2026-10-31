@@ -30,6 +30,7 @@
         container: watchtower
         showStats: true
 
+{% if enable_uptime_kuma | default(true) %}
     - Uptime Kuma:
         icon: uptime-kuma
         href: http://{{ app_host }}:3001
@@ -38,6 +39,7 @@
         container: uptime-kuma
         showStats: true
         siteMonitor: http://{{ app_host }}:3001
+{% endif %}
 
 {% if enable_adguard | default(false) %}
     - AdGuard Home:

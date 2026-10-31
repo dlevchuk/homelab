@@ -7,9 +7,15 @@ docker_gid: "1000"
 timezone: "Europe/Kiev"
 
 homepage_host: "{{ ansible_host }}"
+# Override per host group in group_vars/raspberry_pi4.yml / raspberry_pi5.yml
+homepage_allowed_hosts: "{{ ansible_host }}:3005"
 
 # Portainer initial admin credentials (min 12 characters)
 portainer_admin_password: "RaspberryAdmin123!"
+
+# Docker engine + weekly docker dir backup
+enable_docker_install: true
+enable_docker_backup: true
 
 # Enabled active services
 enable_homepage: true

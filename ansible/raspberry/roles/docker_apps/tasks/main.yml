@@ -1,4 +1,8 @@
 ---
+- name: Install Docker
+  ansible.builtin.include_tasks: install_docker.yml
+  when: enable_docker_install | default(true) | bool
+
 - name: Manage Homepage
   ansible.builtin.include_tasks: docker_homepage.yml
   when: enable_homepage | default(true) | bool
@@ -54,3 +58,7 @@
 - name: Manage Homebridge
   ansible.builtin.include_tasks: docker_homebridge.yml
   when: enable_homebridge | default(false) | bool
+
+# Always included: tasks inside switch cron to present/absent by flags
+- name: Manage backups (cron)
+  ansible.builtin.include_tasks: docker_backup.yml

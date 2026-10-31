@@ -1,6 +1,6 @@
 ---
-- name: common setup - main raspberry
-  hosts: raspberry_main
+- name: common setup - pi4
+  hosts: raspberry_pi4
   gather_facts: true
   become: true
   roles:
@@ -13,8 +13,15 @@
   roles:
     - common
 
-- name: main raspberry - docker apps
-  hosts: raspberry_main
+- name: pi4 - docker apps
+  hosts: raspberry_pi4
+  gather_facts: true
+  become: true
+  roles:
+    - docker_apps
+
+- name: pi5 - docker apps
+  hosts: raspberry_pi5
   gather_facts: true
   become: true
   roles:

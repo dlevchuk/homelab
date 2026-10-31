@@ -44,6 +44,13 @@
     state: present
   when: docker_install_compose | default(true) | bool
 
+- name: Ensure Python Docker SDK (needed by community.docker)
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
 - name: Ensure group "docker" exists
   ansible.builtin.group:
     name: docker
