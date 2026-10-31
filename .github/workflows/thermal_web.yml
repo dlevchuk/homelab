@@ -5,6 +5,9 @@ on:
     paths:
       - scripts/rasp_zero_cam/thermal_web.py
       - scripts/rasp_zero_cam/thermal-web.service
+      - scripts/rasp_zero_cam/supabase_sync.py
+      - scripts/rasp_zero_cam/thermal-sync.service
+      - scripts/rasp_zero_cam/thermal-sync.timer
   workflow_dispatch:
 
 jobs:
@@ -31,15 +34,27 @@ jobs:
           remote_port: ${{ secrets.THERMAL_REMOTE_PORT }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: setup service and restart via ssh
+      - name: setup services and restart via ssh
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         with:
           host: ${{ secrets.THERMAL_REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.THERMAL_REMOTE_PORT }}
+          envs: SUPABASE_URL,SUPABASE_KEY
           script: |
+            # secrets -> env file for systemd (600, not in git)
+            umask 077
+            printf 'SUPABASE_URL=%s\nSUPABASE_KEY=%s\n' "$SUPABASE_URL" "$SUPABASE_KEY" > /home/pi/.supabase.env
+            chmod 600 /home/pi/.supabase.env
+
             sudo cp /home/pi/thermal-web.service /etc/systemd/system/thermal-web.service
+            sudo cp /home/pi/thermal-sync.service /etc/systemd/system/thermal-sync.service
+            sudo cp /home/pi/thermal-sync.timer /etc/systemd/system/thermal-sync.timer
             sudo systemctl daemon-reload
             sudo systemctl enable thermal-web.service
             sudo systemctl restart thermal-web.service
+            sudo systemctl enable --now thermal-sync.timer

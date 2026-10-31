@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Supabase sync
+
+[Timer]
+OnCalendar=*-*-* 23:55:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

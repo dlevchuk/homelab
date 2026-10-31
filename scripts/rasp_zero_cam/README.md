@@ -12,6 +12,7 @@
 - **Buzzer Control**: The dashboard's Signal button plays a PWM tone on GPIO18.
 - **Built-in Web Dashboard**: Served directly from `/` with interactive controls, snapshots, full-screen mode, air raid alerts map, and weather radar widget.
 - **Systemd Integration**: Runs automatically as a background service via `thermal-web.service`.
+- **Daily Supabase Sync**: A systemd timer pushes new BME280 readings and outage stats from local SQLite to Supabase once a day (see [Supabase Sync](#supabase-sync)).
 - **Automated CI/CD**: Automatic deployment and service reload via GitHub Actions over Tailscale.
 
 ---
@@ -43,6 +44,8 @@ sudo usermod -aG spi,gpio,video "$USER"
 ```
 
 Log out and back in after changing group membership. The supplied systemd service already declares these groups.
+
+`supabase_sync.py` uses only the Python standard library, no extra packages needed.
 
 ### Raspberry Pi Pinout
 
@@ -96,8 +99,15 @@ Do not connect BME280 to 5 V. `i2cdetect` cannot see this BME280 configuration b
 | `THERMAL_STALE_SEC` | `3` | Seconds before marking stream as stalled |
 | `THERMAL_TEMP_SCALE` | `""` (none) | Linear calibration multiplier for Y->Temperature conversion |
 | `THERMAL_TEMP_OFFSET` | `0` | Linear calibration offset for Y->Temperature conversion |
-| `THERMAL_DB_PATH` | `~/thermal_recordings/thermal.db` | Path to SQLite database |
+| `THERMAL_DB_PATH` | `~/thermal_recordings/thermal.db` | Path to SQLite database (also used by `supabase_sync.py`) |
 | `BME_DB_INTERVAL` | `300` | Interval in seconds between BME280 DB writes (minimum 60) |
+
+Variables used only by `supabase_sync.py` (provided via `/home/pi/.supabase.env`, see below):
+
+| Variable | Description |
+| :--- | :--- |
+| `SUPABASE_URL` | Project URL, e.g. `https://xxxx.supabase.co` |
+| `SUPABASE_KEY` | `service_role` key (bypasses RLS, keep secret) |
 
 ---
 
@@ -137,9 +147,154 @@ sudo journalctl -u thermal-web.service -f
 
 ---
 
+## Supabase Sync
+
+Once a day (23:55 + up to 2 min random delay) a oneshot systemd unit pushes data from the local SQLite DB (`thermal.db`) to Supabase. `thermal_web.py` is not touched: SQLite runs in WAL mode, so the sync can read it concurrently.
+
+### Components
+
+| File | Purpose |
+| :--- | :--- |
+| `supabase_sync.py` | Incremental, idempotent sync (PostgREST upsert, stdlib only) |
+| `thermal-sync.service` | `Type=oneshot` unit, loads `/home/pi/.supabase.env` |
+| `thermal-sync.timer` | Daily trigger, `Persistent=true` (catches up after a missed run / power outage) |
+
+### How it works
+
+- **`bme280_readings`**: incremental by `ts`. Last synced timestamp is stored in the local SQLite table `sync_state` (`name='bme280_last_ts'`). Sent in batches of 500, with a safety cap of 20 000 rows per run. The cursor advances only after a successful batch, so a Supabase outage never loses data: the next run catches up.
+- **`outage_daily`**: the last 3 days are re-sent every run (today's row can change during the day). Upsert on `(date, location)`.
+- Upserts (`resolution=merge-duplicates`) make re-runs safe, no duplicates.
+- First run uploads the whole history, later runs only new rows.
+
+### Free tier budget
+
+| Table | Rate | Estimate |
+| :--- | :--- | :--- |
+| `bme280_readings` | 1 row / 5 min = ~288 rows/day | ~10-15 MB/year |
+| `outage_daily` | 1 row / day | negligible |
+
+The free tier limit is 500 MB of database, so there is a large margin. The daily request also keeps the project from being paused for inactivity (free projects pause after 7 days without activity).
+
+### SQL (run once in Supabase → SQL Editor)
+
+```sql
+-- BME280 readings (mirror of local SQLite table, ts = unix seconds)
+create table if not exists bme280_readings (
+  ts          bigint primary key,
+  temperature real,
+  humidity    real,
+  pressure    real
+);
+
+-- Daily outage summary (mirror of local SQLite table)
+create table if not exists outage_daily (
+  date           text   not null,   -- YYYY-MM-DD
+  location       text   not null,
+  outage_minutes int    not null,
+  power_minutes  int    not null,
+  periods_count  int    not null,
+  fetched_ts     bigint not null,
+  primary key (date, location)
+);
+
+-- RLS enabled with NO policies: anon/authenticated have no access,
+-- service_role bypasses RLS (used by supabase_sync.py)
+alter table bme280_readings enable row level security;
+alter table outage_daily    enable row level security;
+```
+
+Useful queries:
+
+```sql
+-- Row counts and latest data
+select count(*) as rows, to_timestamp(max(ts)) as last_reading from bme280_readings;
+select * from outage_daily order by date desc limit 7;
+
+-- Daily averages
+select date_trunc('day', to_timestamp(ts)) as day,
+       round(avg(temperature)::numeric, 1) as temp,
+       round(avg(humidity)::numeric, 1)    as hum,
+       round(avg(pressure)::numeric, 1)    as pres
+from bme280_readings
+group by 1
+order by 1 desc;
+
+-- Table sizes (to watch the 500 MB free tier limit)
+select pg_size_pretty(pg_total_relation_size('bme280_readings')) as bme280,
+       pg_size_pretty(pg_total_relation_size('outage_daily'))    as outage,
+       pg_size_pretty(pg_database_size(current_database()))      as database;
+```
+
+Optional retention (only if the DB ever gets close to the limit):
+
+```sql
+delete from bme280_readings where ts < extract(epoch from now() - interval '12 months');
+```
+
+### Local SQLite schema (for reference)
+
+Created by `thermal_web.py` (`ThermalDB`):
+
+```sql
+CREATE TABLE bme280_readings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts INTEGER NOT NULL, temperature REAL, humidity REAL, pressure REAL
+);
+CREATE INDEX idx_bme_ts ON bme280_readings(ts);
+
+CREATE TABLE outage_daily (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL, location TEXT NOT NULL,
+  outage_minutes INTEGER NOT NULL, power_minutes INTEGER NOT NULL,
+  periods_count INTEGER NOT NULL, fetched_ts INTEGER NOT NULL,
+  UNIQUE(date, location)
+);
+```
+
+Created by `supabase_sync.py`:
+
+```sql
+CREATE TABLE IF NOT EXISTS sync_state (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
+```
+
+### Secrets handling
+
+Keys are **not** stored in git or created by hand. The deploy workflow writes `/home/pi/.supabase.env` (`chmod 600`) on every run from GitHub Secrets:
+
+```
+SUPABASE_URL=...
+SUPABASE_KEY=...
+```
+
+Key rotation: update the GitHub secret → run the workflow via `workflow_dispatch`.
+
+### Operations
+
+```bash
+# Run the sync right now and see the result
+sudo systemctl start thermal-sync.service
+journalctl -u thermal-sync.service -n 20
+
+# Next scheduled run
+systemctl list-timers thermal-sync.timer
+
+# Force a full re-sync (safe, upsert): reset the cursor
+sqlite3 ~/thermal_recordings/thermal.db "DELETE FROM sync_state WHERE name='bme280_last_ts';"
+```
+
+---
+
 ## Deployment (GitHub Actions)
 
-The workflow defined in `.github/workflows/thermal_web.yml` automatically deploys changes to the Raspberry Pi over Tailscale whenever `scripts/rasp_zero_cam/` files are pushed.
+The workflow defined in `.github/workflows/thermal_web.yml` automatically deploys changes to the Raspberry Pi over Tailscale whenever any of these files are pushed:
+
+- `scripts/rasp_zero_cam/thermal_web.py`
+- `scripts/rasp_zero_cam/thermal-web.service`
+- `scripts/rasp_zero_cam/supabase_sync.py`
+- `scripts/rasp_zero_cam/thermal-sync.service`
+- `scripts/rasp_zero_cam/thermal-sync.timer`
+
+Steps: rsync `scripts/rasp_zero_cam/` → `/home/pi/`; over SSH write `/home/pi/.supabase.env` (600) from secrets, copy the units to `/etc/systemd/system/`, `daemon-reload`, restart `thermal-web.service`, and `enable --now thermal-sync.timer`.
 
 ### Required GitHub Secrets:
 
@@ -148,3 +303,5 @@ The workflow defined in `.github/workflows/thermal_web.yml` automatically deploy
 - `THERMAL_REMOTE_PORT`: SSH port (default: `22`)
 - `SSH_PRIVATE_KEY`: Private SSH key for host authentication
 - `TAILSCALE_AUTHKEY`: Tailscale authentication key
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_SERVICE_KEY`: Supabase `service_role` key (written to `/home/pi/.supabase.env` as `SUPABASE_KEY`)
