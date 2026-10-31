@@ -1,0 +1,9 @@
+---
+- name: configure and deploy the linux laptop
+  hosts: all
+  remote_user: root
+  gather_facts: True
+  become: true
+
+  roles:
+    - common

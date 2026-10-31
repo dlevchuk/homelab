@@ -1,0 +1,9 @@
+---
+- name: configure and deploy the wsl
+  hosts: all
+  remote_user: last
+  gather_facts: True
+  become: false
+
+  roles:
+    - common

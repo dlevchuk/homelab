@@ -1,0 +1,33 @@
+- name: Install a list of packages
+  ansible.builtin.apt:
+    pkg:
+    - python3-pip
+    - mc
+    - nano
+    - htop
+    #for buttery health
+    - tlp
+    - smartmontools 
+    - powertop
+
+- name: Uncomment line from /etc/tlp.conf
+  replace:
+    dest: /etc/tlp.conf
+    regexp: '^#\s*{{ item.regex }}(.*)$'
+    replace: '{{ item.replace }}'
+  loop:
+    - regex: 'START_CHARGE_THRESH_BAT0=75'
+      replace: 'START_CHARGE_THRESH_BAT0=75'
+    - regex: 'STOP_CHARGE_THRESH_BAT0=80'
+      replace: 'STOP_CHARGE_THRESH_BAT0=80'
+    - regex: 'START_CHARGE_THRESH_BAT1=75'
+      replace: 'START_CHARGE_THRESH_BAT1=75'
+    - regex: 'STOP_CHARGE_THRESH_BAT1=80'
+      replace: 'STOP_CHARGE_THRESH_BAT1=80'
+
+
+- name: Enable tlp service and restart 
+  ansible.builtin.service:
+    name: tlp
+    state: restarted
+    enabled: yes
