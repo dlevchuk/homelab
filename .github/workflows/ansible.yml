@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - ansible/**
+      - ansible/raspberry/**
+      - .github/workflows/ansible.yml
   workflow_dispatch:
 
 env:
@@ -43,8 +44,8 @@ jobs:
       - name: Setup SSH & Inventory
         run: |
           # Remove local config files that might conflict in CI
-          rm -f ansible/group_vars/all
-          rm -f ansible/hosts
+          rm -f ansible/raspberry/group_vars/all
+          rm -f ansible/raspberry/hosts
 
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
@@ -63,7 +64,7 @@ jobs:
           SSH_USER="${REMOTE_USER:-pi}"
           SSH_PORT="${REMOTE_PORT:-7722}"
 
-          ansible-playbook ansible/site.yml \
+          ansible-playbook ansible/raspberry/site.yml \
             -i hosts.ini \
             --private-key=~/.ssh/id_ansible \
             --extra-vars "ansible_user=$SSH_USER ansible_port=$SSH_PORT ansible_host=$REMOTE_HOST"
