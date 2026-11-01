@@ -18,3 +18,9 @@
 - name: Raspberry Pi host specific tasks
   ansible.builtin.include_tasks: raspberry_specific.yml
   when: "'raspberry' in group_names"
+
+- name: Pi 5 fan curve
+  ansible.builtin.include_tasks: pi5_fan.yml
+  when:
+    - "'raspberry_pi5' in group_names"
+    - pi5_fan_curve is defined

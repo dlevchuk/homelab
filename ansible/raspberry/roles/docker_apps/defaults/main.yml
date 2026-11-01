@@ -10,6 +10,13 @@ homepage_host: "{{ ansible_host }}"
 # Override per host group in group_vars/raspberry_pi4.yml / raspberry_pi5.yml
 homepage_allowed_hosts: "{{ ansible_host }}:3005"
 
+# Homepage look (override per host group)
+# colors: slate gray zinc neutral stone amber yellow lime green emerald teal
+#         cyan sky blue indigo violet purple fuchsia pink rose red white
+homepage_title: "Raspberry Pi"
+homepage_theme: dark
+homepage_color: slate
+
 # Portainer initial admin credentials (min 12 characters)
 portainer_admin_password: "RaspberryAdmin123!"
 

@@ -1,4 +1,6 @@
 ---
 homepage_allowed_hosts: "raspberrypi.tail72e9f.ts.net:3005"
+homepage_title: "Raspberry Pi 4"
+homepage_color: slate
 
 enable_uptime_kuma: true

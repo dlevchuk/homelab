@@ -1,5 +1,22 @@
 ---
 homepage_allowed_hosts: "pi5.tail72e9f.ts.net:3005"
+homepage_title: "Raspberry Pi 5"
+homepage_color: violet
 
 # Uptime Kuma працює тільки на pi4
 enable_uptime_kuma: false
+
+# Крива кулера Pi 5 (температура в мільйонних °C, швидкість 0-255)
+pi5_fan_curve:
+  fan_temp0: 45000
+  fan_temp0_hyst: 5000
+  fan_temp0_speed: 75
+  fan_temp1: 55000
+  fan_temp1_hyst: 5000
+  fan_temp1_speed: 125
+  fan_temp2: 65000
+  fan_temp2_hyst: 5000
+  fan_temp2_speed: 175
+  fan_temp3: 72000
+  fan_temp3_hyst: 5000
+  fan_temp3_speed: 250

@@ -1,0 +1,14 @@
+---
+- name: Check which boot config path exists
+  ansible.builtin.stat:
+    path: /boot/firmware/config.txt
+  register: pi5_fan_firmware_config
+
+- name: Set Pi 5 fan curve in boot config
+  ansible.builtin.lineinfile:
+    path: "{{ '/boot/firmware/config.txt' if pi5_fan_firmware_config.stat.exists else '/boot/config.txt' }}"
+    regexp: '^dtparam={{ item.key }}='
+    line: 'dtparam={{ item.key }}={{ item.value }}'
+    insertafter: EOF
+  loop: "{{ pi5_fan_curve | dict2items }}"
+  notify: Reboot Pi
