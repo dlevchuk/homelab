@@ -25,4 +25,4 @@
     owner: root
     group: root
     mode: "0644"
-  notify: Reboot Pi
+  notify: Reload sysctl
