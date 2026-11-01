@@ -1,7 +1,8 @@
 ---
 thermal_user: pi
 thermal_home: /home/pi
-thermal_src: "{{ playbook_dir }}/../scripts/rasp_zero_cam"
+# playbook_dir = <repo>/ansible/raspberry -> repo root is ../..
+thermal_src: "{{ playbook_dir }}/../../scripts/rasp_zero_cam"
 
 # secrets come from env (set in CI step), never stored in git
 supabase_url: "{{ lookup('env', 'SUPABASE_URL') }}"
