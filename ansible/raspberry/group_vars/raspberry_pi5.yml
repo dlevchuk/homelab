@@ -11,8 +11,8 @@ enable_music_assistant: true
 
 # Beszel hub + agent працює тільки на pi5
 enable_beszel: true
-# Ключ береться з UI hub (Add System) після першого деплою
-beszel_agent_key: ""
+# Публічний ключ з UI hub (Add System)
+beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"
 
 # Крива кулера Pi 5 (температура в мільйонних °C, швидкість 0-255)
 pi5_fan_curve:
