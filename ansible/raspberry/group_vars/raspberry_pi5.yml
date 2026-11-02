@@ -1,7 +1,7 @@
 ---
 homepage_allowed_hosts: "pi5.tail72e9f.ts.net:3005"
 homepage_title: "Raspberry Pi 5"
-homepage_color: black
+homepage_color: zinc
 
 # Uptime Kuma працює тільки на pi4
 enable_uptime_kuma: false
