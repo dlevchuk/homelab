@@ -1,0 +1,26 @@
+---
+# https://music-assistant.io/installation/
+- name: Ensure Music Assistant data directory exists
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/music-assistant/data"
+    state: directory
+    owner: "{{ docker_user | default('pi') }}"
+    group: "{{ docker_user | default('pi') }}"
+    mode: "0755"
+
+- name: Setup Music Assistant
+  community.docker.docker_container:
+    name: music-assistant
+    image: ghcr.io/music-assistant/server:latest
+    network_mode: host
+    # needed only if you mount SMB/NFS shares from inside MA
+    capabilities:
+      - SYS_ADMIN
+      - DAC_READ_SEARCH
+    security_opts:
+      - apparmor:unconfined
+    volumes:
+      - "{{ docker_dir }}/music-assistant/data:/data"
+    env:
+      TZ: "{{ timezone }}"
+    restart_policy: unless-stopped

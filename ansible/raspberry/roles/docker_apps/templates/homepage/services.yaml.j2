@@ -112,3 +112,14 @@
         showStats: true
         siteMonitor: http://{{ app_host }}:9191
 {% endif %}
+
+{% if enable_music_assistant | default(false) %}
+    - Music Assistant:
+        icon: music-assistant
+        href: http://{{ app_host }}:8095
+        description: Music library & multi-room player manager
+        server: my-docker
+        container: music-assistant
+        showStats: true
+        siteMonitor: http://{{ app_host }}:8095
+{% endif %}
