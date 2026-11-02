@@ -604,6 +604,21 @@ class ThermalDB:
                 cols = [d[0] for d in cur.description]
                 return [dict(zip(cols, row)) for row in cur.fetchall()]
 
+    def query_outage_monthly(self, months=12):
+        """Години без світла по місяцях (останні N місяців, ASC). Дубль дати по різних локаціях -> MAX."""
+        with self._lock:
+            with self._connect() as conn:
+                cur = conn.execute(
+                    "SELECT month, outage_minutes, days FROM ("
+                    "SELECT substr(date, 1, 7) AS month, SUM(om) AS outage_minutes, COUNT(*) AS days FROM ("
+                    "SELECT date, MAX(outage_minutes) AS om FROM outage_daily GROUP BY date"
+                    ") GROUP BY month ORDER BY month DESC LIMIT ?"
+                    ") ORDER BY month ASC",
+                    (months,)
+                )
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, row)) for row in cur.fetchall()]
+
 
 thermal_db = ThermalDB(DB_PATH)
 
@@ -1255,13 +1270,24 @@ PAGE = """<!doctype html>
   .info-card.srv{background:linear-gradient(145deg,#142219,#181818 60%);border-color:rgba(76,175,80,.24)}
   @media(max-width:600px){.nav-tabs{overflow-x:auto}.nav-tab-btn{white-space:nowrap;padding:9px 12px}.ring-wrap{width:180px;height:180px}.ring-num{font-size:38px}}
 
-  /* Charts tab */
-  .charts-grid{display:flex;flex-direction:column;gap:16px;max-width:1400px;margin:0 auto}
+  /* BME280 charts (inside card) */
   .chart-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
   .chart-ranges{display:flex;flex-wrap:wrap;gap:6px}
-  .chart-box canvas{width:100%;height:220px;display:block;background:#161616;border:1px solid #282828;border-radius:6px}
-  .chart-stats{font-size:11.5px;color:#aaa;font-family:ui-monospace,Consolas,monospace}
+  .bme-chart{margin-top:12px}
+  .bme-chart-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px;font-size:12px;font-weight:600;color:#bbb;flex-wrap:wrap}
+  .bme-chart canvas{width:100%;height:150px;display:block;background:#161616;border:1px solid #282828;border-radius:6px}
+  .chart-stats{font-size:10.5px;color:#aaa;font-weight:400;font-family:ui-monospace,Consolas,monospace}
   #chart-tip{position:fixed;display:none;pointer-events:none;z-index:50;background:rgba(0,0,0,.85);border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11.5px;color:#fff;font-family:ui-monospace,Consolas,monospace;white-space:nowrap}
+
+  /* Outage monthly infographic */
+  .om-bars{display:flex;align-items:flex-end;gap:6px;height:220px;padding-top:6px;overflow-x:auto}
+  .om-col{flex:1;min-width:36px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:help}
+  .om-val{font-size:10.5px;color:#ddd;font-family:ui-monospace,Consolas,monospace;margin-bottom:3px}
+  .om-bar{width:100%;max-width:48px;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#ef5350,#b71c1c);transition:height .4s}
+  .om-bar.partial{background:repeating-linear-gradient(45deg,#c62828,#c62828 6px,#8e1b1b 6px,#8e1b1b 12px);opacity:.85}
+  .om-bar.worst{box-shadow:0 0 10px rgba(255,82,82,.6)}
+  .om-col:hover .om-bar{filter:brightness(1.25)}
+  .om-label{font-size:10px;color:#888;margin-top:5px;font-family:ui-monospace,Consolas,monospace;white-space:nowrap}
 
 </style></head>
 <body>
@@ -1272,9 +1298,6 @@ PAGE = """<!doctype html>
     </button>
     <button id="tab-btn-weather" class="nav-tab-btn" onclick="switchTab('weather')">
       ⚡ Відключення світла & Сервіси
-    </button>
-    <button id="tab-btn-charts" class="nav-tab-btn" onclick="switchTab('charts')">
-      📈 Графіки
     </button>
     <button id="tab-btn-days" class="nav-tab-btn" onclick="switchTab('days')">
       📅 Дні війни та служби
@@ -1423,6 +1446,29 @@ PAGE = """<!doctype html>
             </div>
           </div>
           <div id="bme-summary" class="stat-sub" style="margin-top:10px">Температура: - °C | Вологість: - % | Тиск: - hPa</div>
+
+          <div class="chart-toolbar" style="margin-top:14px">
+            <div class="chart-ranges" id="chart-ranges">
+              <button class="btn-sm" data-h="6" onclick="setChartRange(6)">6 год</button>
+              <button class="btn-sm active" data-h="24" onclick="setChartRange(24)">24 год</button>
+              <button class="btn-sm" data-h="168" onclick="setChartRange(168)">7 днів</button>
+              <button class="btn-sm" data-h="720" onclick="setChartRange(720)">30 днів</button>
+              <button class="btn-sm" data-h="8760" onclick="setChartRange(8760)">1 рік</button>
+            </div>
+            <span id="chart-updated" class="stat-sub">-</span>
+          </div>
+          <div class="bme-chart">
+            <div class="bme-chart-head"><span>🌡 Температура</span><span id="stats-temp" class="chart-stats">-</span></div>
+            <canvas id="chart-temp"></canvas>
+          </div>
+          <div class="bme-chart">
+            <div class="bme-chart-head"><span>💧 Вологість</span><span id="stats-hum" class="chart-stats">-</span></div>
+            <canvas id="chart-hum"></canvas>
+          </div>
+          <div class="bme-chart">
+            <div class="bme-chart-head"><span>🔽 Тиск</span><span id="stats-pres" class="chart-stats">-</span></div>
+            <canvas id="chart-pres"></canvas>
+          </div>
         </div>
 
         <div class="card">
@@ -1586,6 +1632,21 @@ PAGE = """<!doctype html>
             </div>
           </div>
 
+          <!-- Monthly infographic: hours without power -->
+          <div class="outage-timeline-section">
+            <div class="outage-timeline-header">
+              <span style="font-size:12px;font-weight:600;color:#bbb">📊 Години без світла по місяцях</span>
+              <div class="chart-ranges" id="om-ranges">
+                <button class="btn-sm" data-m="6" onclick="setOmMonths(6)">6 міс</button>
+                <button class="btn-sm active" data-m="12" onclick="setOmMonths(12)">12 міс</button>
+                <button class="btn-sm" data-m="24" onclick="setOmMonths(24)">24 міс</button>
+              </div>
+            </div>
+            <div id="om-summary" class="outage-metrics"></div>
+            <div id="om-bars" class="om-bars"></div>
+            <div id="om-note" class="stat-sub" style="margin-top:8px">Завантаження...</div>
+          </div>
+
           <!-- Detailed Periods Table -->
           <div style="margin-top:16px">
             <div style="font-size:12px;font-weight:600;color:#bbb;margin-bottom:8px">Заплановані періоди відключень:</div>
@@ -1680,58 +1741,6 @@ PAGE = """<!doctype html>
     </div>
   </div>
 
-  <!-- Вкладка: Графіки (дані з SQLite) -->
-  <div id="tab-charts" class="tab-page">
-    <div class="charts-grid">
-      <div class="card">
-        <div class="chart-toolbar">
-          <div class="chart-ranges" id="chart-ranges">
-            <button data-h="6" onclick="setChartRange(6)">6 год</button>
-            <button data-h="24" class="active" onclick="setChartRange(24)">24 год</button>
-            <button data-h="168" onclick="setChartRange(168)">7 днів</button>
-            <button data-h="720" onclick="setChartRange(720)">30 днів</button>
-            <button data-h="8760" onclick="setChartRange(8760)">1 рік</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span id="chart-updated" class="stat-sub">-</span>
-            <button class="btn-sm" onclick="loadCharts()">🔄 Оновити</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card chart-box">
-        <div class="card-header">
-          <h3>🌡 Температура (BME280)</h3>
-          <span id="stats-temp" class="chart-stats">-</span>
-        </div>
-        <canvas id="chart-temp"></canvas>
-      </div>
-
-      <div class="card chart-box">
-        <div class="card-header">
-          <h3>💧 Вологість (BME280)</h3>
-          <span id="stats-hum" class="chart-stats">-</span>
-        </div>
-        <canvas id="chart-hum"></canvas>
-      </div>
-
-      <div class="card chart-box">
-        <div class="card-header">
-          <h3>🔽 Тиск (BME280)</h3>
-          <span id="stats-pres" class="chart-stats">-</span>
-        </div>
-        <canvas id="chart-pres"></canvas>
-      </div>
-
-      <div class="card chart-box">
-        <div class="card-header">
-          <h3>⚡ Відключення світла по днях (год)</h3>
-          <span id="stats-outage" class="chart-stats">-</span>
-        </div>
-        <canvas id="chart-outage"></canvas>
-      </div>
-    </div>
-  </div>
   <div id="chart-tip"></div>
 
   <div id="tab-days" class="tab-page">
@@ -1789,22 +1798,17 @@ let healthRequestInFlight = false;
 function switchTab(tabName){
   const tabMain = document.getElementById('tab-main');
   const tabWeather = document.getElementById('tab-weather');
-  const tabCharts = document.getElementById('tab-charts');
   const tabDays = document.getElementById('tab-days');
   const btnMain = document.getElementById('tab-btn-main');
   const btnWeather = document.getElementById('tab-btn-weather');
-  const btnCharts = document.getElementById('tab-btn-charts');
   const btnDays = document.getElementById('tab-btn-days');
-  [tabMain, tabWeather, tabCharts, tabDays].forEach(el => el.classList.remove('active'));
-  [btnMain, btnWeather, btnCharts, btnDays].forEach(el => el.classList.remove('active'));
+  [tabMain, tabWeather, tabDays].forEach(el => el.classList.remove('active'));
+  [btnMain, btnWeather, btnDays].forEach(el => el.classList.remove('active'));
   if(tabName === 'weather' || tabName === 'outage'){
     tabWeather.classList.add('active');
     btnWeather.classList.add('active');
     loadOutage();
-  } else if(tabName === 'charts'){
-    tabCharts.classList.add('active');
-    btnCharts.classList.add('active');
-    loadCharts();
+    loadOutageMonthly();
   } else if(tabName === 'days'){
     tabDays.classList.add('active');
     btnDays.classList.add('active');
@@ -1812,6 +1816,7 @@ function switchTab(tabName){
   } else {
     tabMain.classList.add('active');
     btnMain.classList.add('active');
+    loadCharts();
   }
 }
 
@@ -2108,10 +2113,11 @@ async function loadOutage(force=false){
   }
 }
 
-/* ---------- Charts (vanilla canvas, no external libs: works offline) ---------- */
+/* ---------- BME280 charts (vanilla canvas, no external libs: works offline) ---------- */
 let chartRangeH = 24;
 let chartsLoading = false;
 const chartState = {};
+const CHART_IDS = ['chart-temp', 'chart-hum', 'chart-pres'];
 
 function setChartRange(h){
   chartRangeH = h;
@@ -2131,7 +2137,7 @@ function fmtChartFull(ts){
   return `${pad(d.getDate())}.${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function drawChart(id, kind, pts, opt, hover){
+function drawChart(id, pts, opt, hover){
   const cv = document.getElementById(id);
   if(!cv) return;
   const dpr = window.devicePixelRatio || 1;
@@ -2142,7 +2148,7 @@ function drawChart(id, kind, pts, opt, hover){
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
-  chartState[id] = {kind, pts, opt, W, H};
+  chartState[id] = {pts, opt, W, H};
 
   ctx.font = '10px monospace';
   if(!pts.length){
@@ -2152,96 +2158,76 @@ function drawChart(id, kind, pts, opt, hover){
     return;
   }
 
-  const L = 46, R = 10, T = 10, B = 22;
+  const L = 42, R = 8, T = 8, B = 20;
   const pw = W - L - R, ph = H - T - B;
   let vmin = Math.min(...pts.map(p => p.v));
   let vmax = Math.max(...pts.map(p => p.v));
-  if(kind === 'bar'){
-    vmin = 0;
-    vmax = Math.max(vmax, 1);
-  } else if(vmax === vmin){
+  if(vmax === vmin){
     vmax += 1; vmin -= 1;
   } else {
     const m = (vmax - vmin) * 0.1;
     vmin -= m; vmax += m;
   }
   const yOf = v => T + ph - (v - vmin) / (vmax - vmin) * ph;
-
-  let t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+  const t0 = pts[0].t;
+  let t1 = pts[pts.length - 1].t;
   if(t1 === t0) t1 = t0 + 1;
   const n = pts.length;
-  const slot = pw / n;
-  const xOf = (p, i) => kind === 'bar' ? L + slot * i + slot / 2 : L + (p.t - t0) / (t1 - t0) * pw;
+  const xOf = p => L + (p.t - t0) / (t1 - t0) * pw;
 
-  // grid + y labels
   ctx.strokeStyle = '#262626';
   ctx.fillStyle = '#777';
   ctx.lineWidth = 1;
   ctx.textAlign = 'right';
-  for(let i = 0; i <= 4; i++){
-    const v = vmin + (vmax - vmin) * i / 4;
+  for(let i = 0; i <= 3; i++){
+    const v = vmin + (vmax - vmin) * i / 3;
     const y = yOf(v);
     ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - R, y); ctx.stroke();
     ctx.fillText(v.toFixed(opt.dec), L - 4, y + 3);
   }
 
-  // x labels
   ctx.textAlign = 'center';
-  const xTicks = Math.max(2, Math.min(6, Math.floor(pw / 90)));
+  const xTicks = Math.max(2, Math.min(5, Math.floor(pw / 80)));
   for(let i = 0; i <= xTicks; i++){
     const idx = Math.round((n - 1) * i / xTicks);
     const p = pts[idx];
-    ctx.fillText(fmtChartX(p.t, opt.longRange), xOf(p, idx), H - 6);
+    ctx.fillText(fmtChartX(p.t, opt.longRange), Math.max(L + 12, Math.min(W - R - 12, xOf(p))), H - 6);
   }
 
-  if(kind === 'bar'){
-    const bw = Math.max(2, slot * 0.7);
-    pts.forEach((p, i) => {
-      const x = xOf(p, i);
-      const y = yOf(p.v);
-      ctx.fillStyle = (hover === i) ? '#ff8a80' : opt.color;
-      ctx.fillRect(x - bw / 2, y, bw, T + ph - y);
-    });
-  } else {
-    // area
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    const x = xOf(p), y = yOf(p.v);
+    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = opt.color;
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.lineTo(xOf(pts[n - 1]), T + ph);
+  ctx.lineTo(xOf(pts[0]), T + ph);
+  ctx.closePath();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = opt.color;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  if(n === 1){
     ctx.beginPath();
-    pts.forEach((p, i) => {
-      const x = xOf(p, i), y = yOf(p.v);
-      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.strokeStyle = opt.color;
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-    ctx.lineTo(xOf(pts[n - 1], n - 1), T + ph);
-    ctx.lineTo(xOf(pts[0], 0), T + ph);
-    ctx.closePath();
-    ctx.globalAlpha = 0.12;
+    ctx.arc(xOf(pts[0]), yOf(pts[0].v), 3, 0, Math.PI * 2);
     ctx.fillStyle = opt.color;
     ctx.fill();
-    ctx.globalAlpha = 1;
-    if(n === 1){
-      ctx.beginPath();
-      ctx.arc(xOf(pts[0], 0), yOf(pts[0].v), 3, 0, Math.PI * 2);
-      ctx.fillStyle = opt.color;
-      ctx.fill();
-    }
   }
 
-  // hover marker
   if(hover != null && pts[hover]){
     const p = pts[hover];
-    const x = xOf(p, hover), y = yOf(p.v);
+    const x = xOf(p), y = yOf(p.v);
     ctx.strokeStyle = '#888';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke();
-    if(kind !== 'bar'){
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = opt.color;
-      ctx.fill();
-      ctx.strokeStyle = '#fff';
-      ctx.stroke();
-    }
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = opt.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
   }
 }
 
@@ -2251,14 +2237,10 @@ function chartNearestIdx(id, clientX){
   if(!st || !st.pts.length) return null;
   const rect = cv.getBoundingClientRect();
   const x = clientX - rect.left;
-  const L = 46, R = 10, pw = st.W - L - R;
+  const L = 42, R = 8, pw = st.W - L - R;
   const n = st.pts.length;
-  if(st.kind === 'bar'){
-    const i = Math.floor((x - L) / (pw / n));
-    return Math.max(0, Math.min(n - 1, i));
-  }
   const t0 = st.pts[0].t;
-  let t1 = st.pts[n - 1].t;
+  const t1 = st.pts[n - 1].t;
   if(t1 === t0) return 0;
   const t = t0 + (x - L) / pw * (t1 - t0);
   let best = 0, bd = Infinity;
@@ -2271,28 +2253,31 @@ function chartNearestIdx(id, clientX){
 
 function initChartHover(){
   const tip = document.getElementById('chart-tip');
-  ['chart-temp', 'chart-hum', 'chart-pres', 'chart-outage'].forEach(id => {
+  CHART_IDS.forEach(id => {
     const cv = document.getElementById(id);
     if(!cv) return;
-    cv.addEventListener('mousemove', e => {
+    const show = (clientX, clientY) => {
       const st = chartState[id];
       if(!st) return;
-      const i = chartNearestIdx(id, e.clientX);
+      const i = chartNearestIdx(id, clientX);
       if(i == null) return;
-      drawChart(id, st.kind, st.pts, st.opt, i);
+      drawChart(id, st.pts, st.opt, i);
       const p = st.pts[i];
-      tip.textContent = st.kind === 'bar'
-        ? `${st.opt.labels[i]}: ${p.v.toFixed(st.opt.dec)} ${st.opt.unit}`
-        : `${fmtChartFull(p.t)}: ${p.v.toFixed(st.opt.dec)} ${st.opt.unit}`;
+      tip.textContent = `${fmtChartFull(p.t)}: ${p.v.toFixed(st.opt.dec)} ${st.opt.unit}`;
       tip.style.display = 'block';
-      tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 8, e.clientX + 12) + 'px';
-      tip.style.top = (e.clientY - 34) + 'px';
-    });
-    cv.addEventListener('mouseleave', () => {
+      tip.style.left = Math.max(4, Math.min(window.innerWidth - tip.offsetWidth - 8, clientX + 12)) + 'px';
+      tip.style.top = (clientY - 34) + 'px';
+    };
+    const hide = () => {
       const st = chartState[id];
       tip.style.display = 'none';
-      if(st) drawChart(id, st.kind, st.pts, st.opt, null);
-    });
+      if(st) drawChart(id, st.pts, st.opt, null);
+    };
+    cv.addEventListener('mousemove', e => show(e.clientX, e.clientY));
+    cv.addEventListener('mouseleave', hide);
+    cv.addEventListener('touchstart', e => { const t = e.touches[0]; show(t.clientX, t.clientY); }, {passive: true});
+    cv.addEventListener('touchmove', e => { const t = e.touches[0]; show(t.clientX, t.clientY); }, {passive: true});
+    cv.addEventListener('touchend', hide);
   });
 }
 
@@ -2308,7 +2293,7 @@ function chartStats(pts, unit, dec){
 function redrawCharts(){
   Object.keys(chartState).forEach(id => {
     const st = chartState[id];
-    drawChart(id, st.kind, st.pts, st.opt, null);
+    drawChart(id, st.pts, st.opt, null);
   });
 }
 
@@ -2316,46 +2301,112 @@ async function loadCharts(){
   if(chartsLoading) return;
   chartsLoading = true;
   try{
-    const days = Math.min(365, Math.max(14, Math.ceil(chartRangeH / 24)));
-    const [bme, out] = await Promise.all([
-      fetch(`/api/db/bme280?hours=${chartRangeH}`).then(r => r.json()),
-      fetch(`/api/db/outage?days=${days}`).then(r => r.json()),
-    ]);
+    const bme = await fetch(`/api/db/bme280?hours=${chartRangeH}`).then(r => r.json());
     const longRange = chartRangeH > 48;
     const rows = (bme && bme.rows) || [];
     const series = key => rows.filter(r => r[key] != null).map(r => ({t: r.ts, v: r[key]}));
 
     const temp = series('temperature'), hum = series('humidity'), pres = series('pressure');
-    drawChart('chart-temp', 'line', temp, {color: '#ff7043', unit: '°C', dec: 1, longRange});
-    drawChart('chart-hum', 'line', hum, {color: '#29b6f6', unit: '%', dec: 1, longRange});
-    drawChart('chart-pres', 'line', pres, {color: '#ab47bc', unit: 'hPa', dec: 1, longRange});
+    drawChart('chart-temp', temp, {color: '#ff7043', unit: '°C', dec: 1, longRange});
+    drawChart('chart-hum', hum, {color: '#29b6f6', unit: '%', dec: 1, longRange});
+    drawChart('chart-pres', pres, {color: '#ab47bc', unit: 'hPa', dec: 1, longRange});
     document.getElementById('stats-temp').textContent = chartStats(temp, '°C', 1);
     document.getElementById('stats-hum').textContent = chartStats(hum, '%', 1);
     document.getElementById('stats-pres').textContent = chartStats(pres, 'hPa', 1);
 
-    // outage_daily may contain several locations: sum per date
-    const byDate = {};
-    ((out && out.rows) || []).forEach(r => {
-      byDate[r.date] = (byDate[r.date] || 0) + r.outage_minutes;
-    });
-    const dates = Object.keys(byDate).sort();
-    const opts = dates.map(d => ({t: Date.parse(d + 'T00:00:00Z') / 1000, v: byDate[d] / 60}));
-    const labels = dates.map(d => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`);
-    drawChart('chart-outage', 'bar', opts, {color: '#d32f2f', unit: 'год', dec: 1, longRange: true, labels});
-    const total = opts.reduce((a, p) => a + p.v, 0);
-    document.getElementById('stats-outage').textContent = opts.length
-      ? `${opts.length} дн. • всього ${total.toFixed(1)} год • середнє ${(total / opts.length).toFixed(1)} год/добу`
-      : 'немає даних';
-
     const upd = document.getElementById('chart-updated');
     if(upd){
-      const bucket = bme && bme.bucket_sec ? ` • bucket ${bme.bucket_sec >= 3600 ? (bme.bucket_sec / 3600) + 'h' : bme.bucket_sec + 's'}` : '';
-      upd.textContent = `${rows.length} точок${bucket} • ${new Date().toLocaleTimeString('uk-UA')}`;
+      const b = bme && bme.bucket_sec ? ` • avg/${bme.bucket_sec >= 86400 ? '1d' : '1h'}` : '';
+      upd.textContent = `${rows.length} точок${b} • ${new Date().toLocaleTimeString('uk-UA')}`;
     }
   }catch(e){
     console.error('Charts load error:', e);
   }finally{
     chartsLoading = false;
+  }
+}
+
+/* ---------- Outage monthly infographic ---------- */
+let omMonths = 12;
+const MONTH_NAMES = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+
+function setOmMonths(m){
+  omMonths = m;
+  document.querySelectorAll('#om-ranges button').forEach(b=>{
+    b.classList.toggle('active', Number(b.dataset.m) === m);
+  });
+  loadOutageMonthly();
+}
+
+async function loadOutageMonthly(){
+  const barsEl = document.getElementById('om-bars');
+  const sumEl = document.getElementById('om-summary');
+  const noteEl = document.getElementById('om-note');
+  if(!barsEl) return;
+  try{
+    const j = await fetch(`/api/db/outage_monthly?months=${omMonths}`).then(r => r.json());
+    const rows = (j && j.rows) || [];
+    if(!rows.length){
+      barsEl.innerHTML = '';
+      sumEl.innerHTML = '';
+      noteEl.textContent = 'Поки немає накопичених даних (рахується щодня з графіка відключень)';
+      return;
+    }
+    const items = rows.map(r => {
+      const [y, m] = r.month.split('-').map(Number);
+      const dim = new Date(y, m, 0).getDate();
+      const hours = r.outage_minutes / 60;
+      return {
+        label: `${MONTH_NAMES[m - 1]} ${String(y).slice(2)}`,
+        full: `${MONTH_NAMES[m - 1]} ${y}`,
+        hours, days: r.days, dim,
+        partial: r.days < dim,
+        pct: r.days ? r.outage_minutes / (r.days * 1440) * 100 : 0,
+        perDay: r.days ? hours / r.days : 0,
+      };
+    });
+    const maxH = Math.max(...items.map(i => i.hours), 1);
+    const worst = items.reduce((a, b) => (b.hours > a.hours ? b : a), items[0]);
+    const totalH = items.reduce((a, i) => a + i.hours, 0);
+    const totalD = items.reduce((a, i) => a + i.days, 0);
+    const totalMin = totalH * 60;
+    const pctAll = totalD ? totalMin / (totalD * 1440) * 100 : 0;
+
+    sumEl.innerHTML = `
+      <div class="outage-metric-card">
+        <span class="stat-label">Всього без світла</span>
+        <span class="stat-val" style="font-size:15px;color:#ff5252">${totalH.toFixed(0)} год</span>
+        <span class="stat-sub">${(totalH / 24).toFixed(1)} діб за ${totalD} дн. даних</span>
+      </div>
+      <div class="outage-metric-card">
+        <span class="stat-label">Середнє на добу</span>
+        <span class="stat-val" style="font-size:15px;color:#4fc3f7">${totalD ? (totalH / totalD).toFixed(1) : '0.0'} год</span>
+        <span class="stat-sub">${pctAll.toFixed(1)}% часу без світла</span>
+      </div>
+      <div class="outage-metric-card">
+        <span class="stat-label">Найгірший місяць</span>
+        <span class="stat-val" style="font-size:15px;color:#ffa726">${worst.full}</span>
+        <span class="stat-sub">${worst.hours.toFixed(0)} год${worst.partial ? ' (неповний)' : ''}</span>
+      </div>`;
+
+    barsEl.innerHTML = items.map(i => {
+      const h = Math.max(3, Math.round(i.hours / maxH * 150));
+      const cls = 'om-bar' + (i.partial ? ' partial' : '') + (i === worst ? ' worst' : '');
+      const title = `${i.full}: ${i.hours.toFixed(1)} год без світла • ${i.perDay.toFixed(1)} год/добу • ${i.pct.toFixed(1)}% часу • дані за ${i.days} з ${i.dim} дн.`;
+      return `<div class="om-col" title="${title}">
+        <span class="om-val">${i.hours.toFixed(0)}</span>
+        <div class="${cls}" style="height:${h}px"></div>
+        <span class="om-label">${i.label}</span>
+      </div>`;
+    }).join('');
+
+    const anyPartial = items.some(i => i.partial);
+    noteEl.textContent = anyPartial
+      ? 'Штриховані стовпчики: місяць неповний (дані накопичуються з дня, коли дашборд почав зберігати графік, або місяць ще триває). Значення - заплановані відключення за графіком.'
+      : 'Значення - заплановані відключення за графіком energy-ua.';
+  }catch(e){
+    console.error('Monthly outage load error:', e);
+    noteEl.textContent = 'Помилка завантаження статистики';
   }
 }
 
@@ -2736,9 +2787,10 @@ pollHealth();
 loadSettings();
 loadOutage();
 setInterval(loadOutage, 60000);
+loadCharts();
 setInterval(() => {
-  const tc = document.getElementById('tab-charts');
-  if(tc && tc.classList.contains('active')) loadCharts();
+  const tm = document.getElementById('tab-main');
+  if(tm && tm.classList.contains('active')) loadCharts();
 }, 60000);
 setInterval(updateDayCounters, 60000);
 loadRecordings();
@@ -3358,6 +3410,16 @@ class Handler(BaseHTTPRequestHandler):
                 days = 30
             rows = thermal_db.query_outage_daily(days=days)
             self._json({"ok": True, "days": days, "count": len(rows), "rows": rows})
+            return
+
+        if path == "/api/db/outage_monthly":
+            try:
+                months = int(qs.get("months", ["12"])[0])
+                months = max(1, min(months, 60))
+            except (ValueError, IndexError):
+                months = 12
+            rows = thermal_db.query_outage_monthly(months=months)
+            self._json({"ok": True, "months": months, "count": len(rows), "rows": rows})
             return
 
         if path == "/snapshot":
