@@ -63,6 +63,10 @@
   ansible.builtin.include_tasks: docker_music_assistant.yml
   when: enable_music_assistant | default(false) | bool
 
+- name: Manage Beszel
+  ansible.builtin.include_tasks: docker_beszel.yml
+  when: enable_beszel | default(false) | bool
+
 # Always included: tasks inside switch cron to present/absent by flags
 - name: Manage backups (cron)
   ansible.builtin.include_tasks: docker_backup.yml

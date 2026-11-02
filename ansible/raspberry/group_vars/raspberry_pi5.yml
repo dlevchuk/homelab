@@ -9,6 +9,11 @@ enable_uptime_kuma: false
 # Music Assistant працює тільки на pi5
 enable_music_assistant: true
 
+# Beszel hub + agent працює тільки на pi5
+enable_beszel: true
+# Ключ береться з UI hub (Add System) після першого деплою
+beszel_agent_key: ""
+
 # Крива кулера Pi 5 (температура в мільйонних °C, швидкість 0-255)
 pi5_fan_curve:
   fan_temp0: 45000

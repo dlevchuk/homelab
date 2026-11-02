@@ -41,6 +41,17 @@
         siteMonitor: http://{{ app_host }}:3001
 {% endif %}
 
+{% if enable_beszel | default(false) %}
+    - Beszel:
+        icon: beszel
+        href: http://{{ app_host }}:8090
+        description: Lightweight server & Docker monitoring
+        server: my-docker
+        container: beszel
+        showStats: true
+        siteMonitor: http://{{ app_host }}:8090
+{% endif %}
+
 {% if enable_adguard | default(false) %}
     - AdGuard Home:
         icon: adguard-home
