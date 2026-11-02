@@ -573,12 +573,32 @@ class ThermalDB:
                 cols = [d[0] for d in cur.description]
                 return [dict(zip(cols, row)) for row in cur.fetchall()]
 
+    def query_bme280_agg(self, since_ts, bucket_sec, limit=2000):
+        """Усереднення по часових відрізках (bucket_sec). ts = початок відрізка."""
+        bucket_sec = max(1, int(bucket_sec))
+        with self._lock:
+            with self._connect() as conn:
+                cur = conn.execute(
+                    "SELECT (ts / ?) * ? AS ts, "
+                    "ROUND(AVG(temperature), 2) AS temperature, "
+                    "ROUND(AVG(humidity), 2) AS humidity, "
+                    "ROUND(AVG(pressure), 2) AS pressure "
+                    "FROM bme280_readings WHERE ts >= ? "
+                    "GROUP BY ts / ? ORDER BY ts ASC LIMIT ?",
+                    (bucket_sec, bucket_sec, since_ts, bucket_sec, limit)
+                )
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, row)) for row in cur.fetchall()]
+
     def query_outage_daily(self, days=30):
         """Повертає список dict за останні N днів, відсортованих за датою ASC."""
         with self._lock:
             with self._connect() as conn:
                 cur = conn.execute(
-                    "SELECT date, location, outage_minutes, power_minutes, periods_count FROM outage_daily ORDER BY date ASC LIMIT ?",
+                    "SELECT date, location, outage_minutes, power_minutes, periods_count FROM ("
+                    "SELECT date, location, outage_minutes, power_minutes, periods_count "
+                    "FROM outage_daily ORDER BY date DESC LIMIT ?"
+                    ") ORDER BY date ASC",
                     (days,)
                 )
                 cols = [d[0] for d in cur.description]
@@ -1235,6 +1255,14 @@ PAGE = """<!doctype html>
   .info-card.srv{background:linear-gradient(145deg,#142219,#181818 60%);border-color:rgba(76,175,80,.24)}
   @media(max-width:600px){.nav-tabs{overflow-x:auto}.nav-tab-btn{white-space:nowrap;padding:9px 12px}.ring-wrap{width:180px;height:180px}.ring-num{font-size:38px}}
 
+  /* Charts tab */
+  .charts-grid{display:flex;flex-direction:column;gap:16px;max-width:1400px;margin:0 auto}
+  .chart-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
+  .chart-ranges{display:flex;flex-wrap:wrap;gap:6px}
+  .chart-box canvas{width:100%;height:220px;display:block;background:#161616;border:1px solid #282828;border-radius:6px}
+  .chart-stats{font-size:11.5px;color:#aaa;font-family:ui-monospace,Consolas,monospace}
+  #chart-tip{position:fixed;display:none;pointer-events:none;z-index:50;background:rgba(0,0,0,.85);border:1px solid #444;border-radius:6px;padding:5px 8px;font-size:11.5px;color:#fff;font-family:ui-monospace,Consolas,monospace;white-space:nowrap}
+
 </style></head>
 <body>
   <!-- Tab Navigation Bar -->
@@ -1244,6 +1272,9 @@ PAGE = """<!doctype html>
     </button>
     <button id="tab-btn-weather" class="nav-tab-btn" onclick="switchTab('weather')">
       ⚡ Відключення світла & Сервіси
+    </button>
+    <button id="tab-btn-charts" class="nav-tab-btn" onclick="switchTab('charts')">
+      📈 Графіки
     </button>
     <button id="tab-btn-days" class="nav-tab-btn" onclick="switchTab('days')">
       📅 Дні війни та служби
@@ -1649,6 +1680,60 @@ PAGE = """<!doctype html>
     </div>
   </div>
 
+  <!-- Вкладка: Графіки (дані з SQLite) -->
+  <div id="tab-charts" class="tab-page">
+    <div class="charts-grid">
+      <div class="card">
+        <div class="chart-toolbar">
+          <div class="chart-ranges" id="chart-ranges">
+            <button data-h="6" onclick="setChartRange(6)">6 год</button>
+            <button data-h="24" class="active" onclick="setChartRange(24)">24 год</button>
+            <button data-h="168" onclick="setChartRange(168)">7 днів</button>
+            <button data-h="720" onclick="setChartRange(720)">30 днів</button>
+            <button data-h="8760" onclick="setChartRange(8760)">1 рік</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="chart-updated" class="stat-sub">-</span>
+            <button class="btn-sm" onclick="loadCharts()">🔄 Оновити</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card chart-box">
+        <div class="card-header">
+          <h3>🌡 Температура (BME280)</h3>
+          <span id="stats-temp" class="chart-stats">-</span>
+        </div>
+        <canvas id="chart-temp"></canvas>
+      </div>
+
+      <div class="card chart-box">
+        <div class="card-header">
+          <h3>💧 Вологість (BME280)</h3>
+          <span id="stats-hum" class="chart-stats">-</span>
+        </div>
+        <canvas id="chart-hum"></canvas>
+      </div>
+
+      <div class="card chart-box">
+        <div class="card-header">
+          <h3>🔽 Тиск (BME280)</h3>
+          <span id="stats-pres" class="chart-stats">-</span>
+        </div>
+        <canvas id="chart-pres"></canvas>
+      </div>
+
+      <div class="card chart-box">
+        <div class="card-header">
+          <h3>⚡ Відключення світла по днях (год)</h3>
+          <span id="stats-outage" class="chart-stats">-</span>
+        </div>
+        <canvas id="chart-outage"></canvas>
+      </div>
+    </div>
+  </div>
+  <div id="chart-tip"></div>
+
   <div id="tab-days" class="tab-page">
     <div class="info-grid">
       <div class="card info-card war">
@@ -1704,16 +1789,22 @@ let healthRequestInFlight = false;
 function switchTab(tabName){
   const tabMain = document.getElementById('tab-main');
   const tabWeather = document.getElementById('tab-weather');
+  const tabCharts = document.getElementById('tab-charts');
   const tabDays = document.getElementById('tab-days');
   const btnMain = document.getElementById('tab-btn-main');
   const btnWeather = document.getElementById('tab-btn-weather');
+  const btnCharts = document.getElementById('tab-btn-charts');
   const btnDays = document.getElementById('tab-btn-days');
-  [tabMain, tabWeather, tabDays].forEach(el => el.classList.remove('active'));
-  [btnMain, btnWeather, btnDays].forEach(el => el.classList.remove('active'));
+  [tabMain, tabWeather, tabCharts, tabDays].forEach(el => el.classList.remove('active'));
+  [btnMain, btnWeather, btnCharts, btnDays].forEach(el => el.classList.remove('active'));
   if(tabName === 'weather' || tabName === 'outage'){
     tabWeather.classList.add('active');
     btnWeather.classList.add('active');
     loadOutage();
+  } else if(tabName === 'charts'){
+    tabCharts.classList.add('active');
+    btnCharts.classList.add('active');
+    loadCharts();
   } else if(tabName === 'days'){
     tabDays.classList.add('active');
     btnDays.classList.add('active');
@@ -2014,6 +2105,257 @@ async function loadOutage(force=false){
   }finally{
     outageLoading = false;
     if(btn) btn.disabled = false;
+  }
+}
+
+/* ---------- Charts (vanilla canvas, no external libs: works offline) ---------- */
+let chartRangeH = 24;
+let chartsLoading = false;
+const chartState = {};
+
+function setChartRange(h){
+  chartRangeH = h;
+  document.querySelectorAll('#chart-ranges button').forEach(b=>{
+    b.classList.toggle('active', Number(b.dataset.h) === h);
+  });
+  loadCharts();
+}
+
+function fmtChartX(ts, longRange){
+  const d = new Date(ts * 1000);
+  return longRange ? `${pad(d.getDate())}.${pad(d.getMonth()+1)}` : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function fmtChartFull(ts){
+  const d = new Date(ts * 1000);
+  return `${pad(d.getDate())}.${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function drawChart(id, kind, pts, opt, hover){
+  const cv = document.getElementById(id);
+  if(!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if(!W || !H) return;
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  chartState[id] = {kind, pts, opt, W, H};
+
+  ctx.font = '10px monospace';
+  if(!pts.length){
+    ctx.fillStyle = '#666';
+    ctx.textAlign = 'center';
+    ctx.fillText('Немає даних', W / 2, H / 2);
+    return;
+  }
+
+  const L = 46, R = 10, T = 10, B = 22;
+  const pw = W - L - R, ph = H - T - B;
+  let vmin = Math.min(...pts.map(p => p.v));
+  let vmax = Math.max(...pts.map(p => p.v));
+  if(kind === 'bar'){
+    vmin = 0;
+    vmax = Math.max(vmax, 1);
+  } else if(vmax === vmin){
+    vmax += 1; vmin -= 1;
+  } else {
+    const m = (vmax - vmin) * 0.1;
+    vmin -= m; vmax += m;
+  }
+  const yOf = v => T + ph - (v - vmin) / (vmax - vmin) * ph;
+
+  let t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+  if(t1 === t0) t1 = t0 + 1;
+  const n = pts.length;
+  const slot = pw / n;
+  const xOf = (p, i) => kind === 'bar' ? L + slot * i + slot / 2 : L + (p.t - t0) / (t1 - t0) * pw;
+
+  // grid + y labels
+  ctx.strokeStyle = '#262626';
+  ctx.fillStyle = '#777';
+  ctx.lineWidth = 1;
+  ctx.textAlign = 'right';
+  for(let i = 0; i <= 4; i++){
+    const v = vmin + (vmax - vmin) * i / 4;
+    const y = yOf(v);
+    ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - R, y); ctx.stroke();
+    ctx.fillText(v.toFixed(opt.dec), L - 4, y + 3);
+  }
+
+  // x labels
+  ctx.textAlign = 'center';
+  const xTicks = Math.max(2, Math.min(6, Math.floor(pw / 90)));
+  for(let i = 0; i <= xTicks; i++){
+    const idx = Math.round((n - 1) * i / xTicks);
+    const p = pts[idx];
+    ctx.fillText(fmtChartX(p.t, opt.longRange), xOf(p, idx), H - 6);
+  }
+
+  if(kind === 'bar'){
+    const bw = Math.max(2, slot * 0.7);
+    pts.forEach((p, i) => {
+      const x = xOf(p, i);
+      const y = yOf(p.v);
+      ctx.fillStyle = (hover === i) ? '#ff8a80' : opt.color;
+      ctx.fillRect(x - bw / 2, y, bw, T + ph - y);
+    });
+  } else {
+    // area
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const x = xOf(p, i), y = yOf(p.v);
+      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = opt.color;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.lineTo(xOf(pts[n - 1], n - 1), T + ph);
+    ctx.lineTo(xOf(pts[0], 0), T + ph);
+    ctx.closePath();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = opt.color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    if(n === 1){
+      ctx.beginPath();
+      ctx.arc(xOf(pts[0], 0), yOf(pts[0].v), 3, 0, Math.PI * 2);
+      ctx.fillStyle = opt.color;
+      ctx.fill();
+    }
+  }
+
+  // hover marker
+  if(hover != null && pts[hover]){
+    const p = pts[hover];
+    const x = xOf(p, hover), y = yOf(p.v);
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, T + ph); ctx.stroke();
+    if(kind !== 'bar'){
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = opt.color;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.stroke();
+    }
+  }
+}
+
+function chartNearestIdx(id, clientX){
+  const st = chartState[id];
+  const cv = document.getElementById(id);
+  if(!st || !st.pts.length) return null;
+  const rect = cv.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const L = 46, R = 10, pw = st.W - L - R;
+  const n = st.pts.length;
+  if(st.kind === 'bar'){
+    const i = Math.floor((x - L) / (pw / n));
+    return Math.max(0, Math.min(n - 1, i));
+  }
+  const t0 = st.pts[0].t;
+  let t1 = st.pts[n - 1].t;
+  if(t1 === t0) return 0;
+  const t = t0 + (x - L) / pw * (t1 - t0);
+  let best = 0, bd = Infinity;
+  for(let i = 0; i < n; i++){
+    const d = Math.abs(st.pts[i].t - t);
+    if(d < bd){ bd = d; best = i; }
+  }
+  return best;
+}
+
+function initChartHover(){
+  const tip = document.getElementById('chart-tip');
+  ['chart-temp', 'chart-hum', 'chart-pres', 'chart-outage'].forEach(id => {
+    const cv = document.getElementById(id);
+    if(!cv) return;
+    cv.addEventListener('mousemove', e => {
+      const st = chartState[id];
+      if(!st) return;
+      const i = chartNearestIdx(id, e.clientX);
+      if(i == null) return;
+      drawChart(id, st.kind, st.pts, st.opt, i);
+      const p = st.pts[i];
+      tip.textContent = st.kind === 'bar'
+        ? `${st.opt.labels[i]}: ${p.v.toFixed(st.opt.dec)} ${st.opt.unit}`
+        : `${fmtChartFull(p.t)}: ${p.v.toFixed(st.opt.dec)} ${st.opt.unit}`;
+      tip.style.display = 'block';
+      tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 8, e.clientX + 12) + 'px';
+      tip.style.top = (e.clientY - 34) + 'px';
+    });
+    cv.addEventListener('mouseleave', () => {
+      const st = chartState[id];
+      tip.style.display = 'none';
+      if(st) drawChart(id, st.kind, st.pts, st.opt, null);
+    });
+  });
+}
+
+function chartStats(pts, unit, dec){
+  if(!pts.length) return 'немає даних';
+  const vals = pts.map(p => p.v);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const last = vals[vals.length - 1];
+  return `now ${last.toFixed(dec)} • min ${min.toFixed(dec)} • avg ${avg.toFixed(dec)} • max ${max.toFixed(dec)} ${unit}`;
+}
+
+function redrawCharts(){
+  Object.keys(chartState).forEach(id => {
+    const st = chartState[id];
+    drawChart(id, st.kind, st.pts, st.opt, null);
+  });
+}
+
+async function loadCharts(){
+  if(chartsLoading) return;
+  chartsLoading = true;
+  try{
+    const days = Math.min(365, Math.max(14, Math.ceil(chartRangeH / 24)));
+    const [bme, out] = await Promise.all([
+      fetch(`/api/db/bme280?hours=${chartRangeH}`).then(r => r.json()),
+      fetch(`/api/db/outage?days=${days}`).then(r => r.json()),
+    ]);
+    const longRange = chartRangeH > 48;
+    const rows = (bme && bme.rows) || [];
+    const series = key => rows.filter(r => r[key] != null).map(r => ({t: r.ts, v: r[key]}));
+
+    const temp = series('temperature'), hum = series('humidity'), pres = series('pressure');
+    drawChart('chart-temp', 'line', temp, {color: '#ff7043', unit: '°C', dec: 1, longRange});
+    drawChart('chart-hum', 'line', hum, {color: '#29b6f6', unit: '%', dec: 1, longRange});
+    drawChart('chart-pres', 'line', pres, {color: '#ab47bc', unit: 'hPa', dec: 1, longRange});
+    document.getElementById('stats-temp').textContent = chartStats(temp, '°C', 1);
+    document.getElementById('stats-hum').textContent = chartStats(hum, '%', 1);
+    document.getElementById('stats-pres').textContent = chartStats(pres, 'hPa', 1);
+
+    // outage_daily may contain several locations: sum per date
+    const byDate = {};
+    ((out && out.rows) || []).forEach(r => {
+      byDate[r.date] = (byDate[r.date] || 0) + r.outage_minutes;
+    });
+    const dates = Object.keys(byDate).sort();
+    const opts = dates.map(d => ({t: Date.parse(d + 'T00:00:00Z') / 1000, v: byDate[d] / 60}));
+    const labels = dates.map(d => `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`);
+    drawChart('chart-outage', 'bar', opts, {color: '#d32f2f', unit: 'год', dec: 1, longRange: true, labels});
+    const total = opts.reduce((a, p) => a + p.v, 0);
+    document.getElementById('stats-outage').textContent = opts.length
+      ? `${opts.length} дн. • всього ${total.toFixed(1)} год • середнє ${(total / opts.length).toFixed(1)} год/добу`
+      : 'немає даних';
+
+    const upd = document.getElementById('chart-updated');
+    if(upd){
+      const bucket = bme && bme.bucket_sec ? ` • bucket ${bme.bucket_sec >= 3600 ? (bme.bucket_sec / 3600) + 'h' : bme.bucket_sec + 's'}` : '';
+      upd.textContent = `${rows.length} точок${bucket} • ${new Date().toLocaleTimeString('uk-UA')}`;
+    }
+  }catch(e){
+    console.error('Charts load error:', e);
+  }finally{
+    chartsLoading = false;
   }
 }
 
@@ -2387,11 +2729,17 @@ function updatePinoutState(gpioMap){
 }
 
 renderPinoutUI();
+initChartHover();
+window.addEventListener('resize', redrawCharts);
 setInterval(pollHealth, 1000);
 pollHealth();
 loadSettings();
 loadOutage();
 setInterval(loadOutage, 60000);
+setInterval(() => {
+  const tc = document.getElementById('tab-charts');
+  if(tc && tc.classList.contains('active')) loadCharts();
+}, 60000);
 setInterval(updateDayCounters, 60000);
 loadRecordings();
 </script>
@@ -2990,8 +3338,15 @@ class Handler(BaseHTTPRequestHandler):
             except (ValueError, IndexError):
                 hours = 24
             since_ts = int(time.time()) - hours * 3600
-            rows = thermal_db.query_bme280(since_ts=since_ts, limit=2000)
-            self._json({"ok": True, "hours": hours, "count": len(rows), "rows": rows})
+            # Raw rows up to 48h (5 min step = ~576 rows); longer ranges are averaged,
+            # otherwise LIMIT would cut off the newest data.
+            if hours <= 48:
+                bucket_sec = 0
+                rows = thermal_db.query_bme280(since_ts=since_ts, limit=2000)
+            else:
+                bucket_sec = 3600 if hours <= 720 else 86400
+                rows = thermal_db.query_bme280_agg(since_ts=since_ts, bucket_sec=bucket_sec, limit=2000)
+            self._json({"ok": True, "hours": hours, "bucket_sec": bucket_sec, "count": len(rows), "rows": rows})
             return
 
         if path == "/api/db/outage":
