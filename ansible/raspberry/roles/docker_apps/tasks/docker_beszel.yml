@@ -7,6 +7,7 @@
     owner: "{{ docker_user | default('pi') }}"
     group: "{{ docker_user | default('pi') }}"
     mode: "0755"
+  when: enable_beszel | default(false) | bool
 
 - name: Setup Beszel hub
   community.docker.docker_container:
@@ -17,6 +18,7 @@
     ports:
       - "8090:8090"
     restart_policy: unless-stopped
+  when: enable_beszel | default(false) | bool
 
 # Agent needs the public key from the hub UI (Add System dialog).
 # Skipped until beszel_agent_key is set.
@@ -31,4 +33,6 @@
       LISTEN: "45876"
       KEY: "{{ beszel_agent_key }}"
     restart_policy: unless-stopped
-  when: beszel_agent_key | default('') | length > 0
+  when:
+    - (enable_beszel_agent | default(false) | bool) or (enable_beszel | default(false) | bool)
+    - beszel_agent_key | default('') | length > 0

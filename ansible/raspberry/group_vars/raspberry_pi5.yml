@@ -1,7 +1,7 @@
 ---
 homepage_allowed_hosts: "pi5.tail72e9f.ts.net:3005"
 homepage_title: "Raspberry Pi 5"
-homepage_color: blue
+homepage_color: black
 
 # Uptime Kuma працює тільки на pi4
 enable_uptime_kuma: false
@@ -9,8 +9,9 @@ enable_uptime_kuma: false
 # Music Assistant працює тільки на pi5
 enable_music_assistant: true
 
-# Beszel hub + agent працює тільки на pi5
+# Beszel hub + agent працює на pi5
 enable_beszel: true
+enable_beszel_agent: true
 # Публічний ключ з UI hub (Add System)
 beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"
 

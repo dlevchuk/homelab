@@ -43,6 +43,7 @@ enable_cronicle: false
 enable_homebridge: false
 enable_music_assistant: false
 enable_beszel: false
+enable_beszel_agent: false
 
 # Beszel agent public key (from hub UI -> Add System). Empty = agent not deployed
 beszel_agent_key: ""

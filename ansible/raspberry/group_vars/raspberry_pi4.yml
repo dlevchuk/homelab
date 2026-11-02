@@ -4,3 +4,13 @@ homepage_title: "Raspberry Pi 4"
 homepage_color: slate
 
 enable_uptime_kuma: true
+
+# Beszel agent (Hub runs on pi5)
+enable_beszel: false
+enable_beszel_agent: true
+beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"
+
+# Beszel agent (Hub runs on pi5)
+enable_beszel: false
+enable_beszel_agent: true
+beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"

@@ -1,0 +1,105 @@
+---
+- name: Setup Beszel Agent
+  when:
+    - enable_beszel_agent | default(true) | bool
+    - beszel_agent_key | default('') | length > 0
+  block:
+    - name: Detect system architecture
+      ansible.builtin.command: uname -m
+      register: uname_output
+      changed_when: false
+
+    - name: Determine Beszel architecture
+      ansible.builtin.set_fact:
+        beszel_arch: >-
+          {{
+            'arm' if uname_output.stdout == 'armv6l' else
+            'armv7' if uname_output.stdout in ['armv7l', 'armv7'] else
+            'arm64' if uname_output.stdout in ['aarch64', 'arm64'] else
+            'amd64' if uname_output.stdout == 'x86_64' else
+            uname_output.stdout
+          }}
+
+    - name: Check if systemd-journal group exists
+      ansible.builtin.command: getent group systemd-journal
+      register: journal_group_check
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure Beszel group exists
+      ansible.builtin.group:
+        name: "{{ beszel_agent_user }}"
+        system: true
+        state: present
+
+    - name: Ensure Beszel system user exists
+      ansible.builtin.user:
+        name: "{{ beszel_agent_user }}"
+        group: "{{ beszel_agent_user }}"
+        groups: "{{ 'systemd-journal' if journal_group_check.rc == 0 else omit }}"
+        system: true
+        shell: /bin/false
+        home: "{{ beszel_agent_install_dir }}"
+        create_home: false
+        state: present
+
+    - name: Ensure Beszel install directory exists
+      ansible.builtin.file:
+        path: "{{ beszel_agent_install_dir }}"
+        state: directory
+        owner: "{{ beszel_agent_user }}"
+        group: "{{ beszel_agent_user }}"
+        mode: "0755"
+
+    - name: Check if Beszel agent binary exists
+      ansible.builtin.stat:
+        path: "{{ beszel_agent_install_dir }}/beszel-agent"
+      register: beszel_binary_stat
+
+    - name: Download and unpack Beszel agent binary
+      when: not beszel_binary_stat.stat.exists
+      block:
+        - name: Download Beszel agent tarball
+          ansible.builtin.get_url:
+            url: "https://github.com/henrygd/beszel/releases/latest/download/beszel-agent_linux_{{ beszel_arch }}.tar.gz"
+            dest: "/tmp/beszel-agent_linux_{{ beszel_arch }}.tar.gz"
+            mode: "0644"
+
+        - name: Extract Beszel agent binary
+          ansible.builtin.unarchive:
+            src: "/tmp/beszel-agent_linux_{{ beszel_arch }}.tar.gz"
+            dest: "{{ beszel_agent_install_dir }}"
+            remote_src: true
+            owner: "{{ beszel_agent_user }}"
+            group: "{{ beszel_agent_user }}"
+            mode: "0755"
+          notify: Restart beszel-agent
+
+        - name: Clean up temporary tarball
+          ansible.builtin.file:
+            path: "/tmp/beszel-agent_linux_{{ beszel_arch }}.tar.gz"
+            state: absent
+
+    - name: Ensure Beszel agent binary permissions
+      ansible.builtin.file:
+        path: "{{ beszel_agent_install_dir }}/beszel-agent"
+        owner: "{{ beszel_agent_user }}"
+        group: "{{ beszel_agent_user }}"
+        mode: "0755"
+
+    - name: Deploy Beszel agent systemd service
+      ansible.builtin.template:
+        src: beszel-agent.service.j2
+        dest: /etc/systemd/system/beszel-agent.service
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart beszel-agent
+
+    - name: Ensure Beszel agent service is enabled and started
+      ansible.builtin.systemd:
+        name: beszel-agent
+        state: started
+        enabled: true
+        daemon_reload: true
+

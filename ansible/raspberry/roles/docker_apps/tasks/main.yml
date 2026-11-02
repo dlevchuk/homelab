@@ -65,7 +65,7 @@
 
 - name: Manage Beszel
   ansible.builtin.include_tasks: docker_beszel.yml
-  when: enable_beszel | default(false) | bool
+  when: (enable_beszel | default(false) | bool) or (enable_beszel_agent | default(false) | bool)
 
 # Always included: tasks inside switch cron to present/absent by flags
 - name: Manage backups (cron)

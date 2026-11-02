@@ -11,3 +11,5 @@
       when: "'raspberry_zero' not in group_names"
     - role: thermal_cam
       when: "'raspberry_zero' in group_names"
+    - role: beszel_agent
+      when: "'raspberry_zero' in group_names"

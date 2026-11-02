@@ -1,0 +1,5 @@
+---
+# Beszel agent (Hub runs on pi5)
+enable_beszel_agent: true
+beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"
+

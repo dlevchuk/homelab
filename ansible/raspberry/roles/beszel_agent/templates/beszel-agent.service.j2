@@ -1,0 +1,21 @@
+[Unit]
+Description=Beszel Agent
+After=network.target
+
+[Service]
+Type=simple
+User={{ beszel_agent_user }}
+Group={{ beszel_agent_user }}
+{% if journal_group_check is defined and journal_group_check.rc == 0 %}
+SupplementaryGroups=systemd-journal
+{% endif %}
+WorkingDirectory={{ beszel_agent_install_dir }}
+ExecStart={{ beszel_agent_install_dir }}/beszel-agent
+Restart=always
+RestartSec=5
+Environment="LISTEN={{ beszel_agent_port }}"
+Environment="KEY={{ beszel_agent_key }}"
+
+[Install]
+WantedBy=multi-user.target
+
