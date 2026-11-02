@@ -6,41 +6,72 @@ on:
     - cron: '0 3 1 * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+# One commit-producing backup at a time (goodreads uses the same group)
+concurrency:
+  group: backup-commit
+  cancel-in-progress: false
+
 jobs:
   backup:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install requests beautifulsoup4
-      
+
+      # stdout -> temp file (pure JSON), stderr (progress/logs) -> job log
       - name: Run scraper
         run: |
-          python scripts/backup_imdb_web/imdb_scraper.py > scripts/backup_imdb_web/imdb_backup.json 2>&1
-          cat scripts/backup_imdb_web/imdb_backup.json
-      
-      - name: Check if file exists
+          python scripts/backup_imdb_web/imdb_scraper.py > /tmp/imdb_new.json
+
+      - name: Validate result
         run: |
-          if [ ! -f scripts/backup_imdb_web/imdb_backup.json ]; then
-            echo "ERROR: imdb_backup.json not created"
-            exit 1
-          fi
-          echo "File created, size: $(wc -c < scripts/backup_imdb_web/imdb_backup.json) bytes"
-      
+          python3 - <<'PY'
+          import json, sys
+
+          NEW = "/tmp/imdb_new.json"
+          OLD = "scripts/backup_imdb_web/imdb_backup.json"
+
+          try:
+              with open(NEW, encoding="utf-8") as f:
+                  new = json.load(f)
+          except Exception as e:
+              sys.exit(f"ERROR: new backup is not valid JSON: {e}")
+
+          n_lists = new.get("total_lists", 0)
+          n_items = new.get("total_items", 0)
+          if n_lists == 0 or n_items == 0:
+              sys.exit(f"ERROR: empty backup (lists={n_lists}, items={n_items}), keeping the old one")
+
+          try:
+              with open(OLD, encoding="utf-8") as f:
+                  old_items = json.load(f).get("total_items", 0)
+          except Exception:
+              old_items = 0
+
+          if old_items and n_items < old_items * 0.5:
+              sys.exit(f"ERROR: items dropped {old_items} -> {n_items}, refusing to overwrite")
+
+          print(f"OK: lists={n_lists}, items={n_items} (was {old_items})")
+          PY
+
       - name: Commit and push if changed
         run: |
+          cp /tmp/imdb_new.json scripts/backup_imdb_web/imdb_backup.json
+          echo "File updated, size: $(wc -c < scripts/backup_imdb_web/imdb_backup.json) bytes"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add scripts/backup_imdb_web/imdb_backup.json
@@ -48,5 +79,6 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update IMDB backup - $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git pull --rebase
             git push
           fi

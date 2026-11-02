@@ -6,37 +6,71 @@ on:
     - cron: '0 2 * * 0'
   workflow_dispatch:  # Allow manual trigger
 
+permissions:
+  contents: write
+
+# One commit-producing backup at a time (imdb uses the same group)
+concurrency:
+  group: backup-commit
+  cancel-in-progress: false
+
 jobs:
   backup:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install requests beautifulsoup4
-      
+
+      # stdout -> temp file (pure JSON), stderr (progress/logs) -> job log
       - name: Run scraper
         run: |
-          python scripts/backup_goodreads_web/goodreads_scraper.py > scripts/backup_goodreads_web/goodreads_backup.json
+          python scripts/backup_goodreads_web/goodreads_scraper.py > /tmp/goodreads_new.json
 
-      - name: Check if file exists
+      - name: Validate result
         run: |
-          if [ ! -f scripts/backup_goodreads_web/goodreads_backup.json ]; then
-            echo "ERROR: goodreads_backup.json not created"
-            exit 1
-          fi
-          echo "File created successfully, size: $(wc -c < scripts/backup_goodreads_web/goodreads_backup.json) bytes"
-      
+          python3 - <<'PY'
+          import json, sys
+
+          NEW = "/tmp/goodreads_new.json"
+          OLD = "scripts/backup_goodreads_web/goodreads_backup.json"
+
+          try:
+              with open(NEW, encoding="utf-8") as f:
+                  new = json.load(f)
+          except Exception as e:
+              sys.exit(f"ERROR: new backup is not valid JSON: {e}")
+
+          n_books = new.get("total_books", 0)
+          if n_books == 0:
+              sys.exit("ERROR: empty backup (0 books), keeping the old one")
+
+          try:
+              with open(OLD, encoding="utf-8") as f:
+                  old_books = json.load(f).get("total_books", 0)
+          except Exception:
+              old_books = 0
+
+          if old_books and n_books < old_books * 0.5:
+              sys.exit(f"ERROR: books dropped {old_books} -> {n_books}, refusing to overwrite")
+
+          print(f"OK: books={n_books} (was {old_books})")
+          PY
+
       - name: Commit and push if changed
         run: |
+          cp /tmp/goodreads_new.json scripts/backup_goodreads_web/goodreads_backup.json
+          echo "File updated, size: $(wc -c < scripts/backup_goodreads_web/goodreads_backup.json) bytes"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add scripts/backup_goodreads_web/goodreads_backup.json
@@ -44,5 +78,6 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Update Goodreads backup - $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git pull --rebase
             git push
           fi

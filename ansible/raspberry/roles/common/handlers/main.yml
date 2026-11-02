@@ -16,9 +16,8 @@
     state: restarted
 
 - name: Check watchdog status
-  ansible.builtin.systemd:
-    name: watchdog
-    state: restarted
+  ansible.builtin.command: systemctl is-active watchdog
+  changed_when: false
 
 - name: Reload sysctl
   ansible.builtin.systemd:

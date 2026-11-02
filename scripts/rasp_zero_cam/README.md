@@ -302,6 +302,6 @@ Steps: rsync `scripts/rasp_zero_cam/` → `/home/pi/`; over SSH write `/home/pi/
 - `REMOTE_USER`: SSH username (e.g. `pi`)
 - `THERMAL_REMOTE_PORT`: SSH port (default: `22`)
 - `SSH_PRIVATE_KEY`: Private SSH key for host authentication
-- `TAILSCALE_AUTHKEY`: Tailscale authentication key
+- `TS_OAUTH_CLIENT_ID` / `TS_OAUTH_SECRET`: Tailscale OAuth credentials used by `tailscale/github-action` (tag `tag:ci`)
 - `SUPABASE_URL`: Supabase project URL
-- `SUPABASE_SERVICE_KEY`: Supabase `service_role` key (written to `/home/pi/.supabase.env` as `SUPABASE_KEY`)
+- `SUPABASE_KEY`: Supabase `service_role` key (written to `/home/pi/.supabase.env` as `SUPABASE_KEY`)

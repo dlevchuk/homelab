@@ -9,10 +9,11 @@ on:
 jobs:
   notifyTelegram:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    # skip this workflow's own runs, otherwise a failing notify re-triggers itself
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.name != 'send message to telegram' }}
     steps:
     - name: send message
-      uses: appleboy/telegram-action@master
+      uses: appleboy/telegram-action@v1.1.1
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}
@@ -29,7 +30,7 @@ jobs:
     if: ${{ (github.event.workflow_run.name == 'goodreads backup' || github.event.workflow_run.name == 'IMDB Backup') && github.event.workflow_run.conclusion == 'success' }}
     steps:
     - name: send success message
-      uses: appleboy/telegram-action@master
+      uses: appleboy/telegram-action@v1.1.1
       with:
         to: ${{ secrets.TELEGRAM_TO }}
         token: ${{ secrets.TELEGRAM_TOKEN }}

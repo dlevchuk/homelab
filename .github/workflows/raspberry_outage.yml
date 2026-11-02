@@ -2,7 +2,9 @@ name: sync files raspberry outage
 on:
   push:
     paths:
-    - scripts/raspberry_outage/raspberry_outage.py
+      - scripts/raspberry_outage/raspberry_outage.py
+      - .github/workflows/raspberry_outage.yml
+  workflow_dispatch:
 
 jobs:
   deploy_raspberry_outage_script:
@@ -20,7 +22,7 @@ jobs:
     - name: rsync deployments
       uses: burnett01/rsync-deployments@5.2.1
       with:
-        switches: -avz --delete --chmod=755
+        switches: -avz --chmod=755
         path: scripts/raspberry_outage/raspberry_outage.py
         remote_path: ${{ secrets.REMOTE_PATH }}
         remote_host: ${{ secrets.REMOTE_HOST }}
@@ -28,11 +30,16 @@ jobs:
         remote_port: ${{ secrets.REMOTE_PORT }}
         remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+    # Idempotent: drops the old test_inet.py / raspberry_outage.py entries and
+    # re-adds the correct one. Works with an empty crontab too.
     - name: executing remote ssh to setup cron
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port:  ${{ secrets.REMOTE_PORT }}
-        script: sudo grep 'test_inet.py' /var/spool/cron/crontabs/pi || crontab -l | { cat; echo "@reboot sleep 120 && cd ${{ secrets.REMOTE_PATH }} && python3 test_inet.py > /dev/null 2>&1"; } | crontab -
+        port: ${{ secrets.REMOTE_PORT }}
+        script: |
+          CRON_LINE="@reboot sleep 120 && cd ${{ secrets.REMOTE_PATH }} && python3 raspberry_outage.py > /dev/null 2>&1"
+          ( crontab -l 2>/dev/null | grep -vE 'test_inet\.py|raspberry_outage\.py' || true; echo "$CRON_LINE" ) | crontab -
+          crontab -l | grep raspberry_outage.py

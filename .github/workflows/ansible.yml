@@ -36,12 +36,19 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
+          use-cache: 'true'
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
+
+      - name: Cache Ansible collections
+        uses: actions/cache@v4
+        with:
+          path: ~/.ansible/collections
+          key: ansible-collections-ansible.posix-community.docker-v1
 
       - name: Install Ansible & Requirements
         run: |
@@ -72,36 +79,52 @@ jobs:
           SSH_USER="${REMOTE_USER:-pi}"
 
           touch ~/.ssh/known_hosts
-          ssh-keyscan -p "$PI4_PORT" -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh-keyscan -p "$ZERO_PORT" -H "$THERMAL_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh-keyscan -p "$PI5_PORT" -H "$PI5_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -T 5 -p "$PI4_PORT" -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -T 5 -p "$ZERO_PORT" -H "$THERMAL_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -T 5 -p "$PI5_PORT" -H "$PI5_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 600 ~/.ssh/known_hosts
 
-          # Dynamic inventory: 3 physical Pis
-          cat > hosts.ini <<EOF
-          [raspberry_pi4]
-          rpi-pi4 ansible_host=${REMOTE_HOST} ansible_port=${PI4_PORT}
+          # Dynamic inventory: only reachable Pis are added.
+          # Groups are always declared (maybe empty), so plays for an offline
+          # host are skipped with a warning instead of failing the workflow.
+          : > hosts.ini
+          add_host() {
+            local group="$1" name="$2" host="$3" port="$4"
+            echo "[$group]" >> hosts.ini
+            if [ -n "$host" ] && nc -z -w 5 "$host" "$port" >/dev/null 2>&1; then
+              echo "$name ansible_host=$host ansible_port=$port" >> hosts.ini
+              echo "OK: $name ($host:$port) reachable"
+            else
+              echo "::warning::$name ($host:$port) is unreachable, skipping"
+            fi
+            echo "" >> hosts.ini
+          }
 
-          [raspberry_zero]
-          rpi-zero ansible_host=${THERMAL_REMOTE_HOST} ansible_port=${ZERO_PORT}
+          add_host raspberry_pi4   rpi-pi4  "$REMOTE_HOST"         "$PI4_PORT"
+          add_host raspberry_zero  rpi-zero "$THERMAL_REMOTE_HOST" "$ZERO_PORT"
+          add_host raspberry_pi5   rpi-pi5  "$PI5_REMOTE_HOST"     "$PI5_PORT"
 
-          [raspberry_pi5]
-          rpi-pi5 ansible_host=${PI5_REMOTE_HOST} ansible_port=${PI5_PORT}
+          {
+            echo "[raspberry:children]"
+            echo "raspberry_pi4"
+            echo "raspberry_zero"
+            echo "raspberry_pi5"
+            echo ""
+            echo "[raspberry:vars]"
+            echo "ansible_user=${SSH_USER}"
+            echo "ansible_python_interpreter=/usr/bin/python3"
+          } >> hosts.ini
 
-          [raspberry:children]
-          raspberry_pi4
-          raspberry_zero
-          raspberry_pi5
-
-          [raspberry:vars]
-          ansible_user=${SSH_USER}
-          EOF
-          sed -i 's/^[[:space:]]*//' hosts.ini
+          echo "--- hosts.ini ---"
+          cat hosts.ini
 
       - name: Run Ansible playbook
         env:
           LIMIT: ${{ inputs.limit || 'all' }}
-          ANSIBLE_SSH_ARGS: "-o ControlMaster=no -o ServerAliveInterval=15"
+          ANSIBLE_PIPELINING: "True"
+          ANSIBLE_FORKS: "10"
+          ANSIBLE_SSH_ARGS: "-o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=15 -o ConnectTimeout=15"
+          ANSIBLE_CALLBACKS_ENABLED: "ansible.posix.profile_tasks,ansible.posix.timer"
         run: |
           ansible-playbook ansible/raspberry/site.yml \
             -i hosts.ini \

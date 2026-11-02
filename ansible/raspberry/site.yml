@@ -1,35 +1,13 @@
 ---
-- name: common setup - pi4
-  hosts: raspberry_pi4
-  gather_facts: true
+- name: raspberry fleet
+  hosts: raspberry
+  gather_facts: false
+  strategy: free
   become: true
   roles:
-    - common
-
-- name: common setup - pi5
-  hosts: raspberry_pi5
-  gather_facts: true
-  become: true
-  roles:
-    - common
-
-- name: pi4 - docker apps
-  hosts: raspberry_pi4
-  gather_facts: true
-  become: true
-  roles:
-    - docker_apps
-
-- name: pi5 - docker apps
-  hosts: raspberry_pi5
-  gather_facts: true
-  become: true
-  roles:
-    - docker_apps
-
-- name: zero raspberry - thermal camera
-  hosts: raspberry_zero
-  gather_facts: true
-  become: true
-  roles:
-    - thermal_cam
+    - role: common
+      when: "'raspberry_zero' not in group_names"
+    - role: docker_apps
+      when: "'raspberry_zero' not in group_names"
+    - role: thermal_cam
+      when: "'raspberry_zero' in group_names"

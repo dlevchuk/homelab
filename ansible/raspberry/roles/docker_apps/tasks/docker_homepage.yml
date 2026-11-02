@@ -25,7 +25,6 @@
   community.docker.docker_container:
     name: homepage
     image: ghcr.io/gethomepage/homepage:latest
-    recreate: true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - "{{ docker_dir }}/homepage:/app/config"
