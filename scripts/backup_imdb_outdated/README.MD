@@ -25,7 +25,7 @@ This script was a cookie-based tool to backup all your lists from IMDb including
 - requests
 - beautifulsoup4
 - unidecode
-- load_dotenv
+- python-dotenv
 
 ### Original Setup (no longer works):
 1. Copy your IMDb `at-main`, `ubid-main` and `uu` cookies from your browser

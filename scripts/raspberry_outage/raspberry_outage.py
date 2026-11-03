@@ -54,8 +54,9 @@ retry = True
 while retry:
     try:
         conn = have_internet()
-        if(conn == True):
-           telegram_bot_sendtext("Internet connection was established after a power outage {} that lasted {}".format(poweroff_start_time(), outage_duration(poweroff_start_time())))
-           retry = False
+        if conn:
+            start_time = poweroff_start_time()
+            telegram_bot_sendtext("Internet connection was established after a power outage {} that lasted {}".format(start_time, outage_duration(start_time)))
+            retry = False
     except:
            time.sleep(60)

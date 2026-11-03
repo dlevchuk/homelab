@@ -989,7 +989,6 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
                     and OUTAGE_CACHE.get("date") == today and not OUTAGE_CACHE.get("failed")):
                 prev_good = OUTAGE_CACHE["data"]
 
-        now_naive = now.replace(tzinfo=None)
         url, loc_name = determine_outage_url(lat, lon, custom_target)
         geo = reverse_geocode_location(lat, lon)
         display_name = geo.get("display_name", "")
@@ -1023,15 +1022,6 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
             dur_min = int((end_naive - start_naive).total_seconds() / 60)
             total_minutes += dur_min
 
-            status = "upcoming"
-            delta_min = round((start_naive - now_naive).total_seconds() / 60)
-            if start_naive <= now_naive <= end_naive:
-                status = "active"
-                delta_min = round((end_naive - now_naive).total_seconds() / 60)
-            elif end_naive < now_naive:
-                status = "passed"
-                delta_min = 0
-
             s_h, s_m = int(start_time.split(":")[0]), int(start_time.split(":")[1])
             e_h, e_m = int(end_time.split(":")[0]), int(end_time.split(":")[1])
             s_idx = s_h * 2 + (1 if s_m >= 30 else 0)
@@ -1045,30 +1035,20 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
                 "start_time": start_time,
                 "end_time": end_time,
                 "duration_min": dur_min,
-                "delta_min": max(0, delta_min),
-                "status": status,
             })
 
-        is_outage_now = any(p["status"] == "active" for p in outages)
-        active_period = next((p for p in outages if p["status"] == "active"), None)
-        next_outage = next((p for p in outages if p["status"] == "upcoming"), None)
-
-        result = {
+        base_data = {
             "ok": True,
             "location": loc_name,
             "display_name": display_name,
             "coords": {"lat": lat, "lon": lon},
             "url": url,
-            "is_outage_now": is_outage_now,
-            "active_period": active_period,
-            "next_outage": next_outage,
             "periods": outages,
             "slots": slots,
             "total_outage_minutes": total_minutes,
-            "now_time": now.strftime("%H:%M"),
-            "now_hour_fraction": round(now.hour + now.minute / 60.0 + now.second / 3600.0, 2),
             "updated_at": now.strftime("%H:%M:%S")
         }
+        result = _recompute_outage_status(base_data, now)
 
         with OUTAGE_CACHE_LOCK:
             OUTAGE_CACHE.update(
@@ -3383,7 +3363,6 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/db/bme280":
-            qs = parse_qs(urlparse(self.path).query)
             try:
                 hours = int(qs.get("hours", ["24"])[0])
                 hours = max(1, min(hours, 8760))
@@ -3402,7 +3381,6 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/db/outage":
-            qs = parse_qs(urlparse(self.path).query)
             try:
                 days = int(qs.get("days", ["30"])[0])
                 days = max(1, min(days, 365))

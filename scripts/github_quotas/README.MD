@@ -11,7 +11,7 @@ This script was designed to get notifications to telegram about your github acco
 
      Python 3.x
      requests
-     load_dotenv
+     python-dotenv
      json
 
 

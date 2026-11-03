@@ -1,7 +1,6 @@
 ---
 enable_beszel_agent: true
 beszel_agent_port: 45876
-beszel_agent_key: ""
 beszel_agent_install_dir: "/opt/beszel-agent"
 beszel_agent_user: "beszel"
 

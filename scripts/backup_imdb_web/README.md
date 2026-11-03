@@ -1,27 +1,32 @@
-# IMDB Backup
+# IMDB Custom Lists Backup
 
-Automated backup script for IMDB data. This script scrapes your IMDB ratings, watchlist, reviews, and custom lists and exports them to JSON format.
+Automated backup script for IMDB custom lists. This script scrapes public custom lists from an IMDB user profile and exports them to JSON format.
 
 ## Overview
 
-The `imdb_scraper.py` script fetches all your IMDB data from public pages and exports them as a structured JSON file. Unlike the cookie-based backup script, this version uses web scraping and doesn't require authentication cookies.
+The `imdb_scraper.py` script discovers and scrapes all public custom lists for a given IMDB user profile without requiring authentication cookies.
+
+> [!NOTE]
+> **Ratings & Watchlist**: IMDB's modern web interface applies aggressive bot detection and rate limits on ratings and watchlist pages. For ratings and watchlist, manually export CSV files directly from IMDB:
+> 1. Go to your Ratings: `https://www.imdb.com/user/{USER_ID}/ratings`
+> 2. Go to your Watchlist: `https://www.imdb.com/user/{USER_ID}/watchlist`
+> 3. Click the 3 dots menu (⋮) → **Export** → Save CSV.
+>
+> `imdb_scraper.py` focuses specifically on custom lists, which can be scraped quickly and reliably.
 
 ## Features
 
-- Scrapes multiple data types:
-  - **Ratings** - All titles you've rated with your personal ratings
-  - **Watchlist** - All titles in your watchlist
-  - **Reviews** - All your written reviews
-  - **Custom Lists** - All your custom lists with their items
-- Exports comprehensive title data including:
-  - IMDB ID and URL
-  - Title name and year
-  - Personal rating and average IMDB rating
-  - Metadata (duration, content rating, etc.)
-  - Review text and dates (for reviews)
-- Handles pagination automatically
-- Includes rate limiting (2 second delay between pages)
-- Outputs structured JSON with metadata
+- Scrapes all public custom lists for the configured user ID
+- Extracts item details:
+  - IMDB ID (`imdb_id`)
+  - Title URL (`url`)
+  - Title name (`title`)
+  - Release year (`year`)
+  - IMDB rating (`rating`)
+- Handles multi-page list pagination automatically
+- Parallel scraping with `ThreadPoolExecutor` (max 2 workers)
+- Conservative rate limiting (2s delay per request) and retry logic on HTTP 503
+- Outputs structured JSON with summary totals (`total_lists`, `total_items`)
 
 ## Usage
 
@@ -31,104 +36,70 @@ The `imdb_scraper.py` script fetches all your IMDB data from public pages and ex
 python3 imdb_scraper.py > imdb_backup.json
 ```
 
-The script outputs JSON to stdout and progress messages to stderr.
+The script writes structured JSON to `stdout` and status/progress messages to `stderr`.
 
 ### Automated Backup
 
-You can set up automated backups using cron or a similar scheduler:
+Run on a schedule using cron or GitHub Actions:
 
 ```bash
-# Run daily at 2:00 AM
-0 2 * * * cd /path/to/backup_imdb_web && python3 imdb_scraper.py > imdb_backup.json
+# Example: monthly backup on the 1st of each month at 3:00 AM
+0 3 1 * * cd /path/to/backup_imdb_web && python3 imdb_scraper.py > imdb_backup.json
 ```
 
 ## Configuration
 
-To use this script with a different IMDB user, modify the `USER_ID` constant in `imdb_scraper.py`:
+To change the target IMDB user, edit `USER_ID` in `imdb_scraper.py`:
 
 ```python
 USER_ID = "ur48993532"  # Replace with your IMDB user ID
 ```
 
-You can find your user ID in your IMDB profile URL: `https://www.imdb.com/user/{USER_ID}/`
+Your user ID can be found in your IMDB profile URL: `https://www.imdb.com/user/{USER_ID}/`
 
 ## Dependencies
 
 - Python 3.x
-- `requests` - HTTP library for fetching pages
-- `beautifulsoup4` - HTML parsing
+- `requests`
+- `beautifulsoup4`
 
 Install dependencies:
+
 ```bash
 pip install requests beautifulsoup4
 ```
 
 ## Output Format
 
-The script generates a JSON file with the following structure:
+The script produces a JSON object with the following schema:
 
 ```json
 {
   "user_id": "ur48993532",
-  "scraped_at": "2024-01-01 12:00:00 UTC",
-  "total_ratings": 150,
-  "total_watchlist": 45,
-  "total_reviews": 12,
-  "total_lists": 3,
-  "ratings": [
-    {
-      "imdb_id": "tt0111161",
-      "title": "The Shawshank Redemption",
-      "year": "1994",
-      "user_rating": "10",
-      "rating": "9.3",
-      "url": "https://www.imdb.com/title/tt0111161/",
-      "metadata": ["142 min", "R"]
-    }
-  ],
-  "watchlist": [
-    {
-      "imdb_id": "tt1375666",
-      "title": "Inception",
-      "year": "2010",
-      "url": "https://www.imdb.com/title/tt1375666/"
-    }
-  ],
-  "reviews": [
-    {
-      "imdb_id": "tt0111161",
-      "title": "The Shawshank Redemption",
-      "rating": "10",
-      "date": "15 January 2023",
-      "review_text": "An amazing film..."
-    }
-  ],
-  "custom_lists": [
+  "scraped_at": "2026-11-01 12:00:00 UTC",
+  "lists": [
     {
       "list_id": "ls123456789",
-      "list_name": "My Favorite Movies",
+      "list_name": "Favorite Movies",
+      "list_url": "https://www.imdb.com/list/ls123456789/",
+      "item_count": 25,
       "items": [
         {
           "imdb_id": "tt0111161",
+          "url": "https://www.imdb.com/title/tt0111161/",
           "title": "The Shawshank Redemption",
-          "year": "(1994)",
+          "year": "1994",
           "rating": "9.3"
         }
       ]
     }
-  ]
+  ],
+  "total_lists": 1,
+  "total_items": 25
 }
 ```
 
-## Notes
-
-- The script respects IMDB's rate limits with a 2-second delay between page requests
-- Only public pages are accessible (private profiles cannot be scraped)
-- The script uses a User-Agent header to avoid being blocked
-- Error handling is included for network issues and parsing errors
-- IMDB's HTML structure may change over time, which could break the scraper
-
 ## Files
 
-- `imdb_scraper.py` - Main scraper script
-
+- `imdb_scraper.py` - Scraper script
+- `imdb_backup.json` - Exported custom lists backup

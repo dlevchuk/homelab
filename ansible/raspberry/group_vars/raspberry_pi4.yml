@@ -13,4 +13,3 @@ dozzle_remote_agents:
 # Beszel hub + agent (hub moved here from pi5)
 enable_beszel: true
 enable_beszel_agent: true
-beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"

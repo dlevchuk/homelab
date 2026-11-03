@@ -11,14 +11,15 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Check which boot config path exists
-  ansible.builtin.stat:
-    path: /boot/firmware/config.txt
-  register: thermal_firmware_config
+- name: Ensure boot directory is determined
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: boot_dir.yml
+  when: boot_dir is not defined
 
 - name: Enable SPI (BME280)
   ansible.builtin.lineinfile:
-    path: "{{ '/boot/firmware/config.txt' if thermal_firmware_config.stat.exists else '/boot/config.txt' }}"
+    path: "{{ boot_dir }}/config.txt"
     regexp: '^#?dtparam=spi='
     line: 'dtparam=spi=on'
   notify: Reboot thermal Pi

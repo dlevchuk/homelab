@@ -1,4 +1,4 @@
 requests
 beautifulsoup4
 unidecode
-load_dotenv
+python-dotenv

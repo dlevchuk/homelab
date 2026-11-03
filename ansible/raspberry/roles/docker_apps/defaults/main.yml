@@ -52,6 +52,3 @@ enable_beszel_agent: false
 
 # Dozzle hub: list of agents as host:port (set per host group)
 dozzle_remote_agents: []
-
-# Beszel agent public key (from hub UI -> Add System). Empty = agent not deployed
-beszel_agent_key: ""

@@ -9,7 +9,7 @@ This script allows you to backup your Feedly data, including your OPML file and 
 
      Python 3.x
      requests
-     load_dotenv
+     python-dotenv
 
 
 ## How to run:

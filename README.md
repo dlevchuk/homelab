@@ -4,12 +4,10 @@ Home infrastructure repository: Raspberry Pi management (automated backups, moni
 
 ## Workflow Status
 
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/feedly_backup.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/telegram_notify.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/imdb_backup.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/raspberry_outage.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/goodreads_backup.yml/badge.svg)
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/meteo.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/power.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/ansible.yml/badge.svg)
 
@@ -18,8 +16,8 @@ Home infrastructure repository: Raspberry Pi management (automated backups, moni
 
 ## Overview
 
-- **Automated Backups**: Feedly, IMDb, Goodreads, and Notion data backups
-- **Monitoring**: Power outage alerts, weather reports, and internet connectivity monitoring
+- **Automated Backups**: IMDb and Goodreads data backups
+- **Monitoring**: Power outage alerts, thermal camera stream, and internet connectivity monitoring
 - **Infrastructure as Code**: Ansible playbooks per host (Raspberry Pi, Linux laptop, WSL)
 - **CI/CD**: GitHub Actions workflows for automated deployment and scheduled tasks
 - **Docker Applications**: Automated deployment of containerized services on the Pi
@@ -31,19 +29,18 @@ raspberry/
 ├── ansible/
 │   ├── raspberry/        # Raspberry Pi (deployed by CI)
 │   │   ├── roles/
+│   │   │   ├── beszel_agent/ # Beszel agent monitoring client
 │   │   │   ├── common/      # Common system setup (watchdog, kernel panic config, etc.)
-│   │   │   └── docker_apps/ # Docker application deployments
+│   │   │   ├── docker_apps/ # Docker application deployments
+│   │   │   └── thermal_cam/ # Pi Zero thermal camera setup and service
 │   │   ├── group_vars/
 │   │   ├── hosts
 │   │   └── site.yml
 │   ├── linux_laptop/     # Linux laptop (manual run, TLP battery thresholds)
 │   └── wsl/              # WSL (manual run)
 ├── scripts/              # Python scripts for various tasks
-│   ├── backup_feedly/
 │   ├── backup_goodreads_web/
 │   ├── backup_imdb_web/
-│   ├── backup_imdb_outdated/
-│   ├── backup_notion/
 │   ├── github_quotas/    # deprecated
 │   ├── light_outage/
 │   ├── meteo_data/
@@ -66,14 +63,13 @@ ansible-playbook -i ansible/wsl/hosts ansible/wsl/site.yml
 ### Backup Scripts
 
 - **Goodreads Backup**: weekly backup of reading lists, see [scripts/backup_goodreads_web/README.md](scripts/backup_goodreads_web/README.md)
-- **Feedly Backup**: RSS feed backup script
-- **IMDb Backup**: custom lists backup (monthly)
-- **Notion Backup**: workspace backup script
+- **IMDb Backup**: custom lists backup (monthly), see [scripts/backup_imdb_web/README.md](scripts/backup_imdb_web/README.md)
 
 ### Monitoring & Alerts
 
+- **Thermal Camera Dashboard**: MLX90640 thermal camera web stream, BME280 telemetry, and power outage tracking (`thermal_cam` role, `rasp_zero_cam`)
+- **System Monitoring (Beszel)**: lightweight system metrics via `beszel_agent` role and Docker container
 - **Power Outage Monitoring**: scheduled power outages with Telegram alerts
-- **Weather Reports**: weather data collection and reporting
 - **Internet Connectivity**: alerts on Pi internet outages
 - **Telegram Notifications**: automatic failure notifications for all workflows
 

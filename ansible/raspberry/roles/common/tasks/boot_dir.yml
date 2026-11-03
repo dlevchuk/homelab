@@ -1,0 +1,10 @@
+---
+- name: Check which boot config path exists
+  ansible.builtin.stat:
+    path: /boot/firmware/config.txt
+  register: rpi_boot_config_stat
+
+- name: Set boot directory fact
+  ansible.builtin.set_fact:
+    boot_dir: "{{ '/boot/firmware' if rpi_boot_config_stat.stat.exists else '/boot' }}"
+
