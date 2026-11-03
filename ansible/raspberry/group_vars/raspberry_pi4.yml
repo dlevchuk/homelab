@@ -10,7 +10,7 @@ enable_dozzle: true
 dozzle_remote_agents:
   - "pi5.tail72e9f.ts.net:7007"
 
-# Beszel agent (Hub runs on pi5)
-enable_beszel: false
+# Beszel hub + agent (hub moved here from pi5)
+enable_beszel: true
 enable_beszel_agent: true
 beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"

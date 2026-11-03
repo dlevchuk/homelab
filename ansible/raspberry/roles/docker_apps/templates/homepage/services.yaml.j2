@@ -66,6 +66,12 @@
         container: beszel
         showStats: true
         siteMonitor: http://{{ app_host }}:8090
+{% elif beszel_hub_url is defined %}
+    - Beszel:
+        icon: beszel
+        href: {{ beszel_hub_url }}
+        description: Server monitoring (hub on Pi 4, agent here)
+        siteMonitor: {{ beszel_hub_url }}
 {% endif %}
 
 {% if enable_adguard | default(false) %}

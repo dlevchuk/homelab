@@ -22,10 +22,11 @@ enable_music_assistant: true
 # Home Assistant працює тільки на pi5
 enable_home_assistant: true
 
-# Beszel hub + agent працює на pi5
-enable_beszel: true
+# Beszel hub працює на pi4, тут тільки agent
+enable_beszel: false
 enable_beszel_agent: true
-# Публічний ключ з UI hub (Add System)
+beszel_hub_url: "http://raspberrypi.tail72e9f.ts.net:8090"
+# Публічний ключ hub-а (той самий, бо id_ed25519 перенесено разом з даними)
 beszel_agent_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGbRNwma8zQV8/obLSnbABT2RHzLAgKQ4RiZIfawrL6e"
 
 # Крива кулера Pi 5 (температура в мільйонних °C, швидкість 0-255)
