@@ -1,6 +1,6 @@
 name: sync files feedly backup
 
-# Workflow disabled
+# Workflow disabled (Feedly tokens require Pro). Script moved to scripts/deprecated/backup_feedly/
 on:
   workflow_dispatch:
 
@@ -22,7 +22,7 @@ jobs:
       uses: burnett01/rsync-deployments@5.2.1
       with:
         switches: -avz --delete --chmod=755
-        path: scripts/backup_feedly/feedly_backup.py
+        path: scripts/deprecated/backup_feedly/feedly_backup.py
         remote_path: ${{ secrets.REMOTE_PATH_FEEDLY }}
         remote_host: ${{ secrets.REMOTE_HOST }}
         remote_user: ${{ secrets.REMOTE_USER }}
@@ -32,7 +32,7 @@ jobs:
     - name: Install Python dependencies
       uses: py-actions/py-dependency-install@v2
       with:
-        path: scripts/backup_feedly/requirements.txt
+        path: scripts/deprecated/backup_feedly/requirements.txt
         update-pip: "true"
 
     - name: executing remote ssh to setup cron

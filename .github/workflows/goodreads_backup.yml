@@ -1,10 +1,9 @@
 name: goodreads backup
 
+# DISABLED: Goodreads retired shelf RSS feeds in Oct 2026 (review/list_rss returns 404).
+# Script moved to scripts/deprecated/backup_goodreads_web/. Use manual CSV export instead.
 on:
-  schedule:
-    # Run every Sunday at 2 AM UTC
-    - cron: '0 2 * * 0'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,6 +15,7 @@ concurrency:
 
 jobs:
   backup:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -35,7 +35,7 @@ jobs:
       # stdout -> temp file (pure JSON), stderr (progress/logs) -> job log
       - name: Run scraper
         run: |
-          python scripts/backup_goodreads_web/goodreads_scraper.py > /tmp/goodreads_new.json
+          python scripts/deprecated/backup_goodreads_web/goodreads_scraper.py > /tmp/goodreads_new.json
 
       - name: Validate result
         run: |
@@ -43,7 +43,7 @@ jobs:
           import json, sys
 
           NEW = "/tmp/goodreads_new.json"
-          OLD = "scripts/backup_goodreads_web/goodreads_backup.json"
+          OLD = "scripts/deprecated/backup_goodreads_web/goodreads_backup.json"
 
           try:
               with open(NEW, encoding="utf-8") as f:
@@ -69,11 +69,11 @@ jobs:
 
       - name: Commit and push if changed
         run: |
-          cp /tmp/goodreads_new.json scripts/backup_goodreads_web/goodreads_backup.json
-          echo "File updated, size: $(wc -c < scripts/backup_goodreads_web/goodreads_backup.json) bytes"
+          cp /tmp/goodreads_new.json scripts/deprecated/backup_goodreads_web/goodreads_backup.json
+          echo "File updated, size: $(wc -c < scripts/deprecated/backup_goodreads_web/goodreads_backup.json) bytes"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add scripts/backup_goodreads_web/goodreads_backup.json
+          git add scripts/deprecated/backup_goodreads_web/goodreads_backup.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else

@@ -1,9 +1,8 @@
 name: IMDB Backup
 
+# DISABLED: IMDb blocks the scraper (lists page cannot be fetched).
+# Script moved to scripts/deprecated/backup_imdb_web/. Use manual CSV export instead.
 on:
-  schedule:
-    # Run once per month on the 1st at 3 AM UTC
-    - cron: '0 3 1 * *'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +15,7 @@ concurrency:
 
 jobs:
   backup:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -35,7 +35,7 @@ jobs:
       # stdout -> temp file (pure JSON), stderr (progress/logs) -> job log
       - name: Run scraper
         run: |
-          python scripts/backup_imdb_web/imdb_scraper.py > /tmp/imdb_new.json
+          python scripts/deprecated/backup_imdb_web/imdb_scraper.py > /tmp/imdb_new.json
 
       - name: Validate result
         run: |
@@ -43,7 +43,7 @@ jobs:
           import json, sys
 
           NEW = "/tmp/imdb_new.json"
-          OLD = "scripts/backup_imdb_web/imdb_backup.json"
+          OLD = "scripts/deprecated/backup_imdb_web/imdb_backup.json"
 
           try:
               with open(NEW, encoding="utf-8") as f:
@@ -70,11 +70,11 @@ jobs:
 
       - name: Commit and push if changed
         run: |
-          cp /tmp/imdb_new.json scripts/backup_imdb_web/imdb_backup.json
-          echo "File updated, size: $(wc -c < scripts/backup_imdb_web/imdb_backup.json) bytes"
+          cp /tmp/imdb_new.json scripts/deprecated/backup_imdb_web/imdb_backup.json
+          echo "File updated, size: $(wc -c < scripts/deprecated/backup_imdb_web/imdb_backup.json) bytes"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add scripts/backup_imdb_web/imdb_backup.json
+          git add scripts/deprecated/backup_imdb_web/imdb_backup.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else

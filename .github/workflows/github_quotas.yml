@@ -2,6 +2,7 @@ name: gitHub quotas check
 
 # DISABLED: GitHub billing API endpoints have been deprecated
 # See: https://docs.github.com/en/rest/billing/billing?apiVersion=2022-11-28
+# Script moved to scripts/deprecated/github_quotas/
 on:
   # schedule:
   #   # Run weekly on Saturday at 20:30 UTC (adjust timezone as needed)
@@ -25,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -r scripts/github_quotas/requirements.txt
+          pip install -r scripts/deprecated/github_quotas/requirements.txt
 
       - name: Run GitHub quotas check
         env:
@@ -33,5 +34,4 @@ jobs:
           GITHUB_USER: ${{ secrets.GH_USER }}
           BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           BOT_CHAT_ID: ${{ secrets.TELEGRAM_TO }}
-        run: python scripts/github_quotas/get_github_quotas.py
-
+        run: python scripts/deprecated/github_quotas/get_github_quotas.py

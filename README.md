@@ -1,26 +1,27 @@
 # raspberry
 
-Home infrastructure repository: Raspberry Pi management (automated backups, monitoring, deployment via GitHub Actions and Ansible) plus Ansible configs for other personal machines.
+Home infrastructure repository: Raspberry Pi management (monitoring, deployment via GitHub Actions and Ansible) plus Ansible configs for other personal machines.
 
 ## Workflow Status
 
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/telegram_notify.yml/badge.svg)
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/imdb_backup.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/raspberry_outage.yml/badge.svg)
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/goodreads_backup.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/power.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/ansible.yml/badge.svg)
 
-<!-- Deprecated: GitHub billing API endpoints have been deprecated -->
-<!-- ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/github_quotas.yml/badge.svg) -->
+<!-- Disabled workflows, see scripts/deprecated/README.md
+![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/imdb_backup.yml/badge.svg)
+![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/goodreads_backup.yml/badge.svg)
+![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/github_quotas.yml/badge.svg)
+-->
 
 ## Overview
 
-- **Automated Backups**: IMDb and Goodreads data backups
 - **Monitoring**: Power outage alerts, thermal camera stream, and internet connectivity monitoring
 - **Infrastructure as Code**: Ansible playbooks per host (Raspberry Pi, Linux laptop, WSL)
 - **CI/CD**: GitHub Actions workflows for automated deployment and scheduled tasks
 - **Docker Applications**: Automated deployment of containerized services on the Pi
+- **Deprecated**: scripts that stopped working are kept in [scripts/deprecated](scripts/deprecated/README.md)
 
 ## Project Structure
 
@@ -39,11 +40,14 @@ raspberry/
 │   ├── linux_laptop/     # Linux laptop (manual run, TLP battery thresholds)
 │   └── wsl/              # WSL (manual run)
 ├── scripts/              # Python scripts for various tasks
-│   ├── backup_goodreads_web/
-│   ├── backup_imdb_web/
-│   ├── github_quotas/    # deprecated
+│   ├── deprecated/       # Broken/outdated scripts (workflows disabled)
+│   │   ├── backup_feedly/
+│   │   ├── backup_goodreads_web/
+│   │   ├── backup_imdb_outdated/
+│   │   ├── backup_imdb_web/
+│   │   └── github_quotas/
 │   ├── light_outage/
-│   ├── meteo_data/
+│   ├── meteo_data/       # workflow disabled (manual only)
 │   ├── raspberry_outage/
 │   └── rasp_zero_cam/    # Pi Zero thermal camera dashboard
 └── .github/workflows/
@@ -60,10 +64,10 @@ ansible-playbook -i ansible/wsl/hosts ansible/wsl/site.yml
 
 ## Features
 
-### Backup Scripts
+### Backups
 
-- **Goodreads Backup**: weekly backup of reading lists, see [scripts/backup_goodreads_web/README.md](scripts/backup_goodreads_web/README.md)
-- **IMDb Backup**: custom lists backup (monthly), see [scripts/backup_imdb_web/README.md](scripts/backup_imdb_web/README.md)
+Automated Goodreads and IMDb backups no longer work (Goodreads retired RSS in Oct 2026, IMDb blocks scraping).
+Use the manual CSV export from each site instead. Details and the last good backups: [scripts/deprecated/README.md](scripts/deprecated/README.md).
 
 ### Monitoring & Alerts
 
