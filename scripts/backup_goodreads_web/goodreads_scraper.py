@@ -2,6 +2,7 @@
 """
 Goodreads shelf scraper - exports all books from public shelves to JSON using public RSS feeds
 """
+import os
 import requests
 import json
 import time
@@ -15,8 +16,13 @@ warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 USER_ID = "76529348"
 BASE_URL = f"https://www.goodreads.com/review/list_rss/{USER_ID}"
+# Optional RSS key (from the RSS link at the bottom of your shelf page)
+RSS_KEY = os.environ.get("GOODREADS_KEY", "").strip()
+PER_PAGE = 100
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml,application/xml;q=0.9,text/xml;q=0.8,*/*;q=0.5',
+    'Accept-Language': 'en-US,en;q=0.9',
 }
 
 def clean_cdata(text):
@@ -44,10 +50,18 @@ def fetch_shelf(shelf_name, page=1):
     params = {
         'shelf': shelf_name,
         'page': page,
+        'per_page': PER_PAGE,
     }
-    
+    if RSS_KEY:
+        params['key'] = RSS_KEY
+
     try:
         resp = requests.get(BASE_URL, params=params, headers=HEADERS, timeout=30)
+        ctype = resp.headers.get('Content-Type', '')
+        # Diagnostics (never print the key)
+        shown_url = resp.url.replace(RSS_KEY, '***') if RSS_KEY else resp.url
+        print(f"  [{shelf_name} p{page}] HTTP {resp.status_code}, {len(resp.text)} bytes, "
+              f"type={ctype!r}, redirects={len(resp.history)}, url={shown_url}", file=sys.stderr)
         resp.raise_for_status()
         return resp.text
     except Exception as e:
@@ -60,12 +74,17 @@ def parse_books(xml_content, main_shelf):
         return []
     soup = BeautifulSoup(xml_content, 'html.parser')
     items = soup.find_all('item')
+
+    if not items:
+        snippet = " ".join(xml_content[:300].split())
+        print(f"  [{main_shelf}] no <item> in response. Start of body: {snippet!r}", file=sys.stderr)
+
     books = []
-    
+
     for item in items:
         try:
             book = {}
-            
+
             # Book ID
             book_id_tag = item.find('book_id')
             book_id = clean_cdata(book_id_tag.text if book_id_tag else "")
@@ -73,20 +92,20 @@ def parse_books(xml_content, main_shelf):
                 book_tag = item.find('book')
                 if book_tag:
                     book_id = book_tag.get('id', '')
-            
+
             if not book_id:
                 continue
-                
+
             book['id'] = book_id
-            
+
             # Title
             title_tag = item.find('title')
             book['title'] = clean_cdata(title_tag.text if title_tag else "")
-            
+
             # URL
             # Default to reconstructed robust URL
             book['url'] = f"https://www.goodreads.com/book/show/{book_id}"
-            
+
             # Try to extract the full slugged URL from description if available
             desc_tag = item.find('description')
             if desc_tag:
@@ -97,45 +116,45 @@ def parse_books(xml_content, main_shelf):
                     if '?' in href:
                         href = href.split('?')[0]
                     book['url'] = href
-            
+
             # Author
             author_tag = item.find('author_name')
             book['author'] = clean_cdata(author_tag.text if author_tag else "")
-            
+
             # ISBN
             isbn_tag = item.find('isbn')
             book['isbn'] = clean_cdata(isbn_tag.text if isbn_tag else "")
-            
+
             # Rating
             rating_tag = item.find('user_rating')
             try:
                 book['rating'] = int(rating_tag.text.strip()) if rating_tag else 0
             except ValueError:
                 book['rating'] = 0
-            
+
             # Shelves
             shelves_tag = item.find('user_shelves')
             shelves = []
             if shelves_tag and shelves_tag.text.strip():
                 shelves = [clean_cdata(s) for s in shelves_tag.text.split(',') if s.strip()]
-            
+
             # Ensure the main shelf is included in the shelves list (just like original)
             if main_shelf not in shelves:
                 shelves.append(main_shelf)
             book['shelves'] = shelves
-            
+
             # Date read
             read_tag = item.find('user_read_at')
             book['date_read'] = format_date(read_tag.text if read_tag else "")
-            
+
             # Date added
             added_tag = item.find('user_date_added')
             book['date_added'] = format_date(added_tag.text if added_tag else "")
-            
+
             # Average rating
             avg_rating_tag = item.find('average_rating')
             book['avg_rating'] = clean_cdata(avg_rating_tag.text if avg_rating_tag else "")
-            
+
             # Number of pages
             pages = "not set"
             book_tag = item.find('book')
@@ -144,41 +163,41 @@ def parse_books(xml_content, main_shelf):
                 if pages_tag and pages_tag.text.strip():
                     pages = f"{clean_cdata(pages_tag.text)}\n        pp"
             book['pages'] = pages
-            
+
             # Review/notes
             review_tag = item.find('user_review')
             book['review'] = clean_cdata(review_tag.text if review_tag else "")
-            
+
             if book.get('title'):
                 books.append(book)
-                
+
         except Exception as e:
             print(f"Error parsing book: {e}", file=sys.stderr)
             continue
-            
+
     return books
 
 def scrape_all_shelves():
     """Scrape all shelves using RSS pagination"""
     shelves = ['read', 'currently-reading', 'to-read']
     all_books = []
-    
+
     # Track book IDs to avoid duplicating books that might belong to multiple shelves
     seen_ids = set()
-    
+
     for shelf in shelves:
         print(f"Scraping {shelf}...", file=sys.stderr)
         page = 1
-        
+
         while page <= 100:  # Safe upper limit to prevent any potential infinite loops
             xml_content = fetch_shelf(shelf, page)
             if not xml_content:
                 break
-            
+
             books = parse_books(xml_content, shelf)
             if not books:
                 break
-            
+
             new_books_count = 0
             for book in books:
                 if book['id'] not in seen_ids:
@@ -194,22 +213,22 @@ def scrape_all_shelves():
                                 if s not in existing_book['shelves']:
                                     existing_book['shelves'].append(s)
                             break
-            
+
             print(f"  Page {page}: parsed {len(books)} books ({new_books_count} new)", file=sys.stderr)
-            
-            # If the page has fewer than 100 items, we have reached the end of the shelf
-            if len(books) < 100:
+
+            # If the page has fewer than PER_PAGE items, we have reached the end of the shelf
+            if len(books) < PER_PAGE:
                 break
-                
+
             page += 1
             time.sleep(2)  # Respectful rate limiting
-            
+
     return all_books
 
 if __name__ == '__main__':
-    print("Starting Goodreads scraper (RSS Mode)...", file=sys.stderr)
+    print(f"Starting Goodreads scraper (RSS Mode, key={'set' if RSS_KEY else 'not set'})...", file=sys.stderr)
     books = scrape_all_shelves()
-    
+
     # Output JSON to stdout
     result = {
         'user_id': USER_ID,
@@ -217,6 +236,6 @@ if __name__ == '__main__':
         'total_books': len(books),
         'books': books
     }
-    
+
     print(json.dumps(result, indent=2, ensure_ascii=False))
     print(f"\nTotal unique books scraped: {len(books)}", file=sys.stderr)
