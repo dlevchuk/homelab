@@ -5,6 +5,11 @@ homepage_color: slate
 
 enable_uptime_kuma: true
 
+# Dozzle hub lives here, pi5 runs only the agent
+enable_dozzle: true
+dozzle_remote_agents:
+  - "pi5.tail72e9f.ts.net:7007"
+
 # Beszel agent (Hub runs on pi5)
 enable_beszel: false
 enable_beszel_agent: true

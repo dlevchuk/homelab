@@ -1,10 +1,40 @@
 ---
-- name: Setup Dozzle
+# https://dozzle.dev/guide/agent
+# Hub (UI) runs where enable_dozzle is true, agent where enable_dozzle_agent is true.
+- name: Setup Dozzle (hub)
   community.docker.docker_container:
     name: dozzle
     image: amir20/dozzle:latest
+    env: >-
+      {{ {'DOZZLE_REMOTE_AGENT': (dozzle_remote_agents | join(','))}
+         if (dozzle_remote_agents | default([]) | length > 0) else omit }}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "8888:8080"
     restart_policy: always
+  when: enable_dozzle | default(true) | bool
+
+- name: Setup Dozzle agent
+  community.docker.docker_container:
+    name: dozzle-agent
+    image: amir20/dozzle:latest
+    command: agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "7007:7007"
+    restart_policy: always
+  when: enable_dozzle_agent | default(false) | bool
+
+- name: Remove Dozzle hub where it is disabled
+  community.docker.docker_container:
+    name: dozzle
+    state: absent
+  when: not (enable_dozzle | default(true) | bool)
+
+- name: Remove Dozzle agent where it is disabled
+  community.docker.docker_container:
+    name: dozzle-agent
+    state: absent
+  when: not (enable_dozzle_agent | default(false) | bool)

@@ -29,7 +29,7 @@ enable_docker_backup: true
 # Enabled active services
 enable_homepage: true
 enable_portainer: true
-enable_dozzle: true
+enable_dozzle: true            # Dozzle hub (UI)
 enable_watchtower: true
 enable_uptime_kuma: true
 enable_syncthing: true
@@ -37,6 +37,7 @@ enable_speedtest: true
 enable_glances: true
 
 # Optional / disabled services
+enable_dozzle_agent: false     # Dozzle agent only (no UI), port 7007
 enable_adguard: false
 enable_duplicati: false
 enable_thunderbird: false
@@ -47,6 +48,9 @@ enable_music_assistant: false
 enable_home_assistant: false
 enable_beszel: false
 enable_beszel_agent: false
+
+# Dozzle hub: list of agents as host:port (set per host group)
+dozzle_remote_agents: []
 
 # Beszel agent public key (from hub UI -> Add System). Empty = agent not deployed
 beszel_agent_key: ""

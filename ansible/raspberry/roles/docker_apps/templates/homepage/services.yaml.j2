@@ -14,6 +14,7 @@
         showStats: true
         siteMonitor: http://{{ app_host }}:9000
 
+{% if enable_dozzle | default(true) %}
     - Dozzle:
         icon: dozzle
         href: http://{{ app_host }}:8888
@@ -22,6 +23,13 @@
         container: dozzle
         showStats: true
         siteMonitor: http://{{ app_host }}:8888
+{% elif dozzle_hub_url is defined %}
+    - Dozzle:
+        icon: dozzle
+        href: {{ dozzle_hub_url }}
+        description: Container logs (hub on Pi 4, agent here)
+        siteMonitor: {{ dozzle_hub_url }}
+{% endif %}
 
     - Watchtower:
         icon: watchtower

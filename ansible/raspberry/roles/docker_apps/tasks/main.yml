@@ -11,9 +11,9 @@
   ansible.builtin.include_tasks: docker_portainer.yml
   when: enable_portainer | default(true) | bool
 
-- name: Manage Dozzle
+- name: Manage Dozzle (hub / agent)
   ansible.builtin.include_tasks: docker_dozzle.yml
-  when: enable_dozzle | default(true) | bool
+  when: (enable_dozzle | default(true) | bool) or (enable_dozzle_agent | default(false) | bool)
 
 - name: Manage Watchtower
   ansible.builtin.include_tasks: docker_watchtower.yml
