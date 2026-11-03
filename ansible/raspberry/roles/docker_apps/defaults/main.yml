@@ -28,7 +28,7 @@ enable_docker_backup: true
 
 # Enabled active services
 enable_homepage: true
-enable_portainer: true
+enable_portainer: true         # Portainer hub (UI)
 enable_dozzle: true            # Dozzle hub (UI)
 enable_watchtower: true
 enable_uptime_kuma: true
@@ -37,6 +37,7 @@ enable_speedtest: true
 enable_glances: true
 
 # Optional / disabled services
+enable_portainer_agent: false  # Portainer agent only (no UI), port 9001
 enable_dozzle_agent: false     # Dozzle agent only (no UI), port 7007
 enable_adguard: false
 enable_duplicati: false

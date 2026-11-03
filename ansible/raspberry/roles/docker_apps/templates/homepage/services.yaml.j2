@@ -5,6 +5,7 @@
 {% set app_host = homepage_host | default(ansible_host) %}
 
 - Infrastructure:
+{% if enable_portainer | default(true) %}
     - Portainer:
         icon: portainer
         href: http://{{ app_host }}:9000
@@ -13,6 +14,13 @@
         container: portainer
         showStats: true
         siteMonitor: http://{{ app_host }}:9000
+{% elif portainer_hub_url is defined %}
+    - Portainer:
+        icon: portainer
+        href: {{ portainer_hub_url }}
+        description: Docker management (hub on Pi 4, agent here)
+        siteMonitor: {{ portainer_hub_url }}
+{% endif %}
 
 {% if enable_dozzle | default(true) %}
     - Dozzle:

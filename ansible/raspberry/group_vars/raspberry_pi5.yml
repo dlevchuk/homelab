@@ -6,6 +6,11 @@ homepage_color: zinc
 # Uptime Kuma працює тільки на pi4
 enable_uptime_kuma: false
 
+# Portainer hub працює на pi4, тут тільки agent
+enable_portainer: false
+enable_portainer_agent: true
+portainer_hub_url: "http://raspberrypi.tail72e9f.ts.net:9000"
+
 # Dozzle hub працює на pi4, тут тільки agent
 enable_dozzle: false
 enable_dozzle_agent: true

@@ -7,9 +7,9 @@
   ansible.builtin.include_tasks: docker_homepage.yml
   when: enable_homepage | default(true) | bool
 
-- name: Manage Portainer
+- name: Manage Portainer (hub / agent)
   ansible.builtin.include_tasks: docker_portainer.yml
-  when: enable_portainer | default(true) | bool
+  when: (enable_portainer | default(true) | bool) or (enable_portainer_agent | default(false) | bool)
 
 - name: Manage Dozzle (hub / agent)
   ansible.builtin.include_tasks: docker_dozzle.yml
