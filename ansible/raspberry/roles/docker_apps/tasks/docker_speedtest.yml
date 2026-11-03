@@ -42,7 +42,7 @@
       DB_CONNECTION: sqlite
       SPEEDTEST_SCHEDULE: "{{ speedtest_schedule | default('0 */6 * * *') }}"
       DISPLAY_TIMEZONE: "{{ timezone }}"
-      PRUNE_RESULTS_OLDER_THAN: "{{ speedtest_prune_days | default(90) }}"
+      PRUNE_RESULTS_OLDER_THAN: "{{ (speedtest_prune_days | default(90)) | string }}"
     volumes:
       - "{{ docker_dir }}/speedtest-tracker/config:/config"
     ports:
