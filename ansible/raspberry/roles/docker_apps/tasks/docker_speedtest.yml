@@ -1,20 +1,63 @@
 ---
+# https://docs.linuxserver.io/images/docker-speedtest-tracker/
+# Replaces the abandoned henrywhitaker3/speedtest-tracker image.
+# Schedule is built into the app (SPEEDTEST_SCHEDULE), no cron restarts needed.
+# New data dir on purpose: the old DB format is not compatible.
+- name: Ensure Speedtest directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
+    mode: "0755"
+  loop:
+    - "{{ docker_dir }}/speedtest-tracker"
+    - "{{ docker_dir }}/speedtest-tracker/config"
+
+# APP_KEY is generated once and persisted, so it survives redeploys
+- name: Generate Speedtest APP_KEY (once)
+  ansible.builtin.shell: >
+    umask 077 &&
+    echo "base64:$(openssl rand -base64 32)" > {{ docker_dir }}/speedtest-tracker/app_key
+  args:
+    creates: "{{ docker_dir }}/speedtest-tracker/app_key"
+  no_log: true
+
+- name: Read Speedtest APP_KEY
+  ansible.builtin.slurp:
+    src: "{{ docker_dir }}/speedtest-tracker/app_key"
+  register: speedtest_app_key
+  no_log: true
+
 - name: Setup Speedtest
   community.docker.docker_container:
     name: speedtest
-    image: alexjustesen/speedtest-tracker:latest-arm
+    image: lscr.io/linuxserver/speedtest-tracker:latest
+    env:
+      PUID: "{{ docker_uid }}"
+      PGID: "{{ docker_gid }}"
+      TZ: "{{ timezone }}"
+      APP_KEY: "{{ (speedtest_app_key.content | b64decode) | trim }}"
+      APP_URL: "http://{{ homepage_host | default(ansible_host) }}:8765"
+      DB_CONNECTION: sqlite
+      SPEEDTEST_SCHEDULE: "{{ speedtest_schedule | default('0 */6 * * *') }}"
+      DISPLAY_TIMEZONE: "{{ timezone }}"
+      PRUNE_RESULTS_OLDER_THAN: "{{ speedtest_prune_days | default(90) }}"
     volumes:
-      - "{{ docker_dir }}/speedtest:/config"
+      - "{{ docker_dir }}/speedtest-tracker/config:/config"
     ports:
       - "8765:80"
-    env:
-      OOKLA_EULA_GDPR: "true"
-    restart_policy: always
+    restart_policy: unless-stopped
+  no_log: true
 
-- name: Add daily restart cron job for speedtest container
+- name: Remove old daily restart cron job for speedtest container
   ansible.builtin.cron:
     name: "Restart speedtest container daily"
-    minute: "0"
-    hour: "0"
-    job: "docker restart speedtest"
-    user: "{{ docker_user | default('pi') }}"
+    user: "{{ docker_user }}"
+    state: absent
+
+# Runs last: old data is removed only after the new container is up
+- name: Remove old Speedtest data dir (old image, incompatible DB)
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/speedtest"
+    state: absent
