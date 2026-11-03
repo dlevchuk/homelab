@@ -3,17 +3,18 @@
   ansible.builtin.file:
     path: "{{ docker_dir }}/portainer"
     state: directory
-    owner: "{{ docker_user | default('pi') }}"
-    group: "{{ docker_user | default('pi') }}"
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
     mode: "0755"
 
 - name: Create Portainer admin password file
   ansible.builtin.copy:
     content: "{{ portainer_admin_password }}"
     dest: "{{ docker_dir }}/portainer/admin_password"
-    owner: "{{ docker_user | default('pi') }}"
-    group: "{{ docker_user | default('pi') }}"
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
     mode: "0600"
+  no_log: true
 
 - name: Setup Portainer
   community.docker.docker_container:

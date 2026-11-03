@@ -1,0 +1,26 @@
+---
+# https://www.home-assistant.io/installation/linux#docker-compose
+- name: Ensure Home Assistant config directory exists
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/homeassistant/config"
+    state: directory
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
+    mode: "0755"
+
+- name: Setup Home Assistant
+  community.docker.docker_container:
+    name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    network_mode: host
+    privileged: true
+    volumes:
+      - "{{ docker_dir }}/homeassistant/config:/config"
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    env:
+      TZ: "{{ timezone }}"
+    labels:
+      # HA breaks on major updates: upgrade manually, not via Watchtower
+      com.centurylinklabs.watchtower.enable: "false"
+    restart_policy: unless-stopped

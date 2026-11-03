@@ -1,4 +1,6 @@
 ---
+# Archives live inside {{ docker_dir }}/syncthing/sync, so exclude them,
+# otherwise every weekly archive contains the previous ones and grows endlessly.
 - name: Cron task "backup thunderbird"
   ansible.builtin.cron:
     name: "backup thunderbird"
@@ -17,4 +19,4 @@
     minute: "0"
     hour: "1"
     user: root
-    job: "mkdir -p {{ docker_dir }}/syncthing/sync/backup_docker && tar -zcf {{ docker_dir }}/syncthing/sync/backup_docker/docker_apps.tar.gz {{ docker_dir }}/ > /dev/null 2>&1"
+    job: "mkdir -p {{ docker_dir }}/syncthing/sync/backup_docker && tar -zcf {{ docker_dir }}/syncthing/sync/backup_docker/docker_apps.tar.gz --exclude='{{ docker_dir }}/syncthing/sync/backup_docker' --exclude='{{ docker_dir }}/syncthing/sync/backup' {{ docker_dir }}/ > /dev/null 2>&1"

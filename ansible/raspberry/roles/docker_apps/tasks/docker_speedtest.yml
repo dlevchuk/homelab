@@ -2,7 +2,7 @@
 - name: Setup Speedtest
   community.docker.docker_container:
     name: speedtest
-    image: henrywhitaker3/speedtest-tracker:latest-arm
+    image: alexjustesen/speedtest-tracker:latest-arm
     volumes:
       - "{{ docker_dir }}/speedtest:/config"
     ports:

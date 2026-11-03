@@ -2,6 +2,7 @@
 # Default variables for docker_apps role
 
 docker_dir: "/home/pi/docker"
+docker_user: "pi"
 docker_uid: "1000"
 docker_gid: "1000"
 timezone: "Europe/Kiev"
@@ -18,7 +19,8 @@ homepage_theme: dark
 homepage_color: slate
 
 # Portainer initial admin credentials (min 12 characters)
-portainer_admin_password: "RaspberryAdmin123!"
+# Better: override via ansible-vault / env (PORTAINER_ADMIN_PASSWORD)
+portainer_admin_password: "{{ lookup('env', 'PORTAINER_ADMIN_PASSWORD') | default('RaspberryAdmin123!', true) }}"
 
 # Docker engine + weekly docker dir backup
 enable_docker_install: true
@@ -42,6 +44,7 @@ enable_freshrss: false
 enable_cronicle: false
 enable_homebridge: false
 enable_music_assistant: false
+enable_home_assistant: false
 enable_beszel: false
 enable_beszel_agent: false
 

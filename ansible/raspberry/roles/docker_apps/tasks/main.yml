@@ -63,6 +63,10 @@
   ansible.builtin.include_tasks: docker_music_assistant.yml
   when: enable_music_assistant | default(false) | bool
 
+- name: Manage Home Assistant
+  ansible.builtin.include_tasks: docker_home_assistant.yml
+  when: enable_home_assistant | default(false) | bool
+
 - name: Manage Beszel
   ansible.builtin.include_tasks: docker_beszel.yml
   when: (enable_beszel | default(false) | bool) or (enable_beszel_agent | default(false) | bool)

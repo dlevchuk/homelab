@@ -91,6 +91,17 @@
         showStats: true
         siteMonitor: http://{{ app_host }}:61208
 
+{% if enable_home_assistant | default(false) %}
+    - Home Assistant:
+        icon: home-assistant
+        href: http://{{ app_host }}:8123
+        description: Home automation platform
+        server: my-docker
+        container: homeassistant
+        showStats: true
+        siteMonitor: http://{{ app_host }}:8123
+{% endif %}
+
 {% if enable_duplicati | default(false) %}
     - Duplicati:
         icon: duplicati

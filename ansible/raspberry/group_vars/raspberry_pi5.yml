@@ -9,6 +9,9 @@ enable_uptime_kuma: false
 # Music Assistant працює тільки на pi5
 enable_music_assistant: true
 
+# Home Assistant працює тільки на pi5
+enable_home_assistant: true
+
 # Beszel hub + agent працює на pi5
 enable_beszel: true
 enable_beszel_agent: true
