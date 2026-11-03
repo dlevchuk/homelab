@@ -50,14 +50,3 @@
     restart_policy: unless-stopped
   no_log: true
 
-- name: Remove old daily restart cron job for speedtest container
-  ansible.builtin.cron:
-    name: "Restart speedtest container daily"
-    user: "{{ docker_user }}"
-    state: absent
-
-# Runs last: old data is removed only after the new container is up
-- name: Remove old Speedtest data dir (old image, incompatible DB)
-  ansible.builtin.file:
-    path: "{{ docker_dir }}/speedtest"
-    state: absent

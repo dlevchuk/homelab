@@ -5,6 +5,8 @@ enable_ssh_setup: true
 enable_initial_setup: true
 enable_ping_reboot: true
 enable_hardware_watchdog: false
+# Needed for memory stats in docker stats (appends flags to cmdline.txt, reboots once)
+enable_cgroup_memory: true
 
 # SSH: public key is taken from env (CI exports SSH_PUBLIC_KEY from the private key)
 ssh_authorized_key: "{{ lookup('env', 'SSH_PUBLIC_KEY') }}"

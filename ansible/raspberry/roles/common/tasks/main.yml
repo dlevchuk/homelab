@@ -19,6 +19,10 @@
   ansible.builtin.include_tasks: raspberry_specific.yml
   when: "'raspberry' in group_names"
 
+- name: Enable cgroup memory accounting (docker stats)
+  ansible.builtin.include_tasks: cgroup_memory.yml
+  when: enable_cgroup_memory | default(true) | bool
+
 - name: Pi 5 fan curve
   ansible.builtin.include_tasks: pi5_fan.yml
   when:
