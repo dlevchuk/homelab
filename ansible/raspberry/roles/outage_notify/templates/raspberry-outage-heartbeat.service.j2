@@ -1,0 +1,8 @@
+[Unit]
+Description=Write heartbeat timestamp for outage detection
+
+[Service]
+Type=oneshot
+User={{ outage_notify_user }}
+StateDirectory=raspberry-outage
+ExecStart={{ outage_notify_dir }}/heartbeat.sh

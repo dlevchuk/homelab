@@ -1,0 +1,16 @@
+[Unit]
+Description=Notify about power outage / reboot via Telegram
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ outage_notify_user }}
+SupplementaryGroups=systemd-journal
+StateDirectory=raspberry-outage
+EnvironmentFile=/etc/default/raspberry-outage
+ExecStart=/usr/bin/python3 {{ outage_notify_dir }}/raspberry_outage.py
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

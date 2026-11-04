@@ -1,0 +1,71 @@
+---
+- name: Ensure scripts directory exists
+  ansible.builtin.file:
+    path: "{{ outage_notify_dir }}"
+    state: directory
+    owner: "{{ outage_notify_user }}"
+    group: "{{ outage_notify_user }}"
+    mode: "0755"
+
+- name: Deploy raspberry_outage.py and heartbeat.sh
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ outage_notify_dir }}/{{ item }}"
+    owner: "{{ outage_notify_user }}"
+    group: "{{ outage_notify_user }}"
+    mode: "0755"
+  loop:
+    - raspberry_outage.py
+    - heartbeat.sh
+
+- name: Deploy env file with Telegram credentials
+  ansible.builtin.copy:
+    dest: /etc/default/raspberry-outage
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      BOT_TOKEN={{ outage_notify_bot_token }}
+      BOT_CHAT_ID={{ outage_notify_chat_id }}
+      HOST_LABEL={{ inventory_hostname }}
+  no_log: true
+  when:
+    - outage_notify_bot_token | length > 0
+    - outage_notify_chat_id | length > 0
+
+- name: Deploy systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - raspberry-outage.service
+    - raspberry-outage-heartbeat.service
+    - raspberry-outage-heartbeat.timer
+
+# Основний юніт тільки enable (без start), щоб кожен деплой не слав повідомлення
+- name: Enable raspberry-outage.service
+  ansible.builtin.systemd:
+    name: raspberry-outage.service
+    enabled: true
+    daemon_reload: true
+
+- name: Enable and start heartbeat timer
+  ansible.builtin.systemd:
+    name: raspberry-outage-heartbeat.timer
+    enabled: true
+    state: started
+
+# Старий варіант: @reboot у crontab, доданий через appleboy/ssh-action
+- name: Check legacy cron entry
+  ansible.builtin.shell: crontab -l -u {{ outage_notify_user }} 2>/dev/null | grep -c 'raspberry_outage.py' || true
+  register: outage_legacy_cron
+  changed_when: false
+  check_mode: false
+
+- name: Remove legacy cron entry
+  ansible.builtin.shell: >
+    crontab -l -u {{ outage_notify_user }} | grep -v 'raspberry_outage.py' | crontab -u {{ outage_notify_user }} -
+  when: outage_legacy_cron.stdout | trim != '0'

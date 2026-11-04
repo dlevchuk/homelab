@@ -21,6 +21,8 @@ env:
   THERMAL_REMOTE_PORT: ${{ secrets.THERMAL_REMOTE_PORT }}
   PI5_REMOTE_HOST: ${{ secrets.PI5_REMOTE_HOST }}
   PI5_REMOTE_PORT: ${{ secrets.PI5_REMOTE_PORT }}
+  TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+  TELEGRAM_TO: ${{ secrets.TELEGRAM_TO }}
   ANSIBLE_HOST_KEY_CHECKING: "false"
 
 jobs:

@@ -1,0 +1,6 @@
+---
+outage_notify_user: pi
+outage_notify_dir: /home/pi/scripts
+# Токени з env (CI експортує їх з GitHub Secrets)
+outage_notify_bot_token: "{{ lookup('env', 'TELEGRAM_TOKEN') }}"
+outage_notify_chat_id: "{{ lookup('env', 'TELEGRAM_TO') }}"

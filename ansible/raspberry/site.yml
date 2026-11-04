@@ -13,3 +13,4 @@
       when: "'raspberry_zero' in group_names"
     - role: beszel_agent
       when: "'raspberry_zero' in group_names"
+    - role: outage_notify

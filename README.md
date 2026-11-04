@@ -1,57 +1,51 @@
 # raspberry
 
-Home infrastructure repository: Raspberry Pi management (monitoring, deployment via GitHub Actions and Ansible) plus Ansible configs for other personal machines.
+Home infrastructure repository: Raspberry Pi management (automated backups, monitoring, deployment via GitHub Actions and Ansible) plus Ansible configs for other personal machines.
 
 ## Workflow Status
 
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/telegram_notify.yml/badge.svg)
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/raspberry_outage.yml/badge.svg)
+![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/imdb_backup.yml/badge.svg)
+![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/goodreads_backup.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/power.yml/badge.svg)
 ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/ansible.yml/badge.svg)
 
-<!-- Disabled workflows, see scripts/deprecated/README.md
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/imdb_backup.yml/badge.svg)
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/goodreads_backup.yml/badge.svg)
-![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/github_quotas.yml/badge.svg)
--->
+<!-- Deprecated: GitHub billing API endpoints have been deprecated -->
+<!-- ![workflow](https://github.com/dlevchuk/raspberry/actions/workflows/github_quotas.yml/badge.svg) -->
 
 ## Overview
 
+- **Automated Backups**: IMDb and Goodreads data backups
 - **Monitoring**: Power outage alerts, thermal camera stream, and internet connectivity monitoring
 - **Infrastructure as Code**: Ansible playbooks per host (Raspberry Pi, Linux laptop, WSL)
 - **CI/CD**: GitHub Actions workflows for automated deployment and scheduled tasks
 - **Docker Applications**: Automated deployment of containerized services on the Pi
-- **Deprecated**: scripts that stopped working are kept in [scripts/deprecated](scripts/deprecated/README.md)
 
 ## Project Structure
 
-```
 raspberry/
 ├── ansible/
-│   ├── raspberry/        # Raspberry Pi (deployed by CI)
-│   │   ├── roles/
-│   │   │   ├── beszel_agent/ # Beszel agent monitoring client
-│   │   │   ├── common/      # Common system setup (watchdog, kernel panic config, etc.)
-│   │   │   ├── docker_apps/ # Docker application deployments
-│   │   │   └── thermal_cam/ # Pi Zero thermal camera setup and service
-│   │   ├── group_vars/
-│   │   ├── hosts
-│   │   └── site.yml
-│   ├── linux_laptop/     # Linux laptop (manual run, TLP battery thresholds)
-│   └── wsl/              # WSL (manual run)
-├── scripts/              # Python scripts for various tasks
-│   ├── deprecated/       # Broken/outdated scripts (workflows disabled)
-│   │   ├── backup_feedly/
-│   │   ├── backup_goodreads_web/
-│   │   ├── backup_imdb_outdated/
-│   │   ├── backup_imdb_web/
-│   │   └── github_quotas/
-│   ├── light_outage/
-│   ├── meteo_data/       # workflow disabled (manual only)
-│   ├── raspberry_outage/
-│   └── rasp_zero_cam/    # Pi Zero thermal camera dashboard
+│ ├── raspberry/ # Raspberry Pi (deployed by CI)
+│ │ ├── roles/
+│ │ │ ├── beszel_agent/ # Beszel agent monitoring client
+│ │ │ ├── common/ # Common system setup (watchdog, kernel panic config, etc.)
+│ │ │ ├── docker_apps/ # Docker application deployments
+│ │ │ ├── outage_notify/ # Telegram alert after boot (power outage / reboot), all Pis
+│ │ │ └── thermal_cam/ # Pi Zero thermal camera setup and service
+│ │ ├── group_vars/
+│ │ ├── hosts
+│ │ └── site.yml
+│ ├── linux_laptop/ # Linux laptop (manual run, TLP battery thresholds)
+│ └── wsl/ # WSL (manual run)
+├── scripts/ # Python scripts for various tasks
+│ ├── backup_goodreads_web/
+│ ├── backup_imdb_web/
+│ ├── github_quotas/ # deprecated
+│ ├── light_outage/
+│ ├── meteo_data/
+│ └── rasp_zero_cam/ # Pi Zero thermal camera dashboard
 └── .github/workflows/
-```
+
 
 ## Ansible
 
@@ -64,17 +58,17 @@ ansible-playbook -i ansible/wsl/hosts ansible/wsl/site.yml
 
 ## Features
 
-### Backups
+### Backup Scripts
 
-Automated Goodreads and IMDb backups no longer work (Goodreads retired RSS in Oct 2026, IMDb blocks scraping).
-Use the manual CSV export from each site instead. Details and the last good backups: [scripts/deprecated/README.md](scripts/deprecated/README.md).
+- **Goodreads Backup**: weekly backup of reading lists, see [scripts/backup_goodreads_web/README.md](scripts/backup_goodreads_web/README.md)
+- **IMDb Backup**: custom lists backup (monthly), see [scripts/backup_imdb_web/README.md](scripts/backup_imdb_web/README.md)
 
 ### Monitoring & Alerts
 
 - **Thermal Camera Dashboard**: MLX90640 thermal camera web stream, BME280 telemetry, and power outage tracking (`thermal_cam` role, `rasp_zero_cam`)
 - **System Monitoring (Beszel)**: lightweight system metrics via `beszel_agent` role and Docker container
 - **Power Outage Monitoring**: scheduled power outages with Telegram alerts
-- **Internet Connectivity**: alerts on Pi internet outages
+- **Power Loss / Reboot Alerts**: `outage_notify` role on every Pi. After boot a systemd unit waits for internet and sends a Telegram message: power loss (with duration, undervoltage hint), kernel panic, ping-reboot or clean reboot. A per-minute heartbeat timer gives the outage moment with ~1 min precision (`/var/lib/raspberry-outage/heartbeat`)
 - **Telegram Notifications**: automatic failure notifications for all workflows
 
 ### Infrastructure Management
