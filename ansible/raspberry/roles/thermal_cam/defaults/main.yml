@@ -1,2 +1,7 @@
 ---
 thermal_user: pi
+# Секрети з env (CI експортує їх з GitHub Secrets)
+thermal_supabase_url: "{{ lookup('env', 'SUPABASE_URL') }}"
+thermal_supabase_key: "{{ lookup('env', 'SUPABASE_KEY') }}"
+thermal_scraper_api_key: "{{ lookup('env', 'SCRAPER_API_KEY') }}"
+thermal_zenrows_api_key: "{{ lookup('env', 'ZENROWS_API_KEY') }}"

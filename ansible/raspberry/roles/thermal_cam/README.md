@@ -2,6 +2,8 @@
 
 `thermal_web.py` is a Python-based web server and video streamer designed for V4L2 thermal camera devices (e.g. `/dev/video0`). It uses `ffmpeg` to capture raw video, calculate Y-channel signal statistics (min, avg, max temperature/brightness), apply color palettes, stream MJPEG video via HTTP, record videos, and serve an interactive web dashboard.
 
+Everything here is deployed by the Ansible role `thermal_cam` (`ansible/raspberry/roles/thermal_cam`) via the `ansible.yml` workflow. Source files live in `files/`.
+
 ## Features
 
 - **MJPEG Streaming**: Dynamic rate streaming via `/stream` endpoint with adaptive FPS adjustment.
@@ -13,7 +15,7 @@
 - **Built-in Web Dashboard**: Served directly from `/` with interactive controls, snapshots, full-screen mode, air raid alerts map, and weather radar widget.
 - **Systemd Integration**: Runs automatically as a background service via `thermal-web.service`.
 - **Daily Supabase Sync**: A systemd timer pushes new BME280 readings and outage stats from local SQLite to Supabase once a day (see [Supabase Sync](#supabase-sync)).
-- **Automated CI/CD**: Automatic deployment and service reload via GitHub Actions over Tailscale.
+- **Automated CI/CD**: Deployed idempotently by Ansible (`thermal_cam` role) through GitHub Actions over Tailscale. The service is restarted only when its script, unit or env file actually changed.
 
 ---
 
@@ -28,7 +30,7 @@
   - `python3-gpiozero` and `python3-lgpio` for PWM buzzer control
   - SPI enabled in Raspberry Pi OS
 
-Install the required packages and enable SPI:
+The `thermal_cam` role installs the packages, enables SPI (`dtparam=spi=on`, reboots the Pi if it changed) and adds the user to the `spi,gpio,video` groups. For a manual setup:
 
 ```bash
 sudo apt update
@@ -101,6 +103,10 @@ Do not connect BME280 to 5 V. `i2cdetect` cannot see this BME280 configuration b
 | `THERMAL_TEMP_OFFSET` | `0` | Linear calibration offset for Y->Temperature conversion |
 | `THERMAL_DB_PATH` | `~/thermal_recordings/thermal.db` | Path to SQLite database (also used by `supabase_sync.py`) |
 | `BME_DB_INTERVAL` | `300` | Interval in seconds between BME280 DB writes (minimum 60) |
+| `SCRAPER_API_KEY` | `""` | ScraperAPI key, proxy for the outage schedule fetch (optional) |
+| `ZENROWS_API_KEY` | `""` | ZenRows key, fallback proxy for the outage schedule fetch (optional) |
+
+`SCRAPER_API_KEY` and `ZENROWS_API_KEY` are loaded by `thermal-web.service` from `/home/pi/.thermal-web.env` (see [Secrets handling](#secrets-handling)). The direct request is tried first, proxies are used only when it fails.
 
 Variables used only by `supabase_sync.py` (provided via `/home/pi/.supabase.env`, see below):
 
@@ -127,7 +133,7 @@ THERMAL_PORT=8080 THERMAL_COLORMAP=ironbow python3 thermal_web.py
 
 ## Systemd Service (`thermal-web.service`)
 
-The script is managed via systemd at `/etc/systemd/system/thermal-web.service`.
+The script is managed via systemd at `/etc/systemd/system/thermal-web.service` (deployed by Ansible, source: `files/thermal-web.service`).
 
 ### Service Commands:
 
@@ -155,9 +161,9 @@ Once a day (23:55 + up to 2 min random delay) a oneshot systemd unit pushes data
 
 | File | Purpose |
 | :--- | :--- |
-| `supabase_sync.py` | Incremental, idempotent sync (PostgREST upsert, stdlib only) |
-| `thermal-sync.service` | `Type=oneshot` unit, loads `/home/pi/.supabase.env` |
-| `thermal-sync.timer` | Daily trigger, `Persistent=true` (catches up after a missed run / power outage) |
+| `files/supabase_sync.py` | Incremental, idempotent sync (PostgREST upsert, stdlib only) |
+| `files/thermal-sync.service` | `Type=oneshot` unit, loads `/home/pi/.supabase.env` |
+| `files/thermal-sync.timer` | Daily trigger, `Persistent=true` (catches up after a missed run / power outage) |
 
 ### How it works
 
@@ -259,14 +265,16 @@ CREATE TABLE IF NOT EXISTS sync_state (name TEXT PRIMARY KEY, value INTEGER NOT 
 
 ### Secrets handling
 
-Keys are **not** stored in git or created by hand. The deploy workflow writes `/home/pi/.supabase.env` (`chmod 600`) on every run from GitHub Secrets:
+Keys are **not** stored in git or created by hand. The `thermal_cam` role writes two env files (`chmod 600`, owner `pi`, `no_log`) from GitHub Secrets on every Ansible run:
 
-```
-SUPABASE_URL=...
-SUPABASE_KEY=...
-```
+| File | Content | Used by |
+| :--- | :--- | :--- |
+| `/home/pi/.supabase.env` | `SUPABASE_URL`, `SUPABASE_KEY` | `thermal-sync.service` |
+| `/home/pi/.thermal-web.env` | `SCRAPER_API_KEY`, `ZENROWS_API_KEY` | `thermal-web.service` |
 
-Key rotation: update the GitHub secret → run the workflow via `workflow_dispatch`.
+`.supabase.env` is written only when both Supabase secrets are non-empty. `.thermal-web.env` is always written (empty values are fine, the proxies are optional). A change of `.thermal-web.env` restarts `thermal-web`.
+
+Key rotation: update the GitHub secret → run the `Run Ansible Playbook` workflow via `workflow_dispatch` (limit `rpi-zero`).
 
 ### Operations
 
@@ -284,24 +292,43 @@ sqlite3 ~/thermal_recordings/thermal.db "DELETE FROM sync_state WHERE name='bme2
 
 ---
 
-## Deployment (GitHub Actions)
+## Deployment (Ansible via GitHub Actions)
 
-The workflow defined in `.github/workflows/thermal_web.yml` automatically deploys changes to the Raspberry Pi over Tailscale whenever any of these files are pushed:
+The role `ansible/raspberry/roles/thermal_cam` is applied to the `raspberry_zero` group by `ansible/raspberry/site.yml`. The `Run Ansible Playbook` workflow (`.github/workflows/ansible.yml`) runs it over Tailscale on every push to `main` that touches `ansible/**`, or manually.
 
-- `scripts/rasp_zero_cam/thermal_web.py`
-- `scripts/rasp_zero_cam/thermal-web.service`
-- `scripts/rasp_zero_cam/supabase_sync.py`
-- `scripts/rasp_zero_cam/thermal-sync.service`
-- `scripts/rasp_zero_cam/thermal-sync.timer`
+What the role does:
 
-Steps: rsync `scripts/rasp_zero_cam/` → `/home/pi/`; over SSH write `/home/pi/.supabase.env` (600) from secrets, copy the units to `/etc/systemd/system/`, `daemon-reload`, restart `thermal-web.service`, and `enable --now thermal-sync.timer`.
+- installs packages, enables SPI (reboot only if changed), adds the user to `spi,gpio,video`
+- copies `thermal_web.py` and `supabase_sync.py` to `/home/pi/`
+- writes `/home/pi/.thermal-web.env` and `/home/pi/.supabase.env` (600)
+- installs `thermal-web.service`, `thermal-sync.service`, `thermal-sync.timer` into `/etc/systemd/system/`
+- enables and starts `thermal-web.service` and `thermal-sync.timer`
+- restarts `thermal-web` only if the script, unit or env file changed
+
+If the Pi Zero is unreachable, the dynamic inventory skips it with a warning and the change is **not** applied: re-run the workflow when it is back.
+
+### Manual run
+
+From GitHub: Actions → `Run Ansible Playbook` → Run workflow → `limit: rpi-zero`.
+
+Locally:
+
+```bash
+ansible-playbook ansible/raspberry/site.yml -i ansible/raspberry/hosts --limit rpi-zero
+```
+
+with `SUPABASE_URL`, `SUPABASE_KEY`, `SCRAPER_API_KEY`, `ZENROWS_API_KEY` exported in the environment.
 
 ### Required GitHub Secrets:
 
 - `THERMAL_REMOTE_HOST`: Hostname or Tailscale IP (e.g. `zero.tail72e9f.ts.net`)
-- `REMOTE_USER`: SSH username (e.g. `pi`)
 - `THERMAL_REMOTE_PORT`: SSH port (default: `22`)
+- `REMOTE_USER`: SSH username (e.g. `pi`)
 - `SSH_PRIVATE_KEY`: Private SSH key for host authentication
 - `TS_OAUTH_CLIENT_ID` / `TS_OAUTH_SECRET`: Tailscale OAuth credentials used by `tailscale/github-action` (tag `tag:ci`)
 - `SUPABASE_URL`: Supabase project URL
-- `SUPABASE_KEY`: Supabase `service_role` key (written to `/home/pi/.supabase.env` as `SUPABASE_KEY`)
+- `SUPABASE_KEY`: Supabase `service_role` key (written to `/home/pi/.supabase.env`)
+- `SCRAPER_API_KEY`: ScraperAPI key (written to `/home/pi/.thermal-web.env`, optional)
+- `ZENROWS_API_KEY`: ZenRows key (written to `/home/pi/.thermal-web.env`, optional)
+
+The other secrets used by the workflow (Pi4/Pi5 hosts, Telegram) are listed in `.github/workflows/README.md`.

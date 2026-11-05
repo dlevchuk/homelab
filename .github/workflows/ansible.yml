@@ -23,6 +23,10 @@ env:
   PI5_REMOTE_PORT: ${{ secrets.PI5_REMOTE_PORT }}
   TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
   TELEGRAM_TO: ${{ secrets.TELEGRAM_TO }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+  SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
+  ZENROWS_API_KEY: ${{ secrets.ZENROWS_API_KEY }}
   ANSIBLE_HOST_KEY_CHECKING: "false"
 
 jobs:

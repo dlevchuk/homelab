@@ -17,7 +17,7 @@ enable_dozzle_agent: true
 dozzle_hub_url: "http://raspberrypi.tail72e9f.ts.net:8888"
 
 # Music Assistant працює тільки на pi5
-enable_music_assistant: true
+enable_music_assistant: false
 
 # Home Assistant працює тільки на pi5
 enable_home_assistant: true

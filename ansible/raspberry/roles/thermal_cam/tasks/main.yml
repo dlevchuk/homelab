@@ -29,3 +29,82 @@
     name: "{{ thermal_user }}"
     groups: spi,gpio,video
     append: true
+
+# --- scripts ---
+- name: Deploy thermal_web.py
+  ansible.builtin.copy:
+    src: thermal_web.py
+    dest: "/home/{{ thermal_user }}/thermal_web.py"
+    owner: "{{ thermal_user }}"
+    group: "{{ thermal_user }}"
+    mode: "0755"
+  notify: Restart thermal-web
+
+- name: Deploy supabase_sync.py
+  ansible.builtin.copy:
+    src: supabase_sync.py
+    dest: "/home/{{ thermal_user }}/supabase_sync.py"
+    owner: "{{ thermal_user }}"
+    group: "{{ thermal_user }}"
+    mode: "0755"
+
+# --- secrets ---
+- name: Deploy thermal-web env file (proxy keys)
+  ansible.builtin.copy:
+    dest: "/home/{{ thermal_user }}/.thermal-web.env"
+    owner: "{{ thermal_user }}"
+    group: "{{ thermal_user }}"
+    mode: "0600"
+    content: |
+      SCRAPER_API_KEY={{ thermal_scraper_api_key }}
+      ZENROWS_API_KEY={{ thermal_zenrows_api_key }}
+  no_log: true
+  notify: Restart thermal-web
+
+- name: Deploy Supabase env file
+  ansible.builtin.copy:
+    dest: "/home/{{ thermal_user }}/.supabase.env"
+    owner: "{{ thermal_user }}"
+    group: "{{ thermal_user }}"
+    mode: "0600"
+    content: |
+      SUPABASE_URL={{ thermal_supabase_url }}
+      SUPABASE_KEY={{ thermal_supabase_key }}
+  no_log: true
+  when:
+    - thermal_supabase_url | length > 0
+    - thermal_supabase_key | length > 0
+
+# --- systemd units ---
+- name: Deploy thermal-web.service
+  ansible.builtin.copy:
+    src: thermal-web.service
+    dest: /etc/systemd/system/thermal-web.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart thermal-web
+
+- name: Deploy thermal-sync service and timer
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - thermal-sync.service
+    - thermal-sync.timer
+
+- name: Enable and start thermal-web
+  ansible.builtin.systemd:
+    name: thermal-web.service
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Enable and start thermal-sync timer
+  ansible.builtin.systemd:
+    name: thermal-sync.timer
+    enabled: true
+    state: started
