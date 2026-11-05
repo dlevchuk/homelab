@@ -8,6 +8,8 @@ Environment=THERMAL_MAX_FPS=30
 Environment=THERMAL_MIN_FPS=3
 Environment=THERMAL_QUALITY=6
 Environment=THERMAL_SCALE=320:256
+# SCRAPER_API_KEY / ZENROWS_API_KEY (ansible кладе, не в git)
+EnvironmentFile=-/home/pi/.thermal-web.env
 ExecStart=/usr/bin/python3 /home/pi/thermal_web.py
 Restart=always
 RestartSec=2
