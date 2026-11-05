@@ -1,0 +1,158 @@
+#!/bin/bash
+# Managed by Ansible (docker_apps role).
+# Docker data backup -> Syncthing shared folder.
+#
+#   docker-backup.sh            run a backup now
+#   docker-backup.sh --if-due   run only if the last successful backup is
+#                               older than DUE_DAYS (used by cron)
+#
+# Every start first restarts containers left stopped by an interrupted run
+# (restart policy "unless-stopped" does NOT bring them back after a reboot).
+set -Eeuo pipefail
+
+MODE="${1:-run}"
+case "$MODE" in
+  run|--if-due) ;;
+  *) echo "usage: $0 [--if-due]" >&2; exit 2 ;;
+esac
+
+HOST="{{ inventory_hostname }}"
+DOCKER_DIR="{{ docker_dir }}"
+PARENT="$(dirname "$DOCKER_DIR")"
+NAME="$(basename "$DOCKER_DIR")"
+DEST="{{ docker_backup_dest }}"
+KEEP={{ docker_backup_keep }}
+DUE_DAYS={{ docker_backup_due_days }}
+STATE_DIR=/var/lib/docker-backup
+STOPPED_FILE="$STATE_DIR/stopped"
+LAST_OK_FILE="$STATE_DIR/last_ok"
+TMP_DIR=/var/tmp/docker-backup
+FILE="docker_apps_$(date +%Y%m%d_%H%M%S).tar.gz"
+STOPPED=""
+
+[ -f /etc/default/docker-backup ] && . /etc/default/docker-backup
+
+exec 9>/var/lock/docker-backup.lock
+flock -n 9 || { echo "another backup is running"; exit 0; }
+
+notify() {
+  [ -n "${BOT_TOKEN:-}" ] && [ -n "${BOT_CHAT_ID:-}" ] || return 0
+  curl -fsS -m 20 "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+    --data-urlencode "chat_id=${BOT_CHAT_ID}" \
+    --data-urlencode "text=$1" >/dev/null || true
+}
+
+start_containers() {
+  if [ -n "$STOPPED" ]; then
+    docker start $STOPPED >/dev/null || true
+    STOPPED=""
+    rm -f "$STOPPED_FILE"
+  fi
+}
+
+on_error() {
+  local rc=$?
+  start_containers
+  notify "❌ ${HOST}: docker backup failed (exit ${rc}, line $1)"
+  exit "$rc"
+}
+trap 'on_error $LINENO' ERR
+trap start_containers EXIT
+
+wait_docker() {
+  local i
+  for i in $(seq 1 60); do
+    docker info >/dev/null 2>&1 && return 0
+    sleep 5
+  done
+  return 1
+}
+
+# Pi has no RTC: after boot the clock is wrong until NTP syncs
+time_synced() {
+  local v
+  v="$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" || return 0
+  [ "$v" = "yes" ]
+}
+
+wait_time_sync() {
+  local i
+  for i in $(seq 1 30); do
+    time_synced && return 0
+    sleep 60
+  done
+  return 1
+}
+
+# The previous run was killed (power loss) after stopping containers
+recover_if_needed() {
+  [ -s "$STOPPED_FILE" ] || return 0
+  STOPPED="$(cat "$STOPPED_FILE")"
+  start_containers
+  notify "⚠️ ${HOST}: previous docker backup was interrupted, containers restarted"
+}
+
+wait_docker
+recover_if_needed
+
+if [ "$MODE" = "--if-due" ]; then
+  wait_time_sync || { echo "time is not synchronized, skipping"; exit 0; }
+  if [ -f "$LAST_OK_FILE" ]; then
+    age=$(( $(date +%s) - $(cat "$LAST_OK_FILE") ))
+    if [ "$age" -lt $(( DUE_DAYS * 86400 )) ]; then
+      echo "not due yet (last ok ${age}s ago)"
+      exit 0
+    fi
+  fi
+fi
+
+mkdir -p "$TMP_DIR" "$STATE_DIR"
+# Leftovers of an interrupted run (never inside the Syncthing folder)
+rm -f "$TMP_DIR"/*.tar.gz
+
+{% if docker_backup_stop_containers | bool %}
+STOPPED="$(docker ps -q | tr '\n' ' ')"
+if [ -n "$STOPPED" ]; then
+  # Persist the list BEFORE stopping, so a power cut cannot leave them stopped unnoticed
+  echo "$STOPPED" > "$STOPPED_FILE"
+  sync "$STOPPED_FILE"
+  docker stop -t 30 $STOPPED >/dev/null
+fi
+{% endif %}
+
+rc=0
+tar -czpf "$TMP_DIR/$FILE" -C "$PARENT" \
+{% for e in docker_backup_excludes %}
+  --exclude="$NAME/{{ e }}" \
+{% endfor %}
+  "$NAME" || rc=$?
+# 1 = "file changed as we read it" (only possible when containers are not stopped)
+[ "$rc" -le 1 ]
+
+start_containers
+
+# Validate and flush to disk before Syncthing ever sees the file
+tar -tzf "$TMP_DIR/$FILE" >/dev/null
+sync "$TMP_DIR/$FILE"
+
+# Same filesystem -> atomic rename, Syncthing never picks up a half-written archive
+mkdir -p "$DEST"
+mv "$TMP_DIR/$FILE" "$DEST/$FILE"
+chown {{ docker_uid }}:{{ docker_gid }} "$(dirname "$DEST")" "$DEST" "$DEST/$FILE"
+sync
+
+# Success is recorded only now (an interrupted run is retried by the next due-check)
+date +%s > "$LAST_OK_FILE.tmp"
+mv -f "$LAST_OK_FILE.tmp" "$LAST_OK_FILE"
+sync "$LAST_OK_FILE"
+
+SIZE="$(du -h "$DEST/$FILE" | cut -f1)"
+
+# Retention: keep the newest $KEEP archives, only after the new one is safely in place
+OLD="$(ls -1 "$DEST" | grep -E '^docker_apps_.*\.tar\.gz$' | sort | head -n -"$KEEP" || true)"
+for f in $OLD; do
+  rm -f "$DEST/$f"
+done
+
+[ -z "${PING_URL:-}" ] || curl -fsS -m 20 "$PING_URL" >/dev/null || true
+echo "OK: $DEST/$FILE ($SIZE)"

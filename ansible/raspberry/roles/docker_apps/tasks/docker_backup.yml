@@ -1,22 +1,70 @@
 ---
-# Archives live inside {{ docker_dir }}/syncthing/sync, so exclude them,
-# otherwise every weekly archive contains the previous ones and grows endlessly.
-- name: Cron task "backup thunderbird"
+# Old weekly tar jobs (replaced by the script below)
+- name: Remove legacy backup crons
   ansible.builtin.cron:
-    name: "backup thunderbird"
-    state: "{{ 'present' if (enable_thunderbird | default(false) | bool) else 'absent' }}"
-    weekday: "2"
-    minute: "0"
-    hour: "0"
+    name: "{{ item }}"
+    state: absent
     user: root
-    job: "mkdir -p {{ docker_dir }}/syncthing/sync/backup/thunderbird_backup && tar -zcf {{ docker_dir }}/syncthing/sync/backup/thunderbird_backup/thunderbird_profile_rasp.tar.gz {{ docker_dir }}/thunderbird/ > /dev/null 2>&1"
+  loop:
+    - "backup thunderbird"
+    - "backup docker"
 
-- name: Cron task "backup docker"
+- name: Install curl (Telegram alerts)
+  ansible.builtin.apt:
+    name: curl
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: enable_docker_backup | default(true) | bool
+
+# Persistent state: survives reboots/power loss (unlike /run, /tmp)
+- name: Ensure backup state dir exists
+  ansible.builtin.file:
+    path: /var/lib/docker-backup
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: enable_docker_backup | default(true) | bool
+
+- name: Deploy backup env file (Telegram / ping)
+  ansible.builtin.copy:
+    dest: /etc/default/docker-backup
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      BOT_TOKEN={{ docker_backup_bot_token }}
+      BOT_CHAT_ID={{ docker_backup_chat_id }}
+      PING_URL={{ docker_backup_ping_url }}
+  no_log: true
+  when: enable_docker_backup | default(true) | bool
+
+- name: Deploy docker-backup.sh
+  ansible.builtin.template:
+    src: docker-backup.sh.j2
+    dest: /usr/local/bin/docker-backup.sh
+    owner: root
+    group: root
+    mode: "0750"
+  when: enable_docker_backup | default(true) | bool
+
+# Daily check: the script itself decides whether a backup is due
+- name: Cron task "docker apps backup" (daily due-check)
   ansible.builtin.cron:
-    name: "backup docker"
+    name: "docker apps backup"
     state: "{{ 'present' if (enable_docker_backup | default(true) | bool) else 'absent' }}"
-    weekday: "2"
-    minute: "0"
-    hour: "1"
+    minute: "{{ docker_backup_minute }}"
+    hour: "{{ docker_backup_hour }}"
     user: root
-    job: "mkdir -p {{ docker_dir }}/syncthing/sync/backup_docker && tar -zcf {{ docker_dir }}/syncthing/sync/backup_docker/docker_apps.tar.gz --exclude='{{ docker_dir }}/syncthing/sync/backup_docker' --exclude='{{ docker_dir }}/syncthing/sync/backup' {{ docker_dir }}/ > /dev/null 2>&1"
+    job: "/usr/local/bin/docker-backup.sh --if-due 2>&1 | logger -t docker-backup"
+
+# After every boot: restart containers stopped by an interrupted backup,
+# and catch up on a missed/interrupted backup
+- name: Cron task "docker apps backup (boot)"
+  ansible.builtin.cron:
+    name: "docker apps backup (boot)"
+    state: "{{ 'present' if (enable_docker_backup | default(true) | bool) else 'absent' }}"
+    special_time: reboot
+    user: root
+    job: "sleep 90; /usr/local/bin/docker-backup.sh --if-due 2>&1 | logger -t docker-backup"

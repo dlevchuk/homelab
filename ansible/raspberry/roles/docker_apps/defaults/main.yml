@@ -22,9 +22,42 @@ homepage_color: slate
 # Better: override via ansible-vault / env (PORTAINER_ADMIN_PASSWORD)
 portainer_admin_password: "{{ lookup('env', 'PORTAINER_ADMIN_PASSWORD') | default('RaspberryAdmin123!', true) }}"
 
-# Docker engine + weekly docker dir backup
+# Docker engine
 enable_docker_install: true
+
+# --- Weekly backup into the shared Syncthing folder ---
 enable_docker_backup: true
+# Cron checks every day at this time (and once after every boot) and runs the
+# backup only when the last successful one is at least docker_backup_due_days old.
+# 6 days -> one backup per week without drifting; a missed or interrupted run
+# is retried the next day.
+docker_backup_hour: "3"
+docker_backup_minute: "30"
+docker_backup_due_days: 6
+# Where archives are written (inside the folder shared by Syncthing)
+docker_backup_dest: "{{ docker_dir }}/syncthing/sync/backup_docker/{{ inventory_hostname }}"
+# How many archives to keep (weekly -> 3 = ~3 weeks of history)
+docker_backup_keep: 3
+# Stop all running containers while tar runs (consistent SQLite/DB files)
+docker_backup_stop_containers: true
+# Paths relative to docker_dir. Whole syncthing/sync is excluded (it holds the archives themselves)
+docker_backup_excludes:
+  - "syncthing/sync"
+  - "duplicati/backups"
+  - "portainer/admin_password"
+
+# Telegram alert on failure (same secrets as outage_notify)
+docker_backup_bot_token: "{{ lookup('env', 'TELEGRAM_TOKEN') }}"
+docker_backup_chat_id: "{{ lookup('env', 'TELEGRAM_TO') }}"
+# Optional: Uptime Kuma push URL, pinged on success
+docker_backup_ping_url: ""
+
+# --- Restore on a fresh system ---
+# Used when docker_dir does not exist (or docker_restore_force=true).
+# Put docker_apps_*.tar.gz from the laptop into this dir on the Pi before running Ansible.
+enable_docker_restore: true
+docker_restore_dir: "/var/tmp/docker-restore"
+docker_restore_force: false
 
 # Enabled active services
 enable_homepage: true

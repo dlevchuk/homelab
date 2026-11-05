@@ -1,0 +1,41 @@
+---
+- name: Check docker dir
+  ansible.builtin.stat:
+    path: "{{ docker_dir }}"
+  register: docker_dir_stat
+
+- name: Restore docker data from backup archive
+  when: (not docker_dir_stat.stat.exists) or (docker_restore_force | bool)
+  block:
+    - name: Look for backup archives
+      ansible.builtin.find:
+        paths: "{{ docker_restore_dir }}"
+        patterns: "docker_apps_*.tar.gz"
+      register: restore_found
+
+    - name: No archive found
+      ansible.builtin.debug:
+        msg: >-
+          No docker_apps_*.tar.gz in {{ docker_restore_dir }},
+          continuing with an empty {{ docker_dir }}.
+          To restore: copy the archive there and re-run (docker_dir must not exist).
+      when: restore_found.files | length == 0
+
+    - name: Restore latest archive
+      when: restore_found.files | length > 0
+      vars:
+        restore_archive: "{{ (restore_found.files | sort(attribute='path') | last).path }}"
+      block:
+        - name: Stop running containers (forced restore over existing data)
+          ansible.builtin.shell: docker ps -q | xargs -r docker stop
+          when: docker_dir_stat.stat.exists
+          changed_when: true
+
+        - name: Extract archive (preserves owners/permissions)
+          ansible.builtin.command: >
+            tar -xzpf {{ restore_archive }} -C {{ docker_dir | dirname }}
+          changed_when: true
+
+        - name: Show restored archive
+          ansible.builtin.debug:
+            msg: "Restored {{ restore_archive }} into {{ docker_dir }}"
