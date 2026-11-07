@@ -327,6 +327,19 @@ def get_throttled_status():
         return {"available": False, "error": str(e)}
 
 
+def time_synced():
+    """True if the clock is NTP-synced. Pi has no RTC, so right after boot the time is fake.
+    If timedatectl is unavailable we assume the time is fine (same logic as heartbeat.sh)."""
+    try:
+        r = subprocess.run(
+            ["timedatectl", "show", "-p", "NTPSynchronized", "--value"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return r.returncode != 0 or r.stdout.strip() == "yes"
+    except (OSError, subprocess.SubprocessError):
+        return True
+
+
 def get_gpio_status():
     """Reads hardware GPIO states using pinctrl or raspi-gpio."""
     pins = {}
@@ -678,15 +691,24 @@ _bme_db_last_write = 0.0
 
 def bme_db_loop():
     global _bme_db_last_write
+    skip_logged = False
     while True:
         try:
             now = time.time()
             if now - _bme_db_last_write >= BME_DB_INTERVAL:
-                r = get_bme280_reading()
-                if r.get("available"):
-                    thermal_db.insert_bme280(r["temperature"], r["humidity"], r["pressure"])
-                    _bme_db_last_write = now
-                    print(f"[BME DB] Saved: T={r['temperature']} H={r['humidity']} P={r['pressure']}")
+                # No RTC: until NTP syncs, time.time() is fake (fake-hwclock) and a row with a
+                # wrong ts would land inside the outage gap and break the Supabase sync cursor.
+                if not time_synced():
+                    if not skip_logged:
+                        print("[BME DB] Time is not NTP-synced yet, skipping DB writes")
+                        skip_logged = True
+                else:
+                    skip_logged = False
+                    r = get_bme280_reading()
+                    if r.get("available"):
+                        thermal_db.insert_bme280(r["temperature"], r["humidity"], r["pressure"])
+                        _bme_db_last_write = now
+                        print(f"[BME DB] Saved: T={r['temperature']} H={r['humidity']} P={r['pressure']}")
         except Exception as e:
             print(f"[BME DB] Error: {e}")
         time.sleep(30)
@@ -2174,27 +2196,44 @@ function drawChart(id, pts, opt, hover){
     ctx.fillText(fmtChartX(p.t, opt.longRange), Math.max(L + 12, Math.min(W - R - 12, xOf(p))), H - 6);
   }
 
-  ctx.beginPath();
-  pts.forEach((p, i) => {
-    const x = xOf(p), y = yOf(p.v);
-    if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  });
-  ctx.strokeStyle = opt.color;
-  ctx.lineWidth = 1.6;
-  ctx.stroke();
-  ctx.lineTo(xOf(pts[n - 1]), T + ph);
-  ctx.lineTo(xOf(pts[0]), T + ph);
-  ctx.closePath();
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = opt.color;
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  if(n === 1){
+  // Split into segments: a time gap bigger than opt.gap (e.g. Pi was off) breaks the line.
+  const gap = opt.gap || Infinity;
+  const segs = [];
+  let cur = [pts[0]];
+  for(let i = 1; i < n; i++){
+    if(pts[i].t - pts[i - 1].t > gap){
+      segs.push(cur);
+      cur = [];
+    }
+    cur.push(pts[i]);
+  }
+  segs.push(cur);
+
+  segs.forEach(seg => {
+    if(seg.length === 1){
+      // single point: draw a dot, otherwise the segment would be invisible
+      ctx.beginPath();
+      ctx.arc(xOf(seg[0]), yOf(seg[0].v), 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = opt.color;
+      ctx.fill();
+      return;
+    }
     ctx.beginPath();
-    ctx.arc(xOf(pts[0]), yOf(pts[0].v), 3, 0, Math.PI * 2);
+    seg.forEach((p, i) => {
+      const x = xOf(p), y = yOf(p.v);
+      if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = opt.color;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.lineTo(xOf(seg[seg.length - 1]), T + ph);
+    ctx.lineTo(xOf(seg[0]), T + ph);
+    ctx.closePath();
+    ctx.globalAlpha = 0.12;
     ctx.fillStyle = opt.color;
     ctx.fill();
-  }
+    ctx.globalAlpha = 1;
+  });
 
   if(hover != null && pts[hover]){
     const p = pts[hover];
@@ -2284,12 +2323,14 @@ async function loadCharts(){
     const bme = await fetch(`/api/db/bme280?hours=${chartRangeH}`).then(r => r.json());
     const longRange = chartRangeH > 48;
     const rows = (bme && bme.rows) || [];
+    // a hole bigger than 3 sampling steps is drawn as a line break
+    const gap = bme && bme.step_sec ? bme.step_sec * 3 : 0;
     const series = key => rows.filter(r => r[key] != null).map(r => ({t: r.ts, v: r[key]}));
 
     const temp = series('temperature'), hum = series('humidity'), pres = series('pressure');
-    drawChart('chart-temp', temp, {color: '#ff7043', unit: '°C', dec: 1, longRange});
-    drawChart('chart-hum', hum, {color: '#29b6f6', unit: '%', dec: 1, longRange});
-    drawChart('chart-pres', pres, {color: '#ab47bc', unit: 'hPa', dec: 1, longRange});
+    drawChart('chart-temp', temp, {color: '#ff7043', unit: '°C', dec: 1, longRange, gap});
+    drawChart('chart-hum', hum, {color: '#29b6f6', unit: '%', dec: 1, longRange, gap});
+    drawChart('chart-pres', pres, {color: '#ab47bc', unit: 'hPa', dec: 1, longRange, gap});
     document.getElementById('stats-temp').textContent = chartStats(temp, '°C', 1);
     document.getElementById('stats-hum').textContent = chartStats(hum, '%', 1);
     document.getElementById('stats-pres').textContent = chartStats(pres, 'hPa', 1);
@@ -3377,7 +3418,10 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 bucket_sec = 3600 if hours <= 720 else 86400
                 rows = thermal_db.query_bme280_agg(since_ts=since_ts, bucket_sec=bucket_sec, limit=2000)
-            self._json({"ok": True, "hours": hours, "bucket_sec": bucket_sec, "count": len(rows), "rows": rows})
+            # sampling step: the UI uses it to break the line on gaps (Pi was off)
+            step_sec = bucket_sec if bucket_sec else BME_DB_INTERVAL
+            self._json({"ok": True, "hours": hours, "bucket_sec": bucket_sec, "step_sec": step_sec,
+                        "count": len(rows), "rows": rows})
             return
 
         if path == "/api/db/outage":
