@@ -15,6 +15,7 @@ homepage_allowed_hosts: "{{ ansible_host }}:3005"
 # colors: slate gray zinc neutral stone amber yellow lime green emerald teal
 #         cyan sky blue indigo violet purple fuchsia pink rose red white
 homepage_title: "Raspberry Pi"
+homepage_theme: "dark"
 homepage_color: slate
 
 # Portainer initial admin credentials (min 12 characters)
