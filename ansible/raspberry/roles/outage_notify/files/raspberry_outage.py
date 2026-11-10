@@ -6,7 +6,11 @@
 - штатне перезавантаження
 - нештатне вимкнення (ймовірно світло), з тривалістю і ознаками просідання напруги
 
-Момент втрати живлення = max(heartbeat, останній запис журналу попереднього буту).
+Момент втрати живлення = max(heartbeat, останній запис журналу) "справжнього" попереднього буту.
+"Флап" = короткий (< MIN_BOOT_SEC) бут, що закінчився нештатно (світло блимало після відновлення):
+такі бути пропускаються, аналізується перший нормальний бут перед ними.
+Тривалість буту береться з монотонного часу журналу (не залежить від фейкового годинника без RTC).
+
 Heartbeat пише raspberry-outage-heartbeat.timer (heartbeat.sh) раз на хвилину.
 
 Запускається systemd-юнітом raspberry-outage.service (ansible/raspberry/roles/outage_notify).
@@ -32,6 +36,8 @@ HEARTBEAT_DIR = os.environ.get("HEARTBEAT_DIR", "/var/lib/raspberry-outage")
 RETRY_SEC = 10
 MAX_WAIT_SEC = 6 * 3600     # після цього здаємось
 SYNC_GRACE_SEC = 10 * 60    # скільки чекати NTP при вже наявному інтернеті
+MIN_BOOT_SEC = 10 * 60      # бут коротший за це і нештатно завершений = флап
+MAX_BOOTS_BACK = 10         # скільки бутів назад дивимось максимум
 
 # Ознаки штатного завершення в кінці журналу попереднього буту
 CLEAN_SHUTDOWN_RE = re.compile(
@@ -97,49 +103,97 @@ def boot_id():
         return ""
 
 
-def read_heartbeat():
-    """Heartbeat попереднього буту: перший файл з boot_id, відмінним від поточного."""
-    cur = boot_id()
+def norm_id(s):
+    """boot_id у /proc має дефіси, у журналі (_BOOT_ID) ні."""
+    return (s or "").replace("-", "").lower()
+
+
+def read_heartbeat(bid):
+    """Heartbeat конкретного буту: шукаємо boot_id в heartbeat і heartbeat.prev."""
+    want = norm_id(bid)
+    if not want:
+        return None
     base = os.path.join(HEARTBEAT_DIR, "heartbeat")
     for path in (base, base + ".prev"):
         try:
             with open(path) as f:
-                bid, ts = f.read().split()
-            if bid != cur:
+                b, ts = f.read().split()
+            if norm_id(b) == want:
                 return float(ts)
         except (OSError, ValueError):
             continue
     return None
 
 
-def previous_boot():
-    """Аналіз попереднього буту або None, якщо даних нема."""
-    journal_ts = None
-    out = journal("-b", "-1", "-n", "1", "-o", "json").strip()
-    if out:
-        try:
-            journal_ts = int(json.loads(out.splitlines()[-1])["__REALTIME_TIMESTAMP"]) / 1e6
-        except (ValueError, KeyError, IndexError):
-            journal_ts = None
-
-    hb_ts = read_heartbeat()
-    candidates = [t for t in (journal_ts, hb_ts) if t]
-    if not candidates:
+def boot_last_entry(offset):
+    """Останній запис журналу буту з відносним номером offset (-1, -2, ...) або None."""
+    out = journal("-b", str(offset), "-n", "1", "-o", "json").strip()
+    if not out:
+        return None
+    try:
+        e = json.loads(out.splitlines()[-1])
+        return {
+            "bid": e.get("_BOOT_ID", ""),
+            "journal_ts": int(e["__REALTIME_TIMESTAMP"]) / 1e6,
+            # монотонний час останнього запису ~ тривалість буту, не залежить від годинника
+            "uptime": int(e["__MONOTONIC_TIMESTAMP"]) / 1e6,
+        }
+    except (ValueError, KeyError, IndexError):
         return None
 
-    last_ts = max(candidates)
-    src = "heartbeat" if hb_ts and hb_ts >= (journal_ts or 0) else "журнал"
 
-    tail = journal("-b", "-1", "-n", "100", "-o", "cat")
-    kern = journal("-b", "-1", "-k", "-n", "5000", "-o", "cat")
+def analyze_boot(offset, info):
+    """Збирає ознаки завершення буту offset."""
+    hb_ts = read_heartbeat(info["bid"])
+    candidates = [t for t in (info["journal_ts"], hb_ts) if t]
+    last_ts = max(candidates)
+    src = "heartbeat" if hb_ts and hb_ts >= info["journal_ts"] else "журнал"
+
+    tail = journal("-b", str(offset), "-n", "100", "-o", "cat")
+    kern = journal("-b", str(offset), "-k", "-n", "5000", "-o", "cat")
     return {
         "last_ts": last_ts,
         "src": src,
+        "uptime": info["uptime"],
         "clean": bool(CLEAN_SHUTDOWN_RE.search(tail)),
         "ping_reboot": bool(PING_REBOOT_RE.search(tail)),
         "panic": bool(PANIC_RE.search(kern)),
         "undervolt": bool(UNDERVOLT_RE.search(kern)),
     }
+
+
+def previous_boot():
+    """Аналіз останнього 'справжнього' буту перед поточним (флапи пропускаємо) або None."""
+    cur = norm_id(boot_id())
+    flaps = 0
+    first_seen = None  # fallback, якщо нормального буту не знайшлось
+
+    for n in range(1, MAX_BOOTS_BACK + 1):
+        offset = -n
+        info = boot_last_entry(offset)
+        if info is None:
+            break
+        if cur and norm_id(info["bid"]) == cur:
+            continue  # нас самих рахувати не треба
+
+        res = analyze_boot(offset, info)
+        log(f"boot {offset}: id={info['bid'][:8]} uptime={int(info['uptime'])}s "
+            f"clean={res['clean']} panic={res['panic']} last_ts={int(res['last_ts'])} ({res['src']})")
+        if first_seen is None:
+            first_seen = res
+
+        is_flap = res["uptime"] < MIN_BOOT_SEC and not res["clean"] and not res["panic"]
+        if is_flap:
+            flaps += 1
+            continue
+
+        res["flaps"] = flaps
+        return res
+
+    if first_seen is None:
+        return None
+    first_seen["flaps"] = 0  # всі бути були флапами, показуємо найсвіжіший як є
+    return first_seen
 
 
 def fmt_duration(seconds):
@@ -182,6 +236,9 @@ def build_message(prev, synced, net_uptime):
             lines.append(f"Інтернет з'явився через {fmt_duration(net_uptime)} після завантаження")
     else:
         lines.append("⏱ час не синхронізований, тривалість невідома")
+
+    if prev.get("flaps"):
+        lines.append(f"🔁 після відновлення було ще {prev['flaps']} коротких запусків (світло блимало)")
 
     if prev["undervolt"] and not clean:
         lines.append("⚠️ перед цим фіксувались просідання напруги (Under-voltage)")
