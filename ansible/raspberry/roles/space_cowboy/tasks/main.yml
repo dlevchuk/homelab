@@ -1,0 +1,21 @@
+---
+- name: Deploy seeyouspacecowboy.sh
+  ansible.builtin.copy:
+    src: seeyouspacecowboy.sh
+    dest: "{{ space_cowboy_dir }}/seeyouspacecowboy.sh"
+    owner: "{{ space_cowboy_user }}"
+    group: "{{ space_cowboy_user }}"
+    mode: "0755"
+
+# bash, not sh: dash printf does not understand \x1b
+# Regexp matches an existing (manual) entry too, so no duplicates
+- name: Run the banner on logout
+  ansible.builtin.lineinfile:
+    path: "{{ space_cowboy_dir }}/.bash_logout"
+    regexp: 'seeyouspacecowboy'
+    line: "bash {{ space_cowboy_dir }}/seeyouspacecowboy.sh; sleep 2"
+    insertbefore: BOF
+    create: true
+    owner: "{{ space_cowboy_user }}"
+    group: "{{ space_cowboy_user }}"
+    mode: "0644"

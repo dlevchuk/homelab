@@ -1,0 +1,8 @@
+---
+# Not set up yet. Pick one transport when a host appears (see README).
+# ansible_connection: winrm
+# ansible_winrm_transport: ntlm
+# ansible_port: 5986
+# ansible_winrm_server_cert_validation: ignore
+# ansible_user: Administrator
+# ansible_password: "{{ lookup('env', 'WIN_PASSWORD') }}"

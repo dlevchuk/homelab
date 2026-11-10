@@ -1,0 +1,12 @@
+---
+# present = install the SetupHost.exe hook, absent = remove it
+win11_hook_state: present
+
+# Temp dir for the installer copy of get11.cmd
+win11_work_dir: 'C:\Windows\Temp'
+
+# Optional ISO download (skipped when url is empty)
+win11_iso_url: ""
+# sha256, optional
+win11_iso_checksum: ""
+win11_iso_dest: 'C:\ISO\Win11.iso'

@@ -1,0 +1,64 @@
+---
+- name: Show OS
+  ansible.builtin.debug:
+    msg: "{{ ansible_os_name }} ({{ ansible_distribution_version }})"
+
+- name: Check if the SetupHost.exe hook is installed
+  ansible.windows.win_reg_stat:
+    path: 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe\0'
+    name: Debugger
+  register: win11_hook
+
+# get11.cmd run from any path except C:\Scripts\get11.cmd goes into setup mode:
+# it copies itself to C:\Scripts\get11.cmd and writes the IFEO keys.
+# Without arguments it toggles, so we always pass install/remove explicitly.
+- name: Apply hook state
+  when: >-
+    (win11_hook_state == 'present' and not win11_hook.exists) or
+    (win11_hook_state == 'absent' and win11_hook.exists)
+  block:
+    - name: Copy installer script to temp
+      ansible.windows.win_copy:
+        src: get11.cmd
+        dest: "{{ win11_work_dir }}\\get11_setup.cmd"
+
+    - name: Run get11 installer
+      ansible.windows.win_command: >-
+        cmd.exe /d /c "{{ win11_work_dir }}\get11_setup.cmd"
+        {{ 'install' if win11_hook_state == 'present' else 'remove' }}
+      changed_when: true
+
+    - name: Re-check the hook
+      ansible.windows.win_reg_stat:
+        path: 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe\0'
+        name: Debugger
+      register: win11_hook_after
+
+    - name: Verify result
+      ansible.builtin.assert:
+        that:
+          - win11_hook_after.exists == (win11_hook_state == 'present')
+        fail_msg: >-
+          Hook state mismatch. get11.cmd needs an elevated session
+          (admin + no UAC filtering), see README.
+  always:
+    - name: Remove installer copy
+      ansible.windows.win_file:
+        path: "{{ win11_work_dir }}\\get11_setup.cmd"
+        state: absent
+
+- name: Download Windows 11 ISO
+  when: win11_iso_url | length > 0
+  block:
+    - name: Ensure ISO dir exists
+      ansible.windows.win_file:
+        path: "{{ win11_iso_dest | win_dirname }}"
+        state: directory
+
+    - name: Download ISO
+      ansible.windows.win_get_url:
+        url: "{{ win11_iso_url }}"
+        dest: "{{ win11_iso_dest }}"
+        checksum: "{{ win11_iso_checksum | default(omit, true) }}"
+        checksum_algorithm: sha256
+        force: false

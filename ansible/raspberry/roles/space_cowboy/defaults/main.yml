@@ -1,0 +1,3 @@
+---
+space_cowboy_user: pi
+space_cowboy_dir: "/home/{{ space_cowboy_user }}"
