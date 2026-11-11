@@ -1,3 +1,6 @@
 ---
-# Beszel agent (Hub runs on pi5)
+# Beszel agent (Hub runs on pi4)
 enable_beszel_agent: true
+
+# Wi-Fi: Pi Zero uses NetworkManager (default)
+wifi_backend: "networkmanager"

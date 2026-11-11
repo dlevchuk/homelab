@@ -13,3 +13,6 @@ dozzle_remote_agents:
 # Beszel hub + agent (hub moved here from pi5)
 enable_beszel: true
 enable_beszel_agent: true
+
+# Wi-Fi: Pi 4 uses wpa_supplicant + dhcpcd (no NetworkManager)
+wifi_backend: "wpa_supplicant"

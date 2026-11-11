@@ -1,0 +1,57 @@
+---
+# wpa_supplicant backend for Pi 4 (Raspberry Pi OS Bullseye / no NetworkManager)
+
+- name: Install wpa_supplicant backend packages
+  ansible.builtin.apt:
+    name:
+      - wpasupplicant
+      - dhcpcd5
+      - hostapd
+      - dnsmasq-base
+      - iw
+    state: present
+    cache_valid_time: 3600
+
+- name: Mask hostapd service (managed via wifi-fallback script only)
+  ansible.builtin.systemd:
+    name: hostapd
+    masked: true
+    daemon_reload: false
+
+- name: Deploy wpa_supplicant config for wlan0
+  ansible.builtin.template:
+    src: wpa_supplicant-wlan0.conf.j2
+    dest: /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart wpa_supplicant wlan0
+
+- name: Deploy hostapd configuration
+  ansible.builtin.template:
+    src: hostapd.conf.j2
+    dest: /etc/hostapd/hostapd.conf
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy dnsmasq AP configuration
+  ansible.builtin.template:
+    src: dnsmasq-ap.conf.j2
+    dest: /etc/dnsmasq-ap.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy wifi-fallback script (wpa_supplicant variant)
+  ansible.builtin.template:
+    src: wifi-fallback-wpa.sh.j2
+    dest: /usr/local/bin/wifi-fallback.sh
+    owner: root
+    group: root
+    mode: "0750"
+  no_log: true
+
+# Service/timer deployment, flush, and enable are handled by tasks/main.yml after include.

@@ -1,0 +1,25 @@
+---
+# Netplan Wi-Fi configuration — managed by Ansible role 'wifi'.
+# Renderer: networkd (systemd-networkd). No NetworkManager.
+network:
+  version: 2
+  renderer: networkd
+  wifis:
+    {{ wifi_interface }}:
+      dhcp4: true
+      optional: true
+{% if wifi_networks | length > 0 %}
+      access-points:
+{% for net in wifi_networks %}
+        "{{ net.ssid }}":
+{% if net.psk | default('') | length > 0 %}
+          password: "{{ net.psk }}"
+{% else %}
+          auth:
+            key-management: none
+{% endif %}
+{% if net.hidden | default(false) %}
+          hidden: true
+{% endif %}
+{% endfor %}
+{% endif %}
