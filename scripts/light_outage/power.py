@@ -31,7 +31,7 @@ def send_telegram(msg):
     if not BOT_TOKEN or not CHAT_ID:
         print("⚠️ Missing Telegram credentials")
         return
-    
+
     try:
         response = requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
@@ -47,11 +47,11 @@ def send_discord(msg):
     if not DISCORD_WEBHOOK_URL:
         print("⚠️ Discord webhook URL not set, skipping Discord notification")
         return
-    
+
     try:
         # Convert Telegram HTML tags (<b>) to Discord markdown formatting (**)
         discord_msg = msg.replace("<b>", "**").replace("</b>", "**")
-        
+
         response = requests.post(
             DISCORD_WEBHOOK_URL,
             json={"content": discord_msg},
@@ -66,7 +66,7 @@ def fetch_with_zenrows(url):
     if not ZENROWS_API_KEY:
         print("⚠️ ZenRows API key missing, skipping fallback.")
         return ""
-    
+
     print("🔄 Switching to ZenRows fallback...")
     proxy_url = "https://api.zenrows.com/v1/"
     params = {
@@ -75,7 +75,7 @@ def fetch_with_zenrows(url):
         'js_render': 'true',
         'wait_for': '.periods_items',
     }
-    
+
     try:
         res = requests.get(proxy_url, params=params, timeout=60)
         if res.status_code == 200:
@@ -93,7 +93,7 @@ def fetch_with_proxy(url):
     # Try ScraperAPI first
     if SCRAPER_API_KEY:
         proxy_url = "http://api.scraperapi.com"
-        
+
         # Tier 1: Cheap Attempt
         print("🛰 Attempting ScraperAPI Standard Request (1 credit)...")
         cheap_params = {
@@ -103,7 +103,7 @@ def fetch_with_proxy(url):
             'premium': 'false',
             'country_code': 'ua'
         }
-        
+
         try:
             res = requests.get(proxy_url, params=cheap_params, timeout=45)
             if res.status_code == 200 and "periods_items" in res.text:
@@ -122,7 +122,7 @@ def fetch_with_proxy(url):
             'premium': 'true',
             'render': 'true',
         })
-        
+
         try:
             res = requests.get(proxy_url, params=premium_params, timeout=90)
             if res.status_code == 200 and "periods_items" in res.text:
@@ -155,46 +155,46 @@ all_outages = {}
 
 for item in URLS:
     print(f"Fetching: {item['name']}")
-    
+
     try:
         html = fetch_with_proxy(item["url"])
-        
+
         if "Just a moment" in html or len(html) < 1000:
             print("❌ Blocked or invalid response")
             all_outages[item["name"]] = []
             continue
-        
+
         soup = BeautifulSoup(html, "html.parser")
         spans = soup.select("div.periods_items > span")
         print(f"✓ Found {len(spans)} outage periods")
-        
+
         outages = []
         for s in spans:
             b = s.find_all("b")
             if len(b) < 2:
                 continue
-            
+
             try:
                 start_time = b[0].text.strip()
                 end_time = b[1].text.strip()
-                
+
                 # Parse times
                 start_naive = datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M").time())
                 end_naive = datetime.combine(now.date(), datetime.strptime(end_time, "%H:%M").time())
-                
+
                 # Make timezone aware BEFORE any comparisons
                 start = ukraine_tz.localize(start_naive)
                 end = ukraine_tz.localize(end_naive)
-                
+
                 # Handle overnight outages
                 if end <= start:
                     end += timedelta(days=1)
-                
+
                 # If outage already passed today, move to tomorrow
                 if start < now:
                     start += timedelta(days=1)
                     end += timedelta(days=1)
-                
+
                 outages.append({
                     'start_time': start_time,
                     'end_time': end_time,
@@ -202,15 +202,15 @@ for item in URLS:
                     'end': end
                 })
                 print(f"  - {start_time} – {end_time} ({start.strftime('%d.%m %H:%M')})")
-                
+
             except Exception as e:
                 print(f"  ! Parse error: {e}")
                 import traceback
                 traceback.print_exc()
                 continue
-        
+
         all_outages[item["name"]] = outages
-        
+
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
@@ -226,26 +226,26 @@ message_parts.append(f"🕐 {now.strftime('%d.%m.%Y %H:%M')}\n")
 
 for location, outages in all_outages.items():
     message_parts.append(f"🏠 <b>{location}</b>")
-    
+
     if not outages:
         message_parts.append("  ✅ Відключень немає\n")
         continue
-    
+
     # Find next outage
     next_outage = None
     for outage in sorted(outages, key=lambda x: x['start']):
         if outage['start'] > now:
             next_outage = outage
             break
-    
+
     if next_outage:
         delta_min = (next_outage['start'] - now).total_seconds() / 60
         time_str = format_time_delta(delta_min)
-        
+
         message_parts.append(f"  ⚡ Наступне відключення:")
         message_parts.append(f"     Через <b>{time_str}</b>")
         message_parts.append(f"     {next_outage['start_time']} – {next_outage['end_time']}\n")
-    
+
     # Show all outages
     message_parts.append("  📋 Всі відключення:")
     for outage in outages:
@@ -254,9 +254,9 @@ for location, outages in all_outages.items():
             status = " 🔴 зараз"
         elif outage['start'] < now:
             status = " ✓ пройшло"
-        
+
         message_parts.append(f"     {outage['start_time']} – {outage['end_time']}{status}")
-    
+
     message_parts.append("")
 
 message = "\n".join(message_parts)

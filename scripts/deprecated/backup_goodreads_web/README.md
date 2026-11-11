@@ -98,4 +98,3 @@ The script generates a JSON file with the following structure:
 
 - `goodreads_scraper.py` - Main scraper script
 - `goodreads_backup.json` - Generated backup file (committed to repository)
-

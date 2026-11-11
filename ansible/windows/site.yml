@@ -16,6 +16,6 @@
   post_tasks:
     - name: Fail if some Chocolatey packages were not installed
       ansible.builtin.fail:
-        msg: "Failed packages: {{ choco_failed_packages | join(', ') }}"
-      when: choco_failed_packages | default([]) | length > 0
+        msg: "Failed packages: {{ choco_apps_failed_packages | join(', ') }}"
+      when: choco_apps_failed_packages | default([]) | length > 0
       tags: [always]

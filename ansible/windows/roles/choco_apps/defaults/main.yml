@@ -1,6 +1,6 @@
 ---
-# Groups to install (override in group_vars / -e, e.g. -e '{"choco_groups": ["games"]}')
-choco_groups:
+# Groups to install (override in group_vars / -e, e.g. -e '{"choco_apps_groups": ["games"]}')
+choco_apps_groups:
   - work
   - personal
   - devs
@@ -8,12 +8,12 @@ choco_groups:
 # hardware and games are off by default
 
 # present = install if missing, latest = upgrade on every run
-choco_state: present
+choco_apps_state: present
 
 # Extra packages for a single host
-choco_extra_packages: []
+choco_apps_extra_packages: []
 
-choco_packages:
+choco_apps_packages:
   work:
     - slack
     - firefox

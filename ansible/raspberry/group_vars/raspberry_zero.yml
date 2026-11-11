@@ -1,4 +1,3 @@
 ---
 # Beszel agent (Hub runs on pi5)
 enable_beszel_agent: true
-

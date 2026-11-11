@@ -9,8 +9,6 @@
 
 - name: Install pexpect using Pip.
   pip:
-    name: pexpect 
+    name: pexpect
     state: present
     executable: "{{ pip_executable }}"
-
-

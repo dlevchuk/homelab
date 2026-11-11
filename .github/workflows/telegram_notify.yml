@@ -19,7 +19,7 @@ jobs:
         token: ${{ secrets.TELEGRAM_TOKEN }}
         message: |
           ❌ Workflow Failed
-          
+
           Workflow: ${{ github.event.workflow_run.name }}
           Repository: ${{ github.repository }}
           Branch: ${{ github.event.workflow_run.head_branch }}
@@ -36,7 +36,7 @@ jobs:
         token: ${{ secrets.TELEGRAM_TOKEN }}
         message: |
           ✅ Backup Successful
-          
+
           Workflow: ${{ github.event.workflow_run.name }}
           Repository: ${{ github.repository }}
           Branch: ${{ github.event.workflow_run.head_branch }}

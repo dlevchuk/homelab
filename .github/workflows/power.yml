@@ -10,18 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      
+
 
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-      
+
       - name: Install deps
-        run: | 
+        run: |
           pip install -r scripts/light_outage/requirements.txt
-      
+
       - name: Run script
         env:
           TG_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -31,5 +31,4 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           LOCATION_NAME: ${{ secrets.LOCATION_NAME }}
           LOCATION_URL: ${{ secrets.LOCATION_URL }}
-        run: python scripts/light_outage/power.py      
-
+        run: python scripts/light_outage/power.py

@@ -2,7 +2,7 @@
 # get11.cmd is only the hook payload (Debugger) here, we never run its installer.
 # The three IFEO values below are exactly what its "install" branch writes.
 - name: Install the hook
-  when: win11_hook_state == 'present'
+  when: win11_upgrade_hook_state == 'present'
   block:
     - name: Ensure C:\Scripts exists
       ansible.windows.win_file:
@@ -17,31 +17,31 @@
 
     - name: Enable IFEO filter for SetupHost.exe
       ansible.windows.win_regedit:
-        path: "{{ win11_ifeo_key }}"
+        path: "{{ win11_upgrade_ifeo_key }}"
         name: UseFilter
         data: 1
         type: dword
 
     - name: Set the filter path
       ansible.windows.win_regedit:
-        path: "{{ win11_ifeo_key }}\\0"
+        path: "{{ win11_upgrade_ifeo_key }}\\0"
         name: FilterFullPath
         data: 'C:\$WINDOWS.~BT\Sources\SetupHost.exe'
         type: string
 
     - name: Set the debugger to get11.cmd
       ansible.windows.win_regedit:
-        path: "{{ win11_ifeo_key }}\\0"
+        path: "{{ win11_upgrade_ifeo_key }}\\0"
         name: Debugger
         data: 'C:\Scripts\get11.cmd'
         type: string
 
 - name: Remove the hook
-  when: win11_hook_state == 'absent'
+  when: win11_upgrade_hook_state == 'absent'
   block:
     - name: Remove the IFEO key
       ansible.windows.win_regedit:
-        path: "{{ win11_ifeo_key }}"
+        path: "{{ win11_upgrade_ifeo_key }}"
         state: absent
 
     - name: Remove get11.cmd
@@ -51,23 +51,23 @@
 
 - name: Warn about an unverified ISO download
   ansible.builtin.debug:
-    msg: "win11_iso_checksum is empty, the ISO download will not be verified"
-  when: win11_iso_url | length > 0 and win11_iso_checksum | length == 0
+    msg: "win11_upgrade_iso_checksum is empty, the ISO download will not be verified"
+  when: win11_upgrade_iso_url | length > 0 and win11_upgrade_iso_checksum | length == 0
 
 - name: Download Windows 11 ISO
-  when: win11_iso_url | length > 0
+  when: win11_upgrade_iso_url | length > 0
   block:
     - name: Ensure ISO dir exists
       ansible.windows.win_file:
-        path: "{{ win11_iso_dest | win_dirname }}"
+        path: "{{ win11_upgrade_iso_dest | win_dirname }}"
         state: directory
 
     # 5-6 GB: async so a long download does not hold one SSH task open
     - name: Download ISO
       ansible.windows.win_get_url:
-        url: "{{ win11_iso_url }}"
-        dest: "{{ win11_iso_dest }}"
-        checksum: "{{ win11_iso_checksum | default(omit, true) }}"
+        url: "{{ win11_upgrade_iso_url }}"
+        dest: "{{ win11_upgrade_iso_dest }}"
+        checksum: "{{ win11_upgrade_iso_checksum | default(omit, true) }}"
         checksum_algorithm: sha256
         force: false
       async: 7200

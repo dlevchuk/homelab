@@ -1,12 +1,12 @@
 ---
 # present = install the SetupHost.exe hook, absent = remove it
-win11_hook_state: present
+win11_upgrade_hook_state: present
 
 # IFEO key of SetupHost.exe (hook is the \0 subkey)
-win11_ifeo_key: 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe'
+win11_upgrade_ifeo_key: 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe'
 
 # Optional ISO download (skipped when url is empty)
-win11_iso_url: ""
+win11_upgrade_iso_url: ""
 # sha256, strongly recommended
-win11_iso_checksum: ""
-win11_iso_dest: 'C:\ISO\Win11.iso'
+win11_upgrade_iso_checksum: ""
+win11_upgrade_iso_dest: 'C:\ISO\Win11.iso'

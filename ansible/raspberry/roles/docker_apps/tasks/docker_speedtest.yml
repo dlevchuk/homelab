@@ -49,4 +49,3 @@
       - "8765:80"
     restart_policy: unless-stopped
   no_log: true
-

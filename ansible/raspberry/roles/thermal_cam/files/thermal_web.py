@@ -1726,7 +1726,7 @@ PAGE = """<!doctype html>
               <div class="service-url">windy.com ↗</div>
             </div>
           </a>
-          
+
           <a href="https://chernigiv.energy-ua.info/" target="_blank" rel="noopener noreferrer" class="service-link-card">
             <div class="service-icon" style="background:rgba(255,235,59,0.15);color:#ffee58">💡</div>
             <div class="service-info">
@@ -2008,7 +2008,7 @@ async function loadOutage(force=false){
       if(locSub) locSub.textContent = data.error || 'Помилка отримання даних';
       return;
     }
-    
+
     const locSub = document.getElementById('outage-location-sub');
     if(locSub){
       locSub.innerHTML = `📍 <b>${data.location}</b> (${data.display_name || 'визначено за координатами'})`;

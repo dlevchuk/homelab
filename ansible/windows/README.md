@@ -27,17 +27,17 @@ cd ansible/windows
 Таски:
 1. `present`: кладе `get11.cmd` в `C:\Scripts\get11.cmd` (`win_copy`, ідемпотентно за checksum, відновлює видалений або застарілий файл) і пише три IFEO-значення через `win_regedit` (`UseFilter`, `FilterFullPath`, `Debugger`). Це рівно те, що пише гілка `install` самого скрипта, але без запуску його інсталятора.
 2. `absent`: видаляє IFEO-ключ `SetupHost.exe` і `C:\Scripts\get11.cmd`.
-3. Якщо задано `win11_iso_url`, качає ISO в `win11_iso_dest` (async, не перекачує, якщо файл є). Без `win11_iso_checksum` виводиться попередження.
+3. Якщо задано `win11_upgrade_iso_url`, качає ISO в `win11_upgrade_iso_dest` (async, не перекачує, якщо файл є). Без `win11_upgrade_iso_checksum` виводиться попередження.
 
 ### Змінні (`roles/win11_upgrade/defaults/main.yml`)
 
 | Змінна | Дефолт | Опис |
 | :--- | :--- | :--- |
-| `win11_hook_state` | `present` | `present` ставить хук, `absent` прибирає |
-| `win11_ifeo_key` | IFEO `SetupHost.exe` | ключ реєстру, де живе хук |
-| `win11_iso_url` | `""` | URL ISO, порожньо = не качати |
-| `win11_iso_checksum` | `""` | sha256, дуже бажано задавати |
-| `win11_iso_dest` | `C:\ISO\Win11.iso` | куди зберегти ISO |
+| `win11_upgrade_hook_state` | `present` | `present` ставить хук, `absent` прибирає |
+| `win11_upgrade_ifeo_key` | IFEO `SetupHost.exe` | ключ реєстру, де живе хук |
+| `win11_upgrade_iso_url` | `""` | URL ISO, порожньо = не качати |
+| `win11_upgrade_iso_checksum` | `""` | sha256, дуже бажано задавати |
+| `win11_upgrade_iso_dest` | `C:\ISO\Win11.iso` | куди зберегти ISO |
 
 ### Як зробити апгрейд
 
@@ -45,7 +45,7 @@ cd ansible/windows
 2. Змонтувати ISO: `Mount-DiskImage C:\ISO\Win11.iso`, або ПКМ, Mount.
 3. Запустити `setup.exe` зі змонтованого диска. Важливо брати **справжній ISO** (не Upgrade Assistant) і з правильною мовою системи.
 4. Setup піде як зазвичай, після перезавантаження логінишся в Win11.
-5. Після апгрейду прибрати хук (`win11_hook_state=absent`).
+5. Після апгрейду прибрати хук (`win11_upgrade_hook_state=absent`).
 
 Бонус: щоб був відкат довше за 10 днів, в admin cmd:
 ```
@@ -58,7 +58,7 @@ DISM /Online /Set-OSUninstallWindow /Value:XX
 Ставить програми через Chocolatey модулем `chocolatey.chocolatey.win_chocolatey` (сам встановлює choco, якщо його нема). Пакети в `roles/choco_apps/defaults/main.yml` по групах: `work`, `personal`, `hardware`, `devs`, `messengers`, `games`.
 
 Як це працює:
-- **Один виклик на пакет.** Збій одного пакета не зупиняє решту. Результат збирається у список `choco_failed_packages`.
+- **Один виклик на пакет.** Збій одного пакета не зупиняє решту. Результат збирається у список `choco_apps_failed_packages`.
 - **Підсумок у кінці плейбука.** Після ролей `post_task` у `site.yml` падає з переліком невстановлених пакетів. Так інші ролі й перезавантаження все одно відпрацьовують.
 - **Один reboot в кінці ролей.** Якщо choco каже `reboot_required` (наприклад `docker-desktop`), роль лише сповіщає handler `Reboot windows`, він перезавантажує хост один раз після всіх ролей. Reboot посеред запуску не робиться, бо `choco-upgrade-all-at-startup` після старту ОС запускає `choco upgrade all` і наступний choco-таск упирався б у lock.
 
@@ -66,30 +66,30 @@ DISM /Online /Set-OSUninstallWindow /Value:XX
 
 | Змінна | Дефолт | Опис |
 | :--- | :--- | :--- |
-| `choco_groups` | `work, personal, devs, messengers` | які групи ставити (`hardware` і `games` вимкнені) |
-| `choco_state` | `present` | `present` ставить відсутні, `latest` оновлює все при кожному запуску |
-| `choco_extra_packages` | `[]` | додаткові пакети для конкретного хоста |
-| `choco_packages` | (див. defaults) | словник група -> список пакетів |
+| `choco_apps_groups` | `work, personal, devs, messengers` | які групи ставити (`hardware` і `games` вимкнені) |
+| `choco_apps_state` | `present` | `present` ставить відсутні, `latest` оновлює все при кожному запуску |
+| `choco_apps_extra_packages` | `[]` | додаткові пакети для конкретного хоста |
+| `choco_apps_packages` | (див. defaults) | словник група -> список пакетів |
 
 ### Приклади
 
 ```bash
 # тільки ігри
-ansible-playbook site.yml --tags choco -e '{"choco_groups": ["games"]}'
+ansible-playbook site.yml --tags choco -e '{"choco_apps_groups": ["games"]}'
 # всі групи
-ansible-playbook site.yml --tags choco -e '{"choco_groups": ["work","personal","hardware","devs","messengers","games"]}'
+ansible-playbook site.yml --tags choco -e '{"choco_apps_groups": ["work","personal","hardware","devs","messengers","games"]}'
 # оновити все
-ansible-playbook site.yml --tags choco -e choco_state=latest
+ansible-playbook site.yml --tags choco -e choco_apps_state=latest
 ```
 
 ### Нюанси choco_apps
 
 - **`openssh` навмисно не в списку.** Choco-версія ставить свій sshd в `C:\Program Files\OpenSSH` і може зламати вбудований OpenSSH Server, на якому працює Ansible.
-- **`choco-upgrade-all-at-startup`** створює задачу, яка оновлює всі choco-пакети при старті ОС. Версії можуть мінятись самі, без Ansible. Не комбінуй з `choco_state=latest`, це подвійне оновлення.
+- **`choco-upgrade-all-at-startup`** створює задачу, яка оновлює всі choco-пакети при старті ОС. Версії можуть мінятись самі, без Ansible. Не комбінуй з `choco_apps_state=latest`, це подвійне оновлення.
 - **`docker-desktop`** потребує WSL2/Hyper-V і перезавантаження. Роль перезавантажить хост наприкінці автоматично, тож не запускай її, коли на хості йде робота.
 - **Перша інсталяція довга** (десятки пакетів, кожен окремим викликом). Повторний запуск доставить невстановлене, вже встановлене пропускається.
 - **Зникли зі списку:** `javaruntime`, `windows-tweaker` (неактуальні), `grammarly`, `partition-assistant` (deprecated). Закоментовані пакети лишились у defaults як нотатки.
-- **`autohotkey` винесений у роль `autohotkey`**, бо потрібна v1. Не додавай його назад у `choco_packages`.
+- **`autohotkey` винесений у роль `autohotkey`**, бо потрібна v1. Не додавай його назад у `choco_apps_packages`.
 - Деякі пакети (`1password`, `icloud`, `googledrive`, `dropbox`) після встановлення потребують входу в акаунт вручну.
 
 ## Роль `autohotkey`
@@ -221,9 +221,9 @@ ansible-playbook site.yml --tags win11
 ansible-playbook site.yml --tags choco
 ansible-playbook site.yml --tags ahk
 # прибрати хук після апгрейду
-ansible-playbook site.yml --tags win11 -e win11_hook_state=absent
+ansible-playbook site.yml --tags win11 -e win11_upgrade_hook_state=absent
 # з завантаженням ISO
-ansible-playbook site.yml --tags win11 -e win11_iso_url=https://example/Win11.iso -e win11_iso_checksum=<sha256>
+ansible-playbook site.yml --tags win11 -e win11_upgrade_iso_url=https://example/Win11.iso -e win11_upgrade_iso_checksum=<sha256>
 ```
 
 ## CI
@@ -244,4 +244,4 @@ ansible-playbook site.yml --tags win11 -e win11_iso_url=https://example/Win11.is
 - **Якщо Windows Update завис** (при апгрейді через WU), потрібен окремий `windows_update_refresh.bat` з того ж репо AveYo, тут його нема. Для Beta/Dev/Canary потрібен OfflineInsiderEnroll.
 - **ISO.** Прямого стабільного лінку на ISO від Microsoft нема, URL задається свій. Задавай `win11_iso_checksum`, щоб не було битого завантаження. Файл займає ~5-6 ГБ, перевір місце на диску.
 - **Ідемпотентність.** Повторний запуск при вже встановленому хуку нічого не змінює.
-- **Очистка.** Хук має сенс лише на час апгрейду. Після нього краще прибрати (`win11_hook_state=absent`).
+- **Очистка.** Хук має сенс лише на час апгрейду. Після нього краще прибрати (`win11_upgrade_hook_state=absent`).

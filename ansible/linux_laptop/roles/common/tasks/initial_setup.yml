@@ -7,7 +7,7 @@
     - htop
     #for buttery health
     - tlp
-    - smartmontools 
+    - smartmontools
     - powertop
 
 - name: Uncomment line from /etc/tlp.conf
@@ -26,7 +26,7 @@
       replace: 'STOP_CHARGE_THRESH_BAT1=80'
 
 
-- name: Enable tlp service and restart 
+- name: Enable tlp service and restart
   ansible.builtin.service:
     name: tlp
     state: restarted

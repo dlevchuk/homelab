@@ -15,17 +15,17 @@ message_list = []
 def telegram_bot_sendtext(bot_message):
    bot_token = os.environ.get("BOT_TOKEN")
    bot_chatID = os.environ.get("BOT_CHAT_ID")
-   
+
    if not bot_token or not bot_chatID:
        print("Error: BOT_TOKEN or BOT_CHAT_ID not set")
        return
-   
+
    message = "\n".join(bot_message)
    # URL encode the message to handle special characters
    encoded_message = quote(message)
    send_text = f'https://api.telegram.org/bot{bot_token}/sendMessage?chat_id={bot_chatID}&parse_mode=html&text={encoded_message}'
    response = requests.get(send_text)
-   
+
    if response.status_code != 200:
        print(f"Error sending Telegram message: {response.status_code} - {response.text}")
 
