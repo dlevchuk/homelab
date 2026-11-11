@@ -28,12 +28,11 @@ env:
   SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
   ZENROWS_API_KEY: ${{ secrets.ZENROWS_API_KEY }}
   WIFI_CONFIG: ${{ secrets.WIFI_CONFIG }}
-  WIFI_NETWORKS: ${{ secrets.WIFI_NETWORKS }}
-  WIFI_AP_PASSWORD: ${{ secrets.WIFI_AP_PASSWORD }}
   ANSIBLE_HOST_KEY_CHECKING: "false"
 
 jobs:
   ansible_deploy:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
