@@ -1,7 +1,12 @@
 ---
-- name: configure windows host (win10 -> win11 prep)
+- name: configure windows host
   hosts: windows
   gather_facts: true
 
   roles:
-    - win11_upgrade
+    - role: win11_upgrade
+      tags: [win11]
+    - role: choco_apps
+      tags: [choco]
+    - role: autohotkey
+      tags: [ahk]

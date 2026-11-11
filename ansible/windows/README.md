@@ -1,8 +1,12 @@
-# Windows (win10 -> win11 prep)
+# Windows (win10 -> win11 prep + apps)
 
-Ansible для Windows-хоста. Поки без реального хоста і не в CI, запуск вручну (як laptop/wsl).
+Ansible для Windows-хоста. Поки без реального хоста і не в CI, запуск вручну (як laptop/wsl). Підключення по OpenSSH через Tailscale.
 
-## Що робить роль `win11_upgrade`
+Ролі:
+- `win11_upgrade`: хук для апгрейду Win10 -> Win11 на непідтримуваному залізі.
+- `choco_apps`: програми через Chocolatey.
+
+## Роль `win11_upgrade`
 
 Ставить хук [AveYo get11](https://github.com/AveYo/MediaCreationTool.bat/issues/203) ("Skip TPM Check on Dynamic Update", V13). Сам апгрейд **не запускається**, `setup.exe` ти запускаєш руками.
 
@@ -16,7 +20,7 @@ Ansible для Windows-хоста. Поки без реального хоста
 2. Якщо треба змінити стан: копіює `get11.cmd` у `C:\Windows\Temp\get11_setup.cmd`, запускає його з `install` або `remove`, перевіряє ключ, прибирає тимчасову копію.
 3. Якщо задано `win11_iso_url`, качає ISO в `win11_iso_dest` (не перекачує, якщо файл є).
 
-## Змінні (`roles/win11_upgrade/defaults/main.yml`)
+### Змінні (`roles/win11_upgrade/defaults/main.yml`)
 
 | Змінна | Дефолт | Опис |
 | :--- | :--- | :--- |
@@ -26,33 +30,10 @@ Ansible для Windows-хоста. Поки без реального хоста
 | `win11_iso_checksum` | `""` | sha256, опційно |
 | `win11_iso_dest` | `C:\ISO\Win11.iso` | куди зберегти ISO |
 
-## Підготовка
-
-На control node (Linux/WSL):
-
-```bash
-ansible-galaxy collection install ansible.windows
-pip install pywinrm        # тільки якщо WinRM
-```
-
-Підключення (поки не вирішено), розкоментувати в `group_vars/all` і додати хост у `hosts`:
-- **WinRM** (`ansible_connection: winrm`): треба включений WinRM на хості (`winrm quickconfig`), HTTPS або NTLM. Пароль з env `WIN_PASSWORD`, не в git.
-- **OpenSSH** (`ansible_connection: ssh`, `ansible_shell_type: powershell`): ставиться як Windows-фіча OpenSSH Server.
-
-## Запуск
-
-```bash
-ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml
-# прибрати хук після апгрейду
-ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml -e win11_hook_state=absent
-# з завантаженням ISO
-ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml -e win11_iso_url=https://example/Win11.iso -e win11_iso_checksum=<sha256>
-```
-
-## Як зробити апгрейд
+### Як зробити апгрейд
 
 1. Запустити роль (хук стоїть).
-2. Мок ISO: `Mount-DiskImage C:\ISO\Win11.iso`, або ПКМ, Mount.
+2. Змонтувати ISO: `Mount-DiskImage C:\ISO\Win11.iso`, або ПКМ, Mount.
 3. Запустити `setup.exe` зі змонтованого диска. Важливо брати **справжній ISO** (не Upgrade Assistant) і з правильною мовою системи.
 4. Setup піде як зазвичай, після перезавантаження логінишся в Win11.
 5. Після апгрейду прибрати хук (`win11_hook_state=absent`).
@@ -63,14 +44,146 @@ DISM /Online /Set-OSUninstallWindow /Value:XX
 ```
 де XX це кількість днів (наприклад 20).
 
-## Нюанси
+## Роль `choco_apps`
+
+Ставить програми через Chocolatey модулем `chocolatey.chocolatey.win_chocolatey` (сам встановлює choco, якщо його нема). Після інсталяції, якщо choco каже `reboot_required` (наприклад `docker-desktop`), робиться автоматичний `win_reboot`.
+
+Пакети в `roles/choco_apps/defaults/main.yml` по групах: `work`, `personal`, `hardware`, `devs`, `messengers`, `games`.
+
+### Змінні
+
+| Змінна | Дефолт | Опис |
+| :--- | :--- | :--- |
+| `choco_groups` | `work, personal, devs, messengers` | які групи ставити (`hardware` і `games` вимкнені) |
+| `choco_state` | `present` | `present` ставить відсутні, `latest` оновлює все при кожному запуску |
+| `choco_extra_packages` | `[]` | додаткові пакети для конкретного хоста |
+| `choco_packages` | (див. defaults) | словник група -> список пакетів |
+
+### Приклади
+
+```bash
+# тільки ігри
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml --tags choco -e '{"choco_groups": ["games"]}'
+# всі групи
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml --tags choco -e '{"choco_groups": ["work","personal","hardware","devs","messengers","games"]}'
+# оновити все
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml --tags choco -e choco_state=latest
+```
+
+### Нюанси choco_apps
+
+- **`openssh` навмисно не в списку.** Choco-версія ставить свій sshd в `C:\Program Files\OpenSSH` і може зламати вбудований OpenSSH Server, на якому працює Ansible.
+- **`choco-upgrade-all-at-startup`** створює задачу, яка оновлює всі choco-пакети при старті ОС. Версії можуть мінятись самі, без Ansible.
+- **`docker-desktop`** потребує WSL2/Hyper-V і перезавантаження. Роль перезавантажить хост автоматично, тож не запускай її в момент, коли на хості йде робота.
+- **Перша інсталяція довга** (десятки пакетів). Якщо один пакет впаде, модуль поверне помилку для всього таска, повторний запуск доставить решту (вже встановлені пропускаються).
+- **Зникли з списку:** `javaruntime`, `windows-tweaker` (неактуальні), `grammarly`, `partition-assistant` (deprecated). Закоментовані пакети лишились у defaults як нотатки.
+- Деякі пакети (`1password`, `icloud`, `googledrive`, `dropbox`) після встановлення потребують входу в акаунт вручну.
+
+## Підготовка
+
+На control node (Linux/WSL):
+
+```bash
+ansible-galaxy collection install ansible.windows chocolatey.chocolatey
+```
+
+Підключення: OpenSSH Server на Windows, юзер з групи Administrators, той самий ключ, що для Pi (`/home/last/raspberry`), хост у Tailscale. Налаштування в `group_vars/all`, хост у `hosts` (розкоментувати і підставити імʼя з tailnet).
+
+### Bootstrap SSH (один раз, руками на Windows)
+
+Ansible ще нема як підключитись, тому це робиться локально.
+
+1. Взяти публічний ключ на control node:
+   ```bash
+   ssh-keygen -y -f /home/last/raspberry
+   ```
+2. Встановити Tailscale на Windows і залогінитись (тег/доступ по ACL як для інших Pi).
+3. Зберегти скрипт нижче як `ssh_setup.ps1` і запустити в **PowerShell від адміна**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\ssh_setup.ps1 -PublicKey "ssh-ed25519 AAAA... comment"
+   ```
+
+```powershell
+param(
+    [Parameter(Mandatory)][string]$PublicKey
+)
+$ErrorActionPreference = 'Stop'
+
+# 1. Install OpenSSH Server if missing
+# (Get-WindowsCapability returns both Client and Server, so check the Server State)
+$cap = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'
+if ($cap.State -ne 'Installed') {
+    Write-Output "OpenSSH Server is not installed. Installing..."
+    Add-WindowsCapability -Online -Name 'OpenSSH.Server~~~~0.0.1.0' | Out-Null
+} else {
+    Write-Output "OpenSSH Server is already installed."
+}
+
+# 2. Start sshd and enable autostart
+# (first start creates C:\ProgramData\ssh)
+Set-Service -Name sshd -StartupType 'Automatic'
+Start-Service sshd
+
+# 3. Firewall rule (normally created by setup)
+$rule = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue
+if ($null -eq $rule) {
+    Write-Output "Firewall rule does not exist, creating it..."
+    New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' `
+        -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22 | Out-Null
+} else {
+    Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' exists."
+}
+
+# 4. Default shell = PowerShell (Ansible windows modules need it)
+New-Item -Path HKLM:\SOFTWARE\OpenSSH -Force | Out-Null
+New-ItemProperty -Path HKLM:\SOFTWARE\OpenSSH -Name DefaultShell `
+    -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' `
+    -PropertyType String -Force | Out-Null
+
+# 5. Key for Administrators group members
+$keyFile = "$env:ProgramData\ssh\administrators_authorized_keys"
+if (-not (Test-Path $keyFile)) { New-Item -Path $keyFile -ItemType File | Out-Null }
+if (-not (Select-String -Path $keyFile -SimpleMatch $PublicKey -Quiet)) {
+    Add-Content -Path $keyFile -Value $PublicKey -Encoding ascii
+}
+# sshd ignores the file if ACL is wider than SYSTEM + Administrators
+icacls.exe $keyFile /inheritance:r /grant 'Administrators:F' /grant 'SYSTEM:F' | Out-Null
+
+Restart-Service sshd
+Get-Service sshd | Format-Table Name, Status, StartType
+```
+
+Перевірка з control node:
+
+```bash
+ssh -i /home/last/raspberry <user>@win10.tail72e9f.ts.net
+ansible windows -i ansible/windows/hosts -m ansible.windows.win_ping
+```
+
+## Запуск
+
+```bash
+# все
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml
+# тільки хук для апгрейду / тільки програми
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml --tags win11
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml --tags choco
+# прибрати хук після апгрейду
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml --tags win11 -e win11_hook_state=absent
+# з завантаженням ISO
+ansible-playbook -i ansible/windows/hosts ansible/windows/site.yml --tags win11 -e win11_iso_url=https://example/Win11.iso -e win11_iso_checksum=<sha256>
+```
+
+## Нюанси (win11_upgrade і SSH)
 
 - **Тільки Win10 22H2+ та Win11 22H2+ ISO.** Скрипт перевіряє версію `SetupHost.exe` (`10.0.22xxx+`), для старих збірок хук нічого не робить.
-- **Elevation.** `get11.cmd` вимагає адмін-прав. Якщо сесія не elevated (`fltmc` падає), скрипт спробує підняти себе через `runas` в інтерактивному вікні, і по WinRM/SSH це зависне або не спрацює. Виконуй під локальним Administrator або акаунтом з вимкненим UAC-filtering для remote. Роль перевіряє результат через `assert`, тож буде явна помилка.
+- **Elevation.** `get11.cmd` вимагає адмін-прав. По SSH юзер з групи Administrators отримує повний токен, тож `fltmc` проходить. З не-адмін юзером скрипт спробує підняти себе через `runas` в інтерактивному вікні і зависне. Роль перевіряє результат через `assert`, тож буде явна помилка.
+- **SSH-ключ.** Для юзерів з Administrators Windows читає `C:\ProgramData\ssh\administrators_authorized_keys`, а не `~\.ssh\authorized_keys`. Якщо ACL на файлі ширший за SYSTEM + Administrators, sshd мовчки ігнорує ключ (скрипт виставляє правильні ACL). Якщо на ключі є passphrase, потрібен ssh-agent.
+- **Firewall і Tailscale.** Правило `OpenSSH-Server-In-TCP` відкриває 22 для всіх. Щоб пускати тільки tailnet, додай `-RemoteAddress 100.64.0.0/10` до правила.
 - **Не запускай `get11.cmd` без аргументів вручну повторно:** без аргументів він працює як toggle (встановлено, то видалить). Роль завжди передає `install`/`remove`.
 - **Шлях `C:\Scripts\get11.cmd` зашитий у самому скрипті** (`%SystemDrive%\Scripts`), тому він не винесений у змінну.
 - **Скрипт сторонній і лізе в реєстр.** Антивіруси/Defender можуть реагувати на IFEO-Debugger. Скрипт лежить у ролі як є, без змін (оновлювати вручну з апстриму).
-- **Непідтримуване залізло.** Microsoft не гарантує оновлення/патчі для Win11 на непідтримуваному TPM/CPU. Windows Update може відмовитись ставити окремі апдейти.
+- **Непідтримуване залізо.** Microsoft не гарантує оновлення/патчі для Win11 на непідтримуваному TPM/CPU. Windows Update може відмовитись ставити окремі апдейти.
 - **Якщо Windows Update завис** (при апгрейді через WU), потрібен окремий `windows_update_refresh.bat` з того ж репо AveYo, тут його нема. Для Beta/Dev/Canary потрібен OfflineInsiderEnroll.
 - **ISO.** Прямого стабільного лінку на ISO від Microsoft нема, URL задається свій. Задавай `win11_iso_checksum`, щоб не було битого завантаження. Файл займає ~5-6 ГБ, перевір місце на диску.
 - **Ідемпотентність.** Повторний запуск при вже встановленому хуку нічого не змінює.

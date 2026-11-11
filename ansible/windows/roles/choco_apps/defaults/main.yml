@@ -1,0 +1,92 @@
+---
+# Groups to install (override in group_vars / -e, e.g. -e '{"choco_groups": ["games"]}')
+choco_groups:
+  - work
+  - personal
+  - devs
+  - messengers
+# hardware and games are off by default
+
+# present = install if missing, latest = upgrade on every run
+choco_state: present
+
+# Extra packages for a single host
+choco_extra_packages: []
+
+choco_packages:
+  work:
+    - slack
+    - firefox
+    - winscp
+    - zoom
+    - dbeaver
+    - 1password
+    # - putty.install
+    # - teamviewer
+    # - microsoft-teams
+    # - openvpn
+
+  personal:
+    - doublecmd
+    - 7zip.install
+    - choco-upgrade-all-at-startup
+    - googlechrome
+    - vlc
+    - ccleaner
+    - keepassxc
+    - dropbox
+    - icloud
+    - qbittorrent
+    - duplicati
+    - synctrayzor
+    - tailscale
+    - googledrive
+    - windterm.portable
+    - powertoys
+    # autohotkey is installed by the autohotkey role (pinned to v1)
+    # Not used anymore / notes:
+    # - libreoffice-fresh
+    # - quicklook                  # just highlight a file in Explorer
+    # - whatpulse
+    # - monosnap                   # too heavyweight
+    # - plexmediaserver
+    # - thunderbird                # migrated to docker on raspberry
+    # - ditto                      # windows clipboard
+    # - webex-meetings
+    # - gotomeeting
+    # - mucommander                # too heavyweight
+    # - totalcommander
+    # - eartrumpet                 # custom windows volume bar
+    # - portx                      # ssh manager, no session backup strategy
+    # - greenshot                  # screenshot tool
+    # - sublimetext4
+
+  hardware:
+    - samsung-magician
+    - logioptionsplus
+    - rufus
+    - unetbootin
+
+  devs:
+    - git.install
+    - vscode
+    - awscli
+    - docker-desktop
+    - microsoft-windows-terminal
+    - github-desktop
+    - gping
+    - devtoys
+    # NOT openssh: choco's OpenSSH would conflict with the built-in OpenSSH Server used by Ansible
+
+  messengers:
+    - telegram.install
+    - discord.install
+    # - viber
+
+  games:
+    - epicgameslauncher
+    - steam-client
+    # - ubisoft-connect
+    # - goggalaxy
+    # - hearthstone-deck-tracker
+    # - twitch

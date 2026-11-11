@@ -1,0 +1,15 @@
+---
+# win_chocolatey bootstraps Chocolatey itself if it is missing
+- name: Install Chocolatey packages
+  chocolatey.chocolatey.win_chocolatey:
+    name: "{{ choco_selected }}"
+    state: "{{ choco_state }}"
+  vars:
+    choco_selected: >-
+      {{ ((choco_groups | map('extract', choco_packages) | flatten)
+          + choco_extra_packages) | unique | list }}
+  register: choco_result
+
+- name: Reboot if Chocolatey asks for it
+  ansible.windows.win_reboot:
+  when: choco_result.reboot_required | default(false)

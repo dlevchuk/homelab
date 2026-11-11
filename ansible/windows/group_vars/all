@@ -1,8 +1,11 @@
 ---
-# Not set up yet. Pick one transport when a host appears (see README).
-# ansible_connection: winrm
-# ansible_winrm_transport: ntlm
-# ansible_port: 5986
-# ansible_winrm_server_cert_validation: ignore
-# ansible_user: Administrator
-# ansible_password: "{{ lookup('env', 'WIN_PASSWORD') }}"
+# Variables listed here are applicable to all host groups
+# Windows over OpenSSH (see README, "Bootstrap SSH")
+ansible_connection: ssh
+ansible_shell_type: powershell
+ansible_port: 22
+# Change to your Windows account (must be in Administrators)
+ansible_user: Administrator
+# Same key as the Pis
+ansible_ssh_private_key_file: /home/last/raspberry
+ansible_ssh_common_args: "-o StrictHostKeyChecking=accept-new"
