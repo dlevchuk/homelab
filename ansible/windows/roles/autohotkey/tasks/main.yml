@@ -1,13 +1,30 @@
 ---
-- name: Remove existing AutoHotkey (v2 leftovers)
+# Makes the role work alone (--tags ahk) on a host without Chocolatey
+- name: Ensure Chocolatey is installed
+  chocolatey.chocolatey.win_chocolatey:
+    name: chocolatey
+    state: present
+
+- name: Gather Chocolatey facts
+  chocolatey.chocolatey.win_chocolatey_facts:
+
+- name: Detect installed AutoHotkey version
+  ansible.builtin.set_fact:
+    autohotkey_installed: >-
+      {{ ansible_chocolatey.packages | selectattr('package', 'equalto', 'autohotkey.install')
+         | map(attribute='version') | first | default('') }}
+
+# v2 (or any other version) is replaced automatically, scripts need v1
+- name: Remove AutoHotkey of another version
   chocolatey.chocolatey.win_chocolatey:
     name:
       - autohotkey
       - autohotkey.install
     state: absent
-  when: autohotkey_reinstall | bool
+  when:
+    - autohotkey_installed | length > 0
+    - autohotkey_installed != autohotkey_version
 
-# Pinned to v1: scripts use v1 syntax, the default choco package is v2
 - name: Install AutoHotkey v1
   chocolatey.chocolatey.win_chocolatey:
     name: autohotkey.install
@@ -20,9 +37,3 @@
     src: "{{ item }}"
     dest: "{{ autohotkey_startup_dir }}\\{{ item }}"
   loop: "{{ autohotkey_scripts }}"
-
-- name: Remove scripts that are not selected
-  ansible.windows.win_file:
-    path: "{{ autohotkey_startup_dir }}\\{{ item }}"
-    state: absent
-  loop: "{{ autohotkey_all_scripts | difference(autohotkey_scripts) }}"

@@ -1,7 +1,7 @@
 ---
 - name: configure windows host
   hosts: windows
-  gather_facts: true
+  gather_facts: false
 
   roles:
     - role: win11_upgrade
@@ -10,3 +10,12 @@
       tags: [choco]
     - role: autohotkey
       tags: [ahk]
+
+  # Runs after the roles and after the deferred reboot handler,
+  # so one broken package does not block the other roles or the reboot
+  post_tasks:
+    - name: Fail if some Chocolatey packages were not installed
+      ansible.builtin.fail:
+        msg: "Failed packages: {{ choco_failed_packages | join(', ') }}"
+      when: choco_failed_packages | default([]) | length > 0
+      tags: [always]

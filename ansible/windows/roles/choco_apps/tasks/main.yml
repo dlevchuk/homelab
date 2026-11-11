@@ -1,15 +1,38 @@
 ---
-# win_chocolatey bootstraps Chocolatey itself if it is missing
+# One call per package: a failed package does not stop the rest.
+# win_chocolatey bootstraps Chocolatey itself if it is missing.
 - name: Install Chocolatey packages
   chocolatey.chocolatey.win_chocolatey:
-    name: "{{ choco_selected }}"
+    name: "{{ item }}"
     state: "{{ choco_state }}"
+  loop: "{{ choco_selected }}"
+  loop_control:
+    label: "{{ item }}"
   vars:
     choco_selected: >-
       {{ ((choco_groups | map('extract', choco_packages) | flatten)
           + choco_extra_packages) | unique | list }}
-  register: choco_result
+  register: choco_results
+  ignore_errors: true
 
-- name: Reboot if Chocolatey asks for it
-  ansible.windows.win_reboot:
-  when: choco_result.reboot_required | default(false)
+- name: Collect results
+  ansible.builtin.set_fact:
+    choco_failed_packages: >-
+      {{ choco_results.results | selectattr('failed') | map(attribute='item') | list }}
+    choco_reboot_packages: >-
+      {{ choco_results.results | selectattr('reboot_required', 'defined')
+         | selectattr('reboot_required') | map(attribute='item') | list }}
+
+- name: Show failed packages
+  ansible.builtin.debug:
+    msg: "Failed packages: {{ choco_failed_packages | join(', ') }}"
+  when: choco_failed_packages | length > 0
+
+# One reboot at the end of the roles (handler), not in the middle of the run:
+# choco-upgrade-all-at-startup would race the next choco task after a reboot
+- name: Request a reboot if any package needs it
+  ansible.builtin.debug:
+    msg: "Reboot required by: {{ choco_reboot_packages | join(', ') }}"
+  changed_when: true
+  when: choco_reboot_packages | length > 0
+  notify: Reboot windows

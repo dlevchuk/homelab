@@ -1,51 +1,58 @@
 ---
-- name: Show OS
-  ansible.builtin.debug:
-    msg: "{{ ansible_os_name }} ({{ ansible_distribution_version }})"
-
-- name: Check if the SetupHost.exe hook is installed
-  ansible.windows.win_reg_stat:
-    path: 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe\0'
-    name: Debugger
-  register: win11_hook
-
-# get11.cmd run from any path except C:\Scripts\get11.cmd goes into setup mode:
-# it copies itself to C:\Scripts\get11.cmd and writes the IFEO keys.
-# Without arguments it toggles, so we always pass install/remove explicitly.
-- name: Apply hook state
-  when: >-
-    (win11_hook_state == 'present' and not win11_hook.exists) or
-    (win11_hook_state == 'absent' and win11_hook.exists)
+# get11.cmd is only the hook payload (Debugger) here, we never run its installer.
+# The three IFEO values below are exactly what its "install" branch writes.
+- name: Install the hook
+  when: win11_hook_state == 'present'
   block:
-    - name: Copy installer script to temp
+    - name: Ensure C:\Scripts exists
+      ansible.windows.win_file:
+        path: 'C:\Scripts'
+        state: directory
+
+    # Idempotent by checksum: restores a deleted or outdated script
+    - name: Deploy get11.cmd
       ansible.windows.win_copy:
         src: get11.cmd
-        dest: "{{ win11_work_dir }}\\get11_setup.cmd"
+        dest: 'C:\Scripts\get11.cmd'
 
-    - name: Run get11 installer
-      ansible.windows.win_command: >-
-        cmd.exe /d /c "{{ win11_work_dir }}\get11_setup.cmd"
-        {{ 'install' if win11_hook_state == 'present' else 'remove' }}
-      changed_when: true
+    - name: Enable IFEO filter for SetupHost.exe
+      ansible.windows.win_regedit:
+        path: "{{ win11_ifeo_key }}"
+        name: UseFilter
+        data: 1
+        type: dword
 
-    - name: Re-check the hook
-      ansible.windows.win_reg_stat:
-        path: 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\SetupHost.exe\0'
+    - name: Set the filter path
+      ansible.windows.win_regedit:
+        path: "{{ win11_ifeo_key }}\\0"
+        name: FilterFullPath
+        data: 'C:\$WINDOWS.~BT\Sources\SetupHost.exe'
+        type: string
+
+    - name: Set the debugger to get11.cmd
+      ansible.windows.win_regedit:
+        path: "{{ win11_ifeo_key }}\\0"
         name: Debugger
-      register: win11_hook_after
+        data: 'C:\Scripts\get11.cmd'
+        type: string
 
-    - name: Verify result
-      ansible.builtin.assert:
-        that:
-          - win11_hook_after.exists == (win11_hook_state == 'present')
-        fail_msg: >-
-          Hook state mismatch. get11.cmd needs an elevated session
-          (admin + no UAC filtering), see README.
-  always:
-    - name: Remove installer copy
-      ansible.windows.win_file:
-        path: "{{ win11_work_dir }}\\get11_setup.cmd"
+- name: Remove the hook
+  when: win11_hook_state == 'absent'
+  block:
+    - name: Remove the IFEO key
+      ansible.windows.win_regedit:
+        path: "{{ win11_ifeo_key }}"
         state: absent
+
+    - name: Remove get11.cmd
+      ansible.windows.win_file:
+        path: 'C:\Scripts\get11.cmd'
+        state: absent
+
+- name: Warn about an unverified ISO download
+  ansible.builtin.debug:
+    msg: "win11_iso_checksum is empty, the ISO download will not be verified"
+  when: win11_iso_url | length > 0 and win11_iso_checksum | length == 0
 
 - name: Download Windows 11 ISO
   when: win11_iso_url | length > 0
@@ -55,6 +62,7 @@
         path: "{{ win11_iso_dest | win_dirname }}"
         state: directory
 
+    # 5-6 GB: async so a long download does not hold one SSH task open
     - name: Download ISO
       ansible.windows.win_get_url:
         url: "{{ win11_iso_url }}"
@@ -62,3 +70,5 @@
         checksum: "{{ win11_iso_checksum | default(omit, true) }}"
         checksum_algorithm: sha256
         force: false
+      async: 7200
+      poll: 30

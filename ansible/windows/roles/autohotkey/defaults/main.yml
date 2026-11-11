@@ -7,13 +7,5 @@ autohotkey_scripts:
   - mac_win.ahk
   - caps_lock_layout.ahk
 
-# All scripts the role knows about: the ones not in autohotkey_scripts are removed
-autohotkey_all_scripts:
-  - mac_win.ahk
-  - caps_lock_layout.ahk
-
 # All users Startup folder
 autohotkey_startup_dir: 'C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp'
-
-# true = first uninstall autohotkey/autohotkey.install (use if v2 was installed before)
-autohotkey_reinstall: false

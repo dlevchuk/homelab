@@ -294,7 +294,7 @@ sqlite3 ~/thermal_recordings/thermal.db "DELETE FROM sync_state WHERE name='bme2
 
 ## Deployment (Ansible via GitHub Actions)
 
-The role `ansible/raspberry/roles/thermal_cam` is applied to the `raspberry_zero` group by `ansible/raspberry/site.yml`. The `Run Ansible Playbook` workflow (`.github/workflows/ansible.yml`) runs it over Tailscale on every push to `main` that touches `ansible/**`, or manually.
+The role `ansible/raspberry/roles/thermal_cam` is applied to the `raspberry_zero` group by `ansible/raspberry/site.yml`. The `Run Ansible Playbook` workflow (`.github/workflows/ansible.yml`) runs it over Tailscale on every push to `main` that touches `ansible/raspberry/**`, or manually.
 
 What the role does:
 
@@ -327,8 +327,4 @@ with `SUPABASE_URL`, `SUPABASE_KEY`, `SCRAPER_API_KEY`, `ZENROWS_API_KEY` export
 - `SSH_PRIVATE_KEY`: Private SSH key for host authentication
 - `TS_OAUTH_CLIENT_ID` / `TS_OAUTH_SECRET`: Tailscale OAuth credentials used by `tailscale/github-action` (tag `tag:ci`)
 - `SUPABASE_URL`: Supabase project URL
-- `SUPABASE_KEY`: Supabase `service_role` key (written to `/home/pi/.supabase.env`)
-- `SCRAPER_API_KEY`: ScraperAPI key (written to `/home/pi/.thermal-web.env`, optional)
-- `ZENROWS_API_KEY`: ZenRows key (written to `/home/pi/.thermal-web.env`, optional)
-
-The other secrets used by the workflow (Pi4/Pi5 hosts, Telegram) are listed in `.github/workflows/README.md`.
+- `SUPABASE_KEY`:

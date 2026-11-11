@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - ansible/**
+      - ansible/raspberry/**
   workflow_dispatch:
     inputs:
       limit:

@@ -4,8 +4,8 @@
 ansible_connection: ssh
 ansible_shell_type: powershell
 ansible_port: 22
-# Change to your Windows account (must be in Administrators)
-ansible_user: Administrator
+# Windows account (must be in Administrators), from env WIN_USER
+ansible_user: "{{ lookup('env', 'WIN_USER') | default('Administrator', true) }}"
 # Same key as the Pis
 ansible_ssh_private_key_file: /home/last/raspberry
 ansible_ssh_common_args: "-o StrictHostKeyChecking=accept-new"

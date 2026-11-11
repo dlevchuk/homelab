@@ -1,0 +1,40 @@
+name: ansible windows lint
+
+on:
+  push:
+    paths:
+      - ansible/windows/**
+      - .github/workflows/ansible_windows_lint.yml
+  pull_request:
+    paths:
+      - ansible/windows/**
+      - .github/workflows/ansible_windows_lint.yml
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible/windows
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible and ansible-lint
+        run: pip install ansible-core ansible-lint
+
+      - name: Install collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      # No connection to a host: only syntax and style
+      - name: Syntax check
+        run: ansible-playbook site.yml --syntax-check
+
+      - name: Lint
+        run: ansible-lint --profile basic site.yml
