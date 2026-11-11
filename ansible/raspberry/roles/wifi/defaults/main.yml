@@ -1,0 +1,28 @@
+---
+# Environment secret lookup: single JSON config (WIFI_CONFIG) or legacy separated secrets (WIFI_NETWORKS, WIFI_AP_PASSWORD)
+wifi_config_raw: "{{ lookup('ansible.builtin.env', 'WIFI_CONFIG') | default(lookup('ansible.builtin.env', 'WIFI_NETWORKS'), true) | default('', true) }}"
+wifi_config_parsed: >-
+  {{
+    (wifi_config_raw | from_json)
+    if (wifi_config_raw is string and wifi_config_raw | length > 0)
+    else (wifi_config_raw if (wifi_config_raw is mapping or (wifi_config_raw is iterable and wifi_config_raw is not string)) else {})
+  }}
+
+wifi_networks: >-
+  {{
+    wifi_config_parsed.networks
+    if (wifi_config_parsed is mapping and 'networks' in wifi_config_parsed)
+    else (wifi_config_parsed if (wifi_config_parsed is iterable and wifi_config_parsed is not string and wifi_config_parsed is not mapping) else [])
+  }}
+
+wifi_ap_password: >-
+  {{
+    (wifi_config_parsed.ap_password if (wifi_config_parsed is mapping and 'ap_password' in wifi_config_parsed) else '')
+    | default(lookup('ansible.builtin.env', 'WIFI_AP_PASSWORD') | default('', true), true)
+  }}
+
+wifi_interface: "wlan0"
+wifi_ap_conn_name: "hotspot-ap"
+wifi_ap_ssid: "{{ inventory_hostname }}-ap"
+wifi_ap_ip: "10.42.0.1/24"
+wifi_client_priority: 10

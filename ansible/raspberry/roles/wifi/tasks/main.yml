@@ -1,0 +1,86 @@
+---
+- name: Install Wi-Fi dependencies
+  ansible.builtin.apt:
+    name:
+      - dnsmasq-base
+      - iw
+    state: present
+    cache_valid_time: 3600
+
+- name: Configure Wi-Fi client network profiles
+  community.general.nmcli:
+    type: wifi
+    conn_name: "wifi-{{ item.ssid }}"
+    ifname: "{{ wifi_interface }}"
+    ssid: "{{ item.ssid }}"
+    wifi:
+      hidden: "{{ item.hidden | default(false) | bool }}"
+    wifi_sec:
+      key-mgmt: "{{ 'wpa-psk' if (item.psk | default('') | length > 0) else 'none' }}"
+      psk: "{{ item.psk if (item.psk | default('') | length > 0) else omit }}"
+    autoconnect: true
+    autoconnect_priority: "{{ wifi_client_priority }}"
+    state: present
+  loop: "{{ wifi_networks }}"
+  loop_control:
+    label: "{{ item.ssid }}"
+  no_log: true
+  when: wifi_networks | length > 0
+
+- name: Configure Wi-Fi fallback AP profile
+  community.general.nmcli:
+    type: wifi
+    conn_name: "{{ wifi_ap_conn_name }}"
+    ifname: "{{ wifi_interface }}"
+    ssid: "{{ wifi_ap_ssid }}"
+    wifi:
+      mode: ap
+    wifi_sec:
+      key-mgmt: wpa-psk
+      psk: "{{ wifi_ap_password }}"
+    method4: shared
+    ip4: "{{ wifi_ap_ip }}"
+    method6: disabled
+    autoconnect: false
+    state: present
+  no_log: true
+  when: wifi_ap_password | default('') | length > 0
+
+- name: Deploy wifi-fallback.sh script
+  ansible.builtin.template:
+    src: "wifi-fallback.sh.j2"
+    dest: "/usr/local/bin/wifi-fallback.sh"
+    owner: root
+    group: root
+    mode: "0750"
+  no_log: true
+
+- name: Deploy wifi-fallback systemd service
+  ansible.builtin.template:
+    src: "wifi-fallback.service.j2"
+    dest: "/etc/systemd/system/wifi-fallback.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd daemon
+
+- name: Deploy wifi-fallback systemd timer
+  ansible.builtin.template:
+    src: "wifi-fallback.timer.j2"
+    dest: "/etc/systemd/system/wifi-fallback.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd daemon
+    - Restart wifi-fallback timer
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start wifi-fallback timer
+  ansible.builtin.systemd:
+    name: "wifi-fallback.timer"
+    enabled: true
+    state: started
+

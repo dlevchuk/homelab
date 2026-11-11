@@ -31,9 +31,11 @@ raspberry/
 │   │   │   ├── common/         # Common system setup (watchdog, kernel panic config, etc.)
 │   │   │   ├── docker_apps/    # Docker application deployments, backup and restore
 │   │   │   ├── outage_notify/  # Telegram alert after boot (power outage / reboot), all Pis
-│   │   │   └── thermal_cam/    # Pi Zero thermal camera: scripts, systemd units, secrets
-│   │   │       ├── files/      # thermal_web.py, supabase_sync.py, systemd units
-│   │   │       └── README.md   # thermal camera dashboard docs
+│   │   │   ├── space_cowboy/   # Thermal printer automation service
+│   │   │   ├── thermal_cam/    # Pi Zero thermal camera: scripts, systemd units, secrets
+│   │   │   │   ├── files/      # thermal_web.py, supabase_sync.py, systemd units
+│   │   │   │   └── README.md   # thermal camera dashboard docs
+│   │   │   └── wifi/           # Multi-network Wi-Fi and fallback AP hotspot monitor
 │   │   ├── group_vars/
 │   │   ├── hosts
 │   │   └── site.yml
@@ -73,6 +75,7 @@ Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Ru
 ### Infrastructure Management
 
 - **Ansible Playbooks**: server configuration and Docker app deployment
+- **Wi-Fi Multi-Network & Fallback Hotspot**: `wifi` role configures client Wi-Fi networks and an automated emergency hotspot (`<hostname>-ap`). If neither Ethernet nor known Wi-Fi networks are connected after boot (with a 3-minute grace period to let routers boot up after power outages), the Pi activates a fallback AP on `10.42.0.1` (`ipv4.method shared`). A per-minute systemd timer (`wifi-fallback.timer`) periodically retries client networks every 5 minutes if no devices are connected to the hotspot.
 - **Docker Apps Backup & Restore**: weekly archive of `/home/pi/docker` into the shared Syncthing folder, restore on a fresh SD card via Ansible, see [Docker Apps Backup & Restore](#docker-apps-backup--restore)
 - **Watchdog Setup**: hardware watchdog for automatic reboot on hangs
 - **Cron Management**: cron job setup for scheduled tasks
@@ -133,7 +136,20 @@ Secrets for the Pis (Telegram, Supabase, proxy keys) are passed to Ansible as en
 
 ### Required GitHub Secrets
 
-See [.github/workflows/README.md](.github/workflows/README.md) for the complete list.
+- **Tailscale**: `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET` (tag `tag:ci`)
+- **SSH & Fleet**: `SSH_PRIVATE_KEY`, `REMOTE_USER`, `REMOTE_HOST`, `REMOTE_PORT`, `THERMAL_REMOTE_HOST`, `THERMAL_REMOTE_PORT`, `PI5_REMOTE_HOST`, `PI5_REMOTE_PORT`
+- **Wi-Fi Configuration**: `WIFI_CONFIG` (JSON object containing AP password and list of client networks):
+  ```json
+  {
+    "ap_password": "<min-8-chars>",
+    "networks": [
+      { "ssid": "Home-5G",         "psk": "<wifi-password>" },
+      { "ssid": "Backup-Hotspot",  "psk": "<wifi-password>" },
+      { "ssid": "Hidden-Network",  "psk": "<wifi-password>", "hidden": true }
+    ]
+  }
+  ```
+- **Notifications & Cloud**: `TELEGRAM_TOKEN`, `TELEGRAM_TO`, `SUPABASE_URL`, `SUPABASE_KEY`, `SCRAPER_API_KEY`, `ZENROWS_API_KEY`
 
 ## Getting Started
 

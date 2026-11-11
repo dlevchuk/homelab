@@ -16,7 +16,15 @@ if [ "$UPTIME_SEC" -lt "$MIN_UPTIME_SEC" ]; then
     exit 0
 fi
 
-# 2. Check external hosts (Cloudflare & Google DNS)
+# 2. Skip reboot check if Wi-Fi is operating in AP mode (hotspot fallback has no default gateway)
+if (command -v iw >/dev/null 2>&1 && iw dev wlan0 info 2>/dev/null | grep -q "type AP") || \
+   (command -v nmcli >/dev/null 2>&1 && nmcli -t -f 802-11-wireless.mode connection show --active 2>/dev/null | grep -q "^ap$"); then
+    $LOGGER -t ping-reboot "wlan0 is in AP mode. Skipping reboot check."
+    [ -f "$FAIL_FILE" ] && rm -f "$FAIL_FILE"
+    exit 0
+fi
+
+# 3. Check external hosts (Cloudflare & Google DNS)
 check_connectivity() {
     $PING -c 2 -W 3 1.1.1.1 > /dev/null 2>&1 || $PING -c 2 -W 3 8.8.8.8 > /dev/null 2>&1
 }
@@ -27,7 +35,7 @@ if check_connectivity; then
     exit 0
 fi
 
-# 3. If external ping failed, check local router / default gateway
+# 4. If external ping failed, check local router / default gateway
 GATEWAY=$($IP route 2>/dev/null | awk '/default/ {print $3}' | head -n 1)
 if [ -n "$GATEWAY" ] && $PING -c 2 -W 3 "$GATEWAY" > /dev/null 2>&1; then
     # Router is reachable; the problem is WAN/ISP, rebooting the Pi will not help
@@ -35,7 +43,7 @@ if [ -n "$GATEWAY" ] && $PING -c 2 -W 3 "$GATEWAY" > /dev/null 2>&1; then
     exit 0
 fi
 
-# 4. Local network interface or Wi-Fi is unresponsive - increment fail counter
+# 5. Local network interface or Wi-Fi is unresponsive - increment fail counter
 FAILS=0
 [ -f "$FAIL_FILE" ] && FAILS=$(cat "$FAIL_FILE" 2>/dev/null || echo 0)
 FAILS=$((FAILS + 1))

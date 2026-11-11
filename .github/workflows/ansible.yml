@@ -27,6 +27,9 @@ env:
   SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
   SCRAPER_API_KEY: ${{ secrets.SCRAPER_API_KEY }}
   ZENROWS_API_KEY: ${{ secrets.ZENROWS_API_KEY }}
+  WIFI_CONFIG: ${{ secrets.WIFI_CONFIG }}
+  WIFI_NETWORKS: ${{ secrets.WIFI_NETWORKS }}
+  WIFI_AP_PASSWORD: ${{ secrets.WIFI_AP_PASSWORD }}
   ANSIBLE_HOST_KEY_CHECKING: "false"
 
 jobs:
@@ -54,13 +57,13 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.ansible/collections
-          key: ansible-collections-ansible.posix-community.docker-v1
+          key: ansible-collections-ansible.posix-community.docker-community.general-v1
 
       - name: Install Ansible & Requirements
         run: |
           python -m pip install --upgrade pip
           pip install ansible-core
-          ansible-galaxy collection install ansible.posix community.docker
+          ansible-galaxy collection install ansible.posix community.docker community.general
 
       - name: Setup SSH & Inventory
         env:
@@ -131,6 +134,9 @@ jobs:
           ANSIBLE_FORKS: "10"
           ANSIBLE_SSH_ARGS: "-o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=15 -o ConnectTimeout=15"
           ANSIBLE_CALLBACKS_ENABLED: "ansible.posix.profile_tasks,ansible.posix.timer"
+          WIFI_CONFIG: ${{ secrets.WIFI_CONFIG }}
+          WIFI_NETWORKS: ${{ secrets.WIFI_NETWORKS }}
+          WIFI_AP_PASSWORD: ${{ secrets.WIFI_AP_PASSWORD }}
         run: |
           ansible-playbook ansible/raspberry/site.yml \
             -i hosts.ini \

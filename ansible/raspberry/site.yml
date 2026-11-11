@@ -5,6 +5,7 @@
   strategy: free
   become: true
   roles:
+    - role: wifi
     - role: common
       when: "'raspberry_zero' not in group_names"
     - role: docker_apps

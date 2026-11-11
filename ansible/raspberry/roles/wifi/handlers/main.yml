@@ -1,0 +1,10 @@
+---
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart wifi-fallback timer
+  ansible.builtin.systemd:
+    name: "wifi-fallback.timer"
+    state: restarted
+
