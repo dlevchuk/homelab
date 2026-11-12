@@ -18,6 +18,11 @@ on:
         required: false
         default: false
 
+# Serialize fleet changes so two runs cannot reconfigure the same Pi concurrently.
+concurrency:
+  group: raspberry-deploy
+  cancel-in-progress: false
+
 env:
   REMOTE_USER: ${{ secrets.REMOTE_USER }}
   REMOTE_PORT: ${{ secrets.REMOTE_PORT }}

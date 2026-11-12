@@ -48,15 +48,3 @@
       - "9001:9001"
     restart_policy: always
   when: enable_portainer_agent | default(false) | bool
-
-- name: Remove Portainer hub where it is disabled
-  community.docker.docker_container:
-    name: portainer
-    state: absent
-  when: not (enable_portainer | default(true) | bool)
-
-- name: Remove Portainer agent where it is disabled
-  community.docker.docker_container:
-    name: portainer_agent
-    state: absent
-  when: not (enable_portainer_agent | default(false) | bool)

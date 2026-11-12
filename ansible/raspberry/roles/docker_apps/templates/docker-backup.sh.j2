@@ -44,7 +44,8 @@ notify() {
 
 start_containers() {
   if [ -n "$STOPPED" ]; then
-    docker start $STOPPED >/dev/null || true
+    # Preserve recovery state if any container fails to start.
+    docker start $STOPPED >/dev/null || return 1
     STOPPED=""
     rm -f "$STOPPED_FILE"
   fi
@@ -52,12 +53,13 @@ start_containers() {
 
 on_error() {
   local rc=$?
-  start_containers
+  trap - ERR
+  start_containers || true
   notify "❌ ${HOST}: docker backup failed (exit ${rc}, line $1)"
   exit "$rc"
 }
 trap 'on_error $LINENO' ERR
-trap start_containers EXIT
+trap 'start_containers || true' EXIT
 
 wait_docker() {
   local i
@@ -68,7 +70,7 @@ wait_docker() {
   return 1
 }
 
-# Pi has no RTC: after boot the clock is wrong until NTP syncs
+# A Pi without a working RTC may have an incorrect clock until NTP syncs
 time_synced() {
   local v
   v="$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" || return 0
@@ -135,7 +137,7 @@ start_containers
 tar -tzf "$TMP_DIR/$FILE" >/dev/null
 sync "$TMP_DIR/$FILE"
 
-# Same filesystem -> atomic rename, Syncthing never picks up a half-written archive
+# Atomic rename when TMP_DIR and DEST are on the same filesystem
 mkdir -p "$DEST"
 mv "$TMP_DIR/$FILE" "$DEST/$FILE"
 chown {{ docker_uid }}:{{ docker_gid }} "$(dirname "$DEST")" "$DEST" "$DEST/$FILE"

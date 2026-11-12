@@ -38,6 +38,7 @@ fi
 # 4. If external ping failed, check local router / default gateway
 GATEWAY=$($IP route 2>/dev/null | awk '/default/ {print $3}' | head -n 1)
 if [ -n "$GATEWAY" ] && $PING -c 2 -W 3 "$GATEWAY" > /dev/null 2>&1; then
+    [ -f "$FAIL_FILE" ] && rm -f "$FAIL_FILE"
     # Router is reachable; the problem is WAN/ISP, rebooting the Pi will not help
     $LOGGER -t ping-reboot "Gateway ($GATEWAY) reachable, but WAN is down. Skipping reboot."
     exit 0

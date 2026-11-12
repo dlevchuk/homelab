@@ -24,6 +24,7 @@ import urllib.request
 import urllib.parse
 from urllib.parse import urlparse, parse_qs
 import sqlite3
+from contextlib import contextmanager
 
 DEVICE = "/dev/video0"
 PORT = int(os.environ.get("THERMAL_PORT", "8080"))
@@ -511,12 +512,17 @@ class ThermalDB:
         self._lock = threading.Lock()
         self._init_db()
 
+    @contextmanager
     def _connect(self):
         os.makedirs(os.path.dirname(self._path) or ".", exist_ok=True)
         conn = sqlite3.connect(self._path, timeout=10, check_same_thread=False)
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        return conn
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=NORMAL")
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self):
         with self._lock:
@@ -1060,7 +1066,7 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
             })
 
         base_data = {
-            "ok": True,
+            "ok": bool(html),
             "location": loc_name,
             "display_name": display_name,
             "coords": {"lat": lat, "lon": lon},
@@ -1081,6 +1087,10 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
                 data=result,
             )
         save_outage_cache()
+
+        # A failed fetch must not overwrite a good daily summary with zero outages.
+        if not html:
+            return result
 
         # Persist daily outage summary to SQLite
         try:

@@ -1,14 +1,14 @@
 - name: Install a list of packages
   ansible.builtin.apt:
     pkg:
-    - python3-pip
-    - mc
-    - nano
-    - htop
-    #for buttery health
-    - tlp
-    - smartmontools
-    - powertop
+      - python3-pip
+      - mc
+      - nano
+      - htop
+      # For battery health
+      - tlp
+      - smartmontools
+      - powertop
 
 - name: Uncomment line from /etc/tlp.conf
   replace:
@@ -30,4 +30,4 @@
   ansible.builtin.service:
     name: tlp
     state: restarted
-    enabled: yes
+    enabled: true

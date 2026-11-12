@@ -26,15 +26,3 @@
       - "7007:7007"
     restart_policy: always
   when: enable_dozzle_agent | default(false) | bool
-
-- name: Remove Dozzle hub where it is disabled
-  community.docker.docker_container:
-    name: dozzle
-    state: absent
-  when: not (enable_dozzle | default(true) | bool)
-
-- name: Remove Dozzle agent where it is disabled
-  community.docker.docker_container:
-    name: dozzle-agent
-    state: absent
-  when: not (enable_dozzle_agent | default(false) | bool)

@@ -3,15 +3,16 @@
 # Managed by Ansible role 'wifi'.
 
 set -u
+export LC_ALL=C
 
 LOGGER="/usr/bin/logger -t wifi-fallback"
 NMCLI="$(command -v nmcli 2>/dev/null || echo /usr/bin/nmcli)"
 IW="$(command -v iw 2>/dev/null || echo /usr/sbin/iw)"
-WLAN_IF="{{ wifi_interface }}"
-AP_CON_NAME="{{ wifi_ap_conn_name }}"
-AP_SSID="{{ wifi_ap_ssid }}"
-AP_PASSWORD="{{ wifi_ap_password }}"
-AP_IP="{{ wifi_ap_ip }}"
+WLAN_IF={{ wifi_interface | quote }}
+AP_CON_NAME={{ wifi_ap_conn_name | quote }}
+AP_SSID={{ wifi_ap_ssid | quote }}
+AP_PASSWORD={{ wifi_ap_password | quote }}
+AP_IP={{ wifi_ap_ip | quote }}
 BOOT_GRACE_SEC=180
 AP_RETRY_INTERVAL_SEC=300
 PROBE_FILE="/run/wifi-fallback-ap-probe"
@@ -53,7 +54,7 @@ is_ethernet_connected() {
 # 2. Check if AP mode is currently active on wlan0
 is_ap_active() {
     local conn
-    conn=$($NMCLI -t -f GENERAL.CONNECTION dev show "$WLAN_IF" 2>/dev/null | head -n 1)
+    conn=$($NMCLI --escape no -g GENERAL.CONNECTION dev show "$WLAN_IF" 2>/dev/null | head -n 1)
     if [ "$conn" = "$AP_CON_NAME" ]; then
         return 0
     fi
@@ -66,10 +67,10 @@ is_ap_active() {
 # 3. Check if wlan0 is connected to a client (infrastructure) Wi-Fi network
 is_wifi_client_connected() {
     local state conn
-    state=$($NMCLI -t -f GENERAL.STATE dev show "$WLAN_IF" 2>/dev/null | grep -o '^[0-9]\+' || true)
+    state=$($NMCLI -g GENERAL.STATE dev show "$WLAN_IF" 2>/dev/null | grep -o '^[0-9]\+' || true)
     # State 100 in NetworkManager indicates 'connected'
     if [ "$state" = "100" ]; then
-        conn=$($NMCLI -t -f GENERAL.CONNECTION dev show "$WLAN_IF" 2>/dev/null | head -n 1)
+        conn=$($NMCLI --escape no -g GENERAL.CONNECTION dev show "$WLAN_IF" 2>/dev/null | head -n 1)
         if [ "$conn" != "$AP_CON_NAME" ]; then
             if ! is_ap_active; then
                 return 0
@@ -82,7 +83,7 @@ is_wifi_client_connected() {
 # 4. Count connected client stations to AP
 get_ap_client_count() {
     if [ -x "$IW" ]; then
-        $IW dev "$WLAN_IF" station dump 2>/dev/null | grep -c '^Station' || echo 0
+        $IW dev "$WLAN_IF" station dump 2>/dev/null | awk '/^Station/ {n++} END {print n+0}'
     else
         echo 0
     fi
@@ -114,24 +115,28 @@ ensure_ap_profile() {
 
 # 6. Try connecting to known client Wi-Fi networks
 try_client_networks() {
-    $NMCLI device wifi rescan >/dev/null 2>&1 || true
+    $NMCLI device wifi rescan ifname "$WLAN_IF" >/dev/null 2>&1 || true
     sleep 2
 
     local conns
-    conns=$($NMCLI -g NAME,TYPE connection show 2>/dev/null | awk -F: -v ap="$AP_CON_NAME" '($2=="802-11-wireless" || $2=="wifi") && $1!=ap {print $1}')
+    conns=$($NMCLI -g UUID,TYPE connection show 2>/dev/null | awk -F: '($2=="802-11-wireless" || $2=="wifi") {print $1}')
     [ -z "$conns" ] && return 1
 
+    local ap_uuid
+    ap_uuid=$($NMCLI -g connection.uuid connection show id "$AP_CON_NAME" 2>/dev/null || true)
+
     local visible_ssids
-    visible_ssids=$($NMCLI -g SSID device wifi list 2>/dev/null | grep -v '^--$' | grep -v '^$' | sort -u || true)
+    visible_ssids=$($NMCLI --escape no -g SSID device wifi list ifname "$WLAN_IF" 2>/dev/null | grep -v '^--$' | grep -v '^$' | sort -u || true)
 
     # First pass: visible networks
     while IFS= read -r conn; do
         [ -z "$conn" ] && continue
+        [ "$conn" = "$ap_uuid" ] && continue
         local ssid
-        ssid=$($NMCLI -g 802-11-wireless.ssid connection show "$conn" 2>/dev/null || echo "$conn")
-        if echo "$visible_ssids" | grep -Fxq "$ssid"; then
+        ssid=$($NMCLI --escape no -g 802-11-wireless.ssid connection show "$conn" 2>/dev/null || echo "$conn")
+        if echo "$visible_ssids" | grep -Fxq -- "$ssid"; then
             log "Attempting connection to visible network '$conn' (SSID: $ssid)..."
-            if $NMCLI --wait 10 connection up id "$conn" >/dev/null 2>&1; then
+            if $NMCLI --wait 10 connection up uuid "$conn" ifname "$WLAN_IF" >/dev/null 2>&1; then
                 log "Successfully connected to '$conn'"
                 return 0
             fi
@@ -141,11 +146,12 @@ try_client_networks() {
     # Second pass: hidden or unscanned networks
     while IFS= read -r conn; do
         [ -z "$conn" ] && continue
+        [ "$conn" = "$ap_uuid" ] && continue
         local ssid
-        ssid=$($NMCLI -g 802-11-wireless.ssid connection show "$conn" 2>/dev/null || echo "$conn")
-        if ! echo "$visible_ssids" | grep -Fxq "$ssid"; then
+        ssid=$($NMCLI --escape no -g 802-11-wireless.ssid connection show "$conn" 2>/dev/null || echo "$conn")
+        if ! echo "$visible_ssids" | grep -Fxq -- "$ssid"; then
             log "Attempting connection to network '$conn' (SSID: $ssid)..."
-            if $NMCLI --wait 10 connection up id "$conn" >/dev/null 2>&1; then
+            if $NMCLI --wait 10 connection up uuid "$conn" ifname "$WLAN_IF" >/dev/null 2>&1; then
                 log "Successfully connected to '$conn'"
                 return 0
             fi

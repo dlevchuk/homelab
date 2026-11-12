@@ -3,4 +3,3 @@
 enable_beszel_agent: true
 
 # Wi-Fi: Pi Zero uses NetworkManager (default)
-wifi_backend: "networkmanager"

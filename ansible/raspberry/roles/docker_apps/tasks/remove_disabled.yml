@@ -1,0 +1,51 @@
+---
+# Only role-managed containers are removed. Bind mounts and volumes are retained.
+- name: Remove disabled Docker applications
+  community.docker.docker_container:
+    name: "{{ item.name }}"
+    state: absent
+    keep_volumes: true
+  loop:
+    - name: homepage
+      enabled: "{{ enable_homepage | bool }}"
+    - name: portainer
+      enabled: "{{ enable_portainer | bool }}"
+    - name: portainer_agent
+      enabled: "{{ enable_portainer_agent | bool }}"
+    - name: dozzle
+      enabled: "{{ enable_dozzle | bool }}"
+    - name: dozzle-agent
+      enabled: "{{ enable_dozzle_agent | bool }}"
+    - name: watchtower
+      enabled: "{{ enable_watchtower | bool }}"
+    - name: uptime-kuma
+      enabled: "{{ enable_uptime_kuma | bool }}"
+    - name: syncthing
+      enabled: "{{ enable_syncthing | bool }}"
+    - name: speedtest
+      enabled: "{{ enable_speedtest | bool }}"
+    - name: glances
+      enabled: "{{ enable_glances | bool }}"
+    - name: adguardhome
+      enabled: "{{ enable_adguard | bool }}"
+    - name: duplicati
+      enabled: "{{ enable_duplicati | bool }}"
+    - name: Thunderbird
+      enabled: "{{ enable_thunderbird | bool }}"
+    - name: freshrss
+      enabled: "{{ enable_freshrss | bool }}"
+    - name: cronicle
+      enabled: "{{ enable_cronicle | bool }}"
+    - name: homebridge
+      enabled: "{{ enable_homebridge | bool }}"
+    - name: music-assistant
+      enabled: "{{ enable_music_assistant | bool }}"
+    - name: homeassistant
+      enabled: "{{ enable_home_assistant | bool }}"
+    - name: beszel
+      enabled: "{{ enable_beszel | bool }}"
+    - name: beszel-agent
+      enabled: "{{ (enable_beszel_agent | bool) or (enable_beszel | bool) }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: not (item.enabled | bool)

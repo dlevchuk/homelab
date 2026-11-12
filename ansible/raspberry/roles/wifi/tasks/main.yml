@@ -8,15 +8,6 @@
 
 - name: Setup Wi-Fi (NetworkManager backend)
   ansible.builtin.include_tasks: setup_networkmanager.yml
-  when: wifi_backend == 'networkmanager'
-
-- name: Setup Wi-Fi (wpa_supplicant backend)
-  ansible.builtin.include_tasks: setup_wpa_supplicant.yml
-  when: wifi_backend == 'wpa_supplicant'
-
-- name: Setup Wi-Fi (netplan backend)
-  ansible.builtin.include_tasks: setup_netplan.yml
-  when: wifi_backend == 'netplan'
 
 - name: Deploy wifi-fallback systemd service
   ansible.builtin.template:

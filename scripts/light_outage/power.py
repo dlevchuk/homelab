@@ -2,6 +2,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import os, requests, json, sys
+from html import escape
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 import pytz
@@ -92,7 +93,7 @@ def fetch_with_zenrows(url):
 def fetch_with_proxy(url):
     # Try ScraperAPI first
     if SCRAPER_API_KEY:
-        proxy_url = "http://api.scraperapi.com"
+        proxy_url = "https://api.scraperapi.com"
 
         # Tier 1: Cheap Attempt
         print("🛰 Attempting ScraperAPI Standard Request (1 credit)...")
@@ -161,7 +162,7 @@ for item in URLS:
 
         if "Just a moment" in html or len(html) < 1000:
             print("❌ Blocked or invalid response")
-            all_outages[item["name"]] = []
+            all_outages[item["name"]] = None
             continue
 
         soup = BeautifulSoup(html, "html.parser")
@@ -190,11 +191,6 @@ for item in URLS:
                 if end <= start:
                     end += timedelta(days=1)
 
-                # If outage already passed today, move to tomorrow
-                if start < now:
-                    start += timedelta(days=1)
-                    end += timedelta(days=1)
-
                 outages.append({
                     'start_time': start_time,
                     'end_time': end_time,
@@ -215,7 +211,7 @@ for item in URLS:
         print(f"❌ Error: {e}")
         import traceback
         traceback.print_exc()
-        all_outages[item["name"]] = []
+        all_outages[item["name"]] = None
 
 print(f"\n{'='*60}")
 
@@ -225,7 +221,11 @@ message_parts.append(f"📅 <b>Графік відключень</b>")
 message_parts.append(f"🕐 {now.strftime('%d.%m.%Y %H:%M')}\n")
 
 for location, outages in all_outages.items():
-    message_parts.append(f"🏠 <b>{location}</b>")
+    message_parts.append(f"🏠 <b>{escape(location)}</b>")
+
+    if outages is None:
+        message_parts.append("  ⚠️ Не вдалося отримати графік\n")
+        continue
 
     if not outages:
         message_parts.append("  ✅ Відключень немає\n")

@@ -31,7 +31,7 @@ raspberry/
 │   │   │   ├── common/         # Common system setup (watchdog, kernel panic config, etc.)
 │   │   │   ├── docker_apps/    # Docker application deployments, backup and restore
 │   │   │   ├── outage_notify/  # Telegram alert after boot (power outage / reboot), all Pis
-│   │   │   ├── space_cowboy/   # Thermal printer automation service
+│   │   │   ├── space_cowboy/   # Animated logout banner
 │   │   │   ├── thermal_cam/    # Pi Zero thermal camera: scripts, systemd units, secrets
 │   │   │   │   ├── files/      # thermal_web.py, supabase_sync.py, systemd units
 │   │   │   │   └── README.md   # thermal camera dashboard docs
@@ -60,7 +60,7 @@ ansible-playbook -i ansible/wsl/hosts ansible/wsl/site.yml
 cd ansible/windows && ansible-playbook site.yml
 ```
 
-Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Run workflow → `limit` (`rpi-pi4`, `rpi-zero`, `rpi-pi5`).
+Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Run workflow → `limit` (`rpi-pi4`, `rpi-zero`, `rpi-pi5`). Tick `check` for a dry-run (`--check --diff`, nothing is changed on the hosts). Shell/command tasks are skipped in check mode, so treat the result as a preview, not a guarantee.
 
 ## Features
 
@@ -75,7 +75,7 @@ Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Ru
 ### Infrastructure Management
 
 - **Ansible Playbooks**: server configuration and Docker app deployment
-- **Wi-Fi Multi-Network & Fallback Hotspot**: `wifi` role configures client Wi-Fi networks and an automated emergency hotspot (`<hostname>-ap`). If neither Ethernet nor known Wi-Fi networks are connected after boot (with a 3-minute grace period to let routers boot up after power outages), the Pi activates a fallback AP on `10.42.0.1` (`ipv4.method shared`). A per-minute systemd timer (`wifi-fallback.timer`) periodically retries client networks every 5 minutes if no devices are connected to the hotspot.
+- **Wi-Fi Multi-Network & Fallback Hotspot**: `wifi` role configures client Wi-Fi networks and an automated emergency hotspot (`<hostname>-ap`). If neither Ethernet nor known Wi-Fi networks are connected after boot (with a 3-minute grace period to let routers boot up after power outages), the Pi activates a fallback AP on `10.42.0.1` (`ipv4.method shared`). A per-minute systemd timer (`wifi-fallback.timer`) periodically retries client networks every 5 minutes if no devices are connected to the hotspot. Off by default, see [Wi-Fi Configuration](#wi-fi-configuration)
 - **Docker Apps Backup & Restore**: weekly archive of `/home/pi/docker` into the shared Syncthing folder, restore on a fresh SD card via Ansible, see [Docker Apps Backup & Restore](#docker-apps-backup--restore)
 - **Watchdog Setup**: hardware watchdog for automatic reboot on hangs
 - **Cron Management**: cron job setup for scheduled tasks
@@ -84,6 +84,8 @@ Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Ru
 
 Goodreads, IMDb, Feedly and GitHub quotas scripts no longer work (sites removed the feeds / APIs or block scraping). They live in [scripts/deprecated](scripts/deprecated/README.md) together with the last good backups, their workflows are disabled. Use manual CSV export for Goodreads and IMDb.
 
+Setting a Docker application’s `enable_*` flag to `false` removes its role-managed container on the next deployment; bind-mounted data and volumes are retained. Unmanaged containers are left alone. The Beszel agent retains its existing rule: it is enabled when either `enable_beszel_agent` or `enable_beszel` is true.
+
 ## Docker Apps Backup & Restore
 
 Goal: if an SD card dies, a new one is brought back to the same state by Ansible. Implemented in the `docker_apps` role (`ansible/raspberry/roles/docker_apps`) for the Pis that run it (pi4, pi5; the Pi Zero thermal cam is not covered, its data goes to Supabase).
@@ -91,12 +93,12 @@ Goal: if an SD card dies, a new one is brought back to the same state by Ansible
 ### How the backup works
 
 - `/usr/local/bin/docker-backup.sh` (template `docker-backup.sh.j2`) is deployed by Ansible, state lives in `/var/lib/docker-backup` (`last_ok`, `stopped`).
-- Cron checks **daily at 03:30** and **once after every boot** (`--if-due`). A backup runs only if the last successful one is at least `docker_backup_due_days` (6) days old, so it is effectively weekly. A run missed because the Pi was off, or interrupted by a power loss, is retried the next day.
-- The script stops all running containers (consistent SQLite files), makes `docker_apps_YYYYmmdd_HHMMSS.tar.gz` of `/home/pi/docker` in `/var/tmp`, starts the containers again, validates and `sync`s the archive, then moves it atomically into the Syncthing folder:
+- Cron checks **daily at 03:30** and **once after every boot** (`--if-due`). A backup runs only if the last successful one is at least `docker_backup_due_days` (6) days old, so backups normally run every 6 days. A run missed because the Pi was off, or interrupted by a power loss, is retried the next day.
+- The script stops all running containers (consistent SQLite files), makes `docker_apps_YYYYmmdd_HHMMSS.tar.gz` of `/home/pi/docker` in `/var/tmp`, starts the containers again, validates and `sync`s the archive, then moves it into the Syncthing folder (atomic only if both directories are on the same filesystem):
   `/home/pi/docker/syncthing/sync/backup_docker/<hostname>/`
 - The newest `docker_backup_keep` (3) archives are kept, older ones are removed only after the new one is in place.
 - Excluded: `syncthing/sync` (holds the archives), `duplicati/backups`, `portainer/admin_password` (generated by Ansible). The Syncthing config (including the device ID) stays in the archive.
-- Containers with `restart_policy: unless-stopped` do not start after a reboot if they were stopped by `docker stop`. If power is lost during a backup, the next start of the script (the boot cron) brings them back first and sends a Telegram warning.
+- Containers with `restart_policy: unless-stopped` do not start after a reboot if they were stopped by `docker stop`. If power is lost during a backup, the next start of the script (the boot cron) brings them back first and sends a Telegram warning. If a container cannot be restarted, the recovery list is retained for the next attempt.
 - On failure a Telegram message is sent (`TELEGRAM_TOKEN` / `TELEGRAM_TO` from GitHub Secrets, written to `/etc/default/docker-backup`, mode 600). Optional `docker_backup_ping_url` pings an Uptime Kuma push monitor on success.
 - The archive is **not encrypted**. Offsite copy is whatever syncs the Syncthing folder to other devices; nothing is stored on a remote service by the Pi itself.
 
@@ -126,6 +128,49 @@ After a restore the Syncthing folder `sync` is empty and has no `.stfolder` mark
 
 Do not leave a freshly deployed empty stack running unattended for weeks: the next weekly backups would push the good archives out of the 3 kept ones.
 
+## Wi-Fi Configuration
+
+The `wifi` role gives a Pi several client Wi-Fi networks plus a fallback hotspot (behaviour is described in [Features](#infrastructure-management)). It is **off by default**: the role runs only where `enable_wifi: true` is set in `ansible/raspberry/group_vars/<group>.yml` (enabled for pi4 and pi5). Both use NetworkManager and the same `WIFI_CONFIG` format. NetworkManager is the only supported backend.
+
+The role does not migrate a Pi from dhcpcd / wpa_supplicant to NetworkManager. That is done by hand once, before the first run of the role. On the NetworkManager backend the role installs `dnsmasq-base`, `python3-gi` and `gir1.2-nm-1.0` (needed by the `nmcli` Ansible module).
+
+Pi 5 with Raspberry Pi OS Trixie already uses NetworkManager. Existing netplan-generated NetworkManager connections (such as `netplan-wlan0-<ssid>`) are preserved; the role adds its `wifi-<ssid>` profiles without restarting NetworkManager or applying netplan. The global `wpa_supplicant` service can remain active because NetworkManager uses it for Wi-Fi authentication.
+
+### `WIFI_CONFIG` secret
+
+Networks and the hotspot password are not stored in git. They come from the GitHub Secret `WIFI_CONFIG`, a single JSON object that CI exports as an environment variable:
+
+```json
+{
+  "ap_password": "<min-8-chars>",
+  "networks": [
+    { "ssid": "Home-5G",        "psk": "<wifi-password>" },
+    { "ssid": "Backup-Hotspot", "psk": "<wifi-password>" },
+    { "ssid": "Hidden-Network", "psk": "<wifi-password>", "hidden": true },
+    { "ssid": "Open-Network" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `ap_password` | string | no | WPA2 password of the fallback hotspot, 8-63 characters. If empty or missing, the hotspot profile is not created |
+| `networks` | array | no | Client networks. If empty or missing, no client profiles are created |
+| `networks[].ssid` | string | yes | Network name. Always a JSON **string**, so numeric names must be quoted (`"49"`, not `49`) |
+| `networks[].psk` | string | no | WPA2 password. If empty or missing, the network is configured as open |
+| `networks[].hidden` | boolean | no | `true` for a hidden SSID, default `false` |
+
+Rules and behaviour:
+
+- It must be valid JSON: no trailing commas, lowercase `true` / `false`, double quotes only, and `"` or `\` inside a password must be escaped. Validate before pasting into the secret: `jq -c . wifi.json` prints a compact one-line JSON or the error (do not commit the file).
+- All networks have the same priority (`wifi_client_priority`, 10): the Pi connects to whichever known network is available.
+- Profiles are named `wifi-<ssid>` and are created or updated by Ansible. Connections that were not created by the role are left alone.
+- The hotspot SSID is `<inventory_hostname>-ap` (for example `rpi-pi4-ap`), its address is `10.42.0.1/24`, and a connected client reaches the Pi with `ssh pi@10.42.0.1`.
+- Legacy fallback: if `WIFI_CONFIG` is empty, the role reads the separate secrets `WIFI_NETWORKS` (JSON array of the same network objects) and `WIFI_AP_PASSWORD`.
+- If no Wi-Fi secrets are set, the role skips client and hotspot profile creation, but still installs dependencies and deploys the fallback timer and script. Existing profiles are preserved.
+
+To change networks: update the secret, then run Actions → `Run Ansible Playbook` with `limit` for that Pi (first with `check`, if you want to see the diff).
+
 ## Deployment
 
 Deployment is configured via `tailscale/github-action`, giving CI access to the Tailscale network. Requires:
@@ -138,17 +183,7 @@ Secrets for the Pis (Telegram, Supabase, proxy keys) are passed to Ansible as en
 
 - **Tailscale**: `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET` (tag `tag:ci`)
 - **SSH & Fleet**: `SSH_PRIVATE_KEY`, `REMOTE_USER`, `REMOTE_HOST`, `REMOTE_PORT`, `THERMAL_REMOTE_HOST`, `THERMAL_REMOTE_PORT`, `PI5_REMOTE_HOST`, `PI5_REMOTE_PORT`
-- **Wi-Fi Configuration**: `WIFI_CONFIG` (JSON object containing AP password and list of client networks):
-  ```json
-  {
-    "ap_password": "<min-8-chars>",
-    "networks": [
-      { "ssid": "Home-5G",         "psk": "<wifi-password>" },
-      { "ssid": "Backup-Hotspot",  "psk": "<wifi-password>" },
-      { "ssid": "Hidden-Network",  "psk": "<wifi-password>", "hidden": true }
-    ]
-  }
-  ```
+- **Wi-Fi Configuration**: `WIFI_CONFIG` (JSON with client networks and the hotspot password, format in [Wi-Fi Configuration](#wi-fi-configuration))
 - **Notifications & Cloud**: `TELEGRAM_TOKEN`, `TELEGRAM_TO`, `SUPABASE_URL`, `SUPABASE_KEY`, `SCRAPER_API_KEY`, `ZENROWS_API_KEY`
 
 ## Getting Started
@@ -157,3 +192,7 @@ Secrets for the Pis (Telegram, Supabase, proxy keys) are passed to Ansible as en
 2. Configure GitHub Secrets in repository settings
 3. Push changes to trigger deployment workflows
 4. Scheduled workflows run automatically
+
+## Local checks
+
+Run offline regression tests with `python3 -m unittest discover -s tests -v`. See [repository review](docs/code-review-2026-11-12.md) for fixes, validation coverage and remaining issues.

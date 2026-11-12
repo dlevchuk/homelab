@@ -8,14 +8,3 @@
     name: "wifi-fallback.timer"
     state: restarted
   ignore_errors: "{{ ansible_check_mode }}"
-
-- name: Restart wpa_supplicant wlan0
-  ansible.builtin.systemd:
-    name: "wpa_supplicant@wlan0.service"
-    state: restarted
-  when: wifi_backend == 'wpa_supplicant'
-
-- name: Apply netplan
-  ansible.builtin.command: netplan apply
-  changed_when: true
-  when: wifi_backend == 'netplan'

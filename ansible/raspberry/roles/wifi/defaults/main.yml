@@ -26,7 +26,3 @@ wifi_ap_conn_name: "hotspot-ap"
 wifi_ap_ssid: "{{ inventory_hostname }}-ap"
 wifi_ap_ip: "10.42.0.1/24"
 wifi_client_priority: 10
-
-# Backend: networkmanager | wpa_supplicant | netplan
-# Set per host-group in group_vars
-wifi_backend: "networkmanager"

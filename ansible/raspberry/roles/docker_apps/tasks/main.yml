@@ -8,6 +8,9 @@
   ansible.builtin.include_tasks: docker_restore.yml
   when: enable_docker_restore | default(true) | bool
 
+- name: Remove disabled application containers
+  ansible.builtin.include_tasks: remove_disabled.yml
+
 - name: Manage Homepage
   ansible.builtin.include_tasks: docker_homepage.yml
   when: enable_homepage | default(true) | bool

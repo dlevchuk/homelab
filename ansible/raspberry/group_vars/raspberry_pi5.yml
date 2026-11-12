@@ -42,5 +42,6 @@ pi5_fan_curve:
   fan_temp3_hyst: 5000
   fan_temp3_speed: 250
 
-# Wi-Fi: Pi 5 uses netplan + networkd renderer
-wifi_backend: "netplan"
+# Wi-Fi: multi-network + fallback AP, same NetworkManager backend as Pi 4.
+# Raspberry Pi OS Trixie uses NetworkManager, including netplan-generated profiles.
+enable_wifi: true

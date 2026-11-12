@@ -20,14 +20,6 @@
     restart_policy: unless-stopped
   when: enable_beszel | default(false) | bool
 
-# Hub moved between hosts: remove the container where it is disabled.
-# Data in {{ docker_dir }}/beszel stays on disk (manual cleanup).
-- name: Remove Beszel hub where it is disabled
-  community.docker.docker_container:
-    name: beszel
-    state: absent
-  when: not (enable_beszel | default(false) | bool)
-
 # Agent needs the public key from the hub UI (Add System dialog).
 # Skipped until beszel_agent_key is set.
 - name: Setup Beszel agent

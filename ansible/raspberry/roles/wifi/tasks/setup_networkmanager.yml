@@ -37,6 +37,7 @@
     ssid: "{{ wifi_ap_ssid }}"
     wifi:
       mode: ap
+      band: bg
     wifi_sec:
       key-mgmt: wpa-psk
       psk: "{{ wifi_ap_password }}"
@@ -56,5 +57,3 @@
     group: root
     mode: "0750"
   no_log: true
-
-  

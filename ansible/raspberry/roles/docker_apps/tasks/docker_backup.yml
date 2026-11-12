@@ -34,9 +34,9 @@
     group: root
     mode: "0600"
     content: |
-      BOT_TOKEN={{ docker_backup_bot_token }}
-      BOT_CHAT_ID={{ docker_backup_chat_id }}
-      PING_URL={{ docker_backup_ping_url }}
+      BOT_TOKEN={{ docker_backup_bot_token | quote }}
+      BOT_CHAT_ID={{ docker_backup_chat_id | quote }}
+      PING_URL={{ docker_backup_ping_url | quote }}
   no_log: true
   when: enable_docker_backup | default(true) | bool
 

@@ -1,14 +1,10 @@
 - name: Install a list of packages
+  become: true
   ansible.builtin.apt:
     pkg:
-    - python3-pip
-    - mc
-    - nano
-    - htop
-    - ansible
-
-- name: Install pexpect using Pip.
-  pip:
-    name: pexpect
-    state: present
-    executable: "{{ pip_executable }}"
+      - python3-pip
+      - mc
+      - nano
+      - htop
+      - ansible
+      - python3-pexpect

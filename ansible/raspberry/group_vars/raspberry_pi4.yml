@@ -17,5 +17,4 @@ enable_beszel_agent: true
 # Wi-Fi: multi-network + fallback AP.
 # Pi 4 runs NetworkManager (migrated by hand from dhcpcd + wpa_supplicant)
 enable_wifi: true
-wifi_backend: "networkmanager"
 

@@ -38,7 +38,7 @@ Normally via GitHub Actions (`.github/workflows/power.yml`, daily at 22:00 UTC) 
      DISCORD_WEBHOOK_URL=
 
      #location configuration (required)
-     LOCATION_NAME=Name of your location (example: Чернігів)
+     LOCATION_NAME='Name of your location (example: Чернігів)'
      LOCATION_URL=https://chernigiv.energy-ua.info/grafik/
    ```
 
@@ -54,5 +54,7 @@ Normally via GitHub Actions (`.github/workflows/power.yml`, daily at 22:00 UTC) 
 - Fetch strategy: ScraperAPI standard request, then ScraperAPI premium, then ZenRows as a fallback
 - Timezone-aware: uses Ukraine timezone (Europe/Kyiv)
 - Telegram and optional Discord delivery
+- Fetch failures are reported as unavailable data, not as an absence of outages
+- Periods are interpreted for the current Kyiv date; past periods are not automatically shifted to tomorrow
 
 > Not implemented: real-time alerts ("30 minutes before an outage" / "power restored"). The script runs once per day.

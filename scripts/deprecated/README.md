@@ -10,7 +10,7 @@ Scripts that no longer work. Kept for reference only, their workflows are disabl
 | `backup_feedly/` | disabled | Feedly developer tokens require Pro since Oct 2023 | none |
 | `github_quotas/` | deprecated | GitHub billing API endpoints removed | none |
 
-Last good backups (`goodreads_backup.json`, `imdb_backup.json`) stay in their directories.
+Historical backups stay in their directories. `backup_imdb_web/imdb_backup.json` contains an older scraper log followed by JSON, so it is not directly parseable as JSON; preserve the original when recovering its data.
 
 Workflows are kept in `.github/workflows/` with `if: false` (manual `workflow_dispatch` only, job is skipped).
 Paths inside them already point to `scripts/deprecated/...`, so they can be re-enabled by removing `if: false`.
