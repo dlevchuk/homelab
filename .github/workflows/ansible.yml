@@ -12,6 +12,11 @@ on:
         description: "Ansible --limit (all, rpi-pi4, rpi-zero, rpi-pi5)"
         required: false
         default: "all"
+      check:
+        description: "Dry-run (--check --diff), nothing is changed on the hosts"
+        type: boolean
+        required: false
+        default: false
 
 env:
   REMOTE_USER: ${{ secrets.REMOTE_USER }}
@@ -32,7 +37,6 @@ env:
 
 jobs:
   ansible_deploy:
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -129,6 +133,7 @@ jobs:
       - name: Run Ansible playbook
         env:
           LIMIT: ${{ inputs.limit || 'all' }}
+          CHECK_MODE: ${{ inputs.check && 'true' || 'false' }}
           ANSIBLE_PIPELINING: "True"
           ANSIBLE_FORKS: "10"
           ANSIBLE_SSH_ARGS: "-o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=15 -o ConnectTimeout=15"
@@ -137,11 +142,19 @@ jobs:
           WIFI_NETWORKS: ${{ secrets.WIFI_NETWORKS }}
           WIFI_AP_PASSWORD: ${{ secrets.WIFI_AP_PASSWORD }}
         run: |
+          EXTRA=""
+          if [ "$CHECK_MODE" = "true" ]; then
+            EXTRA="--check --diff"
+            echo "::notice::Dry-run mode (--check --diff), nothing will be changed"
+          fi
           ansible-playbook ansible/raspberry/site.yml \
             -i hosts.ini \
             --private-key=~/.ssh/id_ansible \
-            --limit "$LIMIT"
+            --limit "$LIMIT" \
+            $EXTRA
 
       - name: Cleanup SSH Key & Inventory
         if: always()
         run: rm -f ~/.ssh/id_ansible ~/.ssh/id_ansible.pub hosts.ini
+
+        

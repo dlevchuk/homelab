@@ -3,6 +3,9 @@
   ansible.builtin.apt:
     name:
       - dnsmasq-base
+      # required by community.general.nmcli on the target
+      - python3-gi
+      - gir1.2-nm-1.0
     state: present
     cache_valid_time: 3600
 
@@ -54,3 +57,4 @@
     mode: "0750"
   no_log: true
 
+  

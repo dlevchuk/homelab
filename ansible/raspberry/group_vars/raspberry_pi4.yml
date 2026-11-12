@@ -14,5 +14,8 @@ dozzle_remote_agents:
 enable_beszel: true
 enable_beszel_agent: true
 
-# Wi-Fi: Pi 4 uses wpa_supplicant + dhcpcd (no NetworkManager)
-wifi_backend: "wpa_supplicant"
+# Wi-Fi: multi-network + fallback AP.
+# Pi 4 runs NetworkManager (migrated by hand from dhcpcd + wpa_supplicant)
+enable_wifi: true
+wifi_backend: "networkmanager"
+
