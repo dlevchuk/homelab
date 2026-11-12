@@ -1,0 +1,12 @@
+---
+# Small enough for SD cards, with one week of diagnostic history when space allows.
+logging_journal_max_use: 100M
+logging_journal_keep_free: 500M
+logging_journal_max_file_size: 10M
+logging_journal_runtime_max_use: 20M
+logging_retention_days: 7
+logging_text_max_size: 10M
+logging_text_rotate: 7
+# Per container; Docker rotation is size-based and has no age limit.
+logging_docker_max_size: 10m
+logging_docker_max_files: 3

@@ -1,0 +1,15 @@
+---
+- name: Restart logging journal
+  ansible.builtin.systemd_service:
+    name: systemd-journald
+    state: restarted
+
+# Rotate first: vacuum only removes archived journal files.
+- name: Vacuum logging journal
+  ansible.builtin.command:
+    argv:
+      - journalctl
+      - --rotate
+      - "--vacuum-size={{ logging_journal_max_use }}"
+      - "--vacuum-time={{ logging_retention_days }}d"
+  changed_when: true

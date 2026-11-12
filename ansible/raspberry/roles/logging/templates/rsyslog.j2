@@ -1,0 +1,26 @@
+# Managed by Ansible: logging role
+/var/log/syslog
+/var/log/messages
+/var/log/auth.log
+/var/log/kern.log
+/var/log/daemon.log
+/var/log/user.log
+/var/log/mail.log
+/var/log/mail.info
+/var/log/mail.warn
+/var/log/mail.err
+/var/log/debug
+{
+    daily
+    maxsize {{ logging_text_max_size }}
+    rotate {{ logging_text_rotate }}
+    maxage {{ logging_retention_days }}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        /bin/systemctl kill --kill-who=main --signal=HUP rsyslog.service
+    endscript
+}

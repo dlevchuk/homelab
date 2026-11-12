@@ -4,7 +4,16 @@
   gather_facts: false
   strategy: free
   become: true
+  module_defaults:
+    community.docker.docker_container:
+      log_driver: json-file
+      log_options:
+        max-size: "{{ logging_docker_max_size }}"
+        max-file: "{{ logging_docker_max_files | string }}"
+        compress: "true"
   roles:
+    - role: logging
+      tags: [logging]
     # Off by default, enabled per host group (enable_wifi in group_vars)
     - role: wifi
       when: enable_wifi | default(false) | bool

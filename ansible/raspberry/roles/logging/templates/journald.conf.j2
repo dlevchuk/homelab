@@ -1,0 +1,10 @@
+# Managed by Ansible: logging role
+[Journal]
+Storage=persistent
+Compress=yes
+SystemMaxUse={{ logging_journal_max_use }}
+SystemKeepFree={{ logging_journal_keep_free }}
+SystemMaxFileSize={{ logging_journal_max_file_size }}
+RuntimeMaxUse={{ logging_journal_runtime_max_use }}
+MaxRetentionSec={{ logging_retention_days }}day
+MaxFileSec=1day

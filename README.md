@@ -196,3 +196,11 @@ Secrets for the Pis (Telegram, Supabase, proxy keys) are passed to Ansible as en
 ## Local checks
 
 Run offline regression tests with `python3 -m unittest discover -s tests -v`. See [repository review](docs/code-review-2026-11-12.md) for fixes, validation coverage and remaining issues.
+
+## Log retention
+
+The `logging` role applies to all Raspberry Pis, including Pi Zero: system journals
+use a 100 MiB target and seven-day retention; rsyslog text logs rotate daily with
+seven compressed archives and a 10 MiB threshold. Ansible-managed Docker containers
+use three 10 MiB log files each. The first full deployment may recreate containers
+to apply these limits. See [policy, overrides and verification](ansible/raspberry/roles/logging/README.md).

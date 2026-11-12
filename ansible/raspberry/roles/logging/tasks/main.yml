@@ -1,0 +1,48 @@
+---
+- name: Create journald configuration directory
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Limit system journal size and retention
+  ansible.builtin.template:
+    src: journald.conf.j2
+    dest: /etc/systemd/journald.conf.d/99-logging.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart logging journal
+    - Vacuum logging journal
+
+- name: Install logrotate
+  ansible.builtin.apt:
+    name: logrotate
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Check for rsyslog rotation policy
+  ansible.builtin.stat:
+    path: /etc/logrotate.d/rsyslog
+  register: logging_rsyslog_policy
+
+# Replace the package policy rather than adding overlapping log paths.
+- name: Limit rsyslog text logs where installed
+  ansible.builtin.template:
+    src: rsyslog.j2
+    dest: /etc/logrotate.d/rsyslog
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/logrotate --debug %s
+  when: logging_rsyslog_policy.stat.exists
+
+- name: Enable daily log rotation
+  ansible.builtin.systemd_service:
+    name: logrotate.timer
+    enabled: true
+    state: started
