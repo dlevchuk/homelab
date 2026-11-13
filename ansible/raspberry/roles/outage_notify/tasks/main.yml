@@ -17,6 +17,7 @@
   loop:
     - raspberry_outage.py
     - heartbeat.sh
+  notify: Restart outage monitor
 
 - name: Deploy env file with Telegram credentials
   ansible.builtin.copy:
@@ -29,6 +30,7 @@
       BOT_CHAT_ID={{ outage_notify_chat_id }}
       HOST_LABEL={{ inventory_hostname }}
   no_log: true
+  notify: Restart outage monitor
   when:
     - outage_notify_bot_token | length > 0
     - outage_notify_chat_id | length > 0
@@ -44,13 +46,18 @@
     - raspberry-outage.service
     - raspberry-outage-heartbeat.service
     - raspberry-outage-heartbeat.timer
+  notify: Restart outage monitor
 
-# Основний юніт тільки enable (без start), щоб кожен деплой не слав повідомлення
+# Стан boot_id на диску запобігає повторним повідомленням при деплої.
 - name: Enable raspberry-outage.service
   ansible.builtin.systemd:
     name: raspberry-outage.service
     enabled: true
     daemon_reload: true
+    state: started
+  when:
+    - outage_notify_bot_token | length > 0
+    - outage_notify_chat_id | length > 0
 
 - name: Enable and start heartbeat timer
   ansible.builtin.systemd:

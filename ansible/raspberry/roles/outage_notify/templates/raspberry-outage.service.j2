@@ -1,5 +1,5 @@
 [Unit]
-Description=Notify about power outage / reboot via Telegram
+Description=Monitor internet and notify about outages / reboots via Telegram
 After=network-online.target
 Wants=network-online.target
 
@@ -10,7 +10,8 @@ SupplementaryGroups=systemd-journal
 StateDirectory=raspberry-outage
 EnvironmentFile=/etc/default/raspberry-outage
 ExecStart=/usr/bin/python3 {{ outage_notify_dir }}/raspberry_outage.py
-Restart=no
+Restart=on-failure
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target

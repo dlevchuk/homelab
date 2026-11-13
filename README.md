@@ -30,7 +30,7 @@ raspberry/
 │   │   │   ├── beszel_agent/   # Beszel agent monitoring client
 │   │   │   ├── common/         # Common system setup (watchdog, kernel panic config, etc.)
 │   │   │   ├── docker_apps/    # Docker application deployments, backup and restore
-│   │   │   ├── outage_notify/  # Telegram alert after boot (power outage / reboot), all Pis
+│   │   │   ├── outage_notify/  # Durable Telegram reboot and internet outage monitor, all Pis
 │   │   │   ├── space_cowboy/   # Animated logout banner
 │   │   │   ├── thermal_cam/    # Pi Zero thermal camera: scripts, systemd units, secrets
 │   │   │   │   ├── files/      # thermal_web.py, supabase_sync.py, systemd units
@@ -69,7 +69,7 @@ Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Ru
 - **Thermal Camera Dashboard**: MLX90640 thermal camera web stream, BME280 telemetry, power outage tracking and daily Supabase sync. Deployed by the `thermal_cam` role, see [ansible/raspberry/roles/thermal_cam/README.md](ansible/raspberry/roles/thermal_cam/README.md)
 - **System Monitoring (Beszel)**: lightweight system metrics via `beszel_agent` role and Docker container
 - **Power Outage Monitoring**: scheduled power outages with Telegram alerts, see [scripts/light_outage/README.MD](scripts/light_outage/README.MD)
-- **Power Loss / Reboot Alerts**: `outage_notify` role on every Pi. After boot a systemd unit waits for internet and sends a Telegram message: power loss (with duration, undervoltage hint), kernel panic, ping-reboot or clean reboot. A per-minute heartbeat timer gives the outage moment with ~1 min precision (`/var/lib/raspberry-outage/heartbeat`)
+- **Power Loss / Reboot / Internet Alerts**: `outage_notify` runs continuously on every Pi, checking connectivity at roughly 10-second intervals plus probe and delivery time. It reports boot history and internet recovery, including outages without a reboot. Durations below a minute use seconds; NTP waiting and Telegram delivery delays do not inflate the measured outage. A per-minute heartbeat records last activity, which is not proof of the exact power-loss time. See [monitor behavior and limitations](ansible/raspberry/roles/outage_notify/README.md).
 - **Telegram Notifications**: automatic failure notifications for all workflows
 
 ### Infrastructure Management

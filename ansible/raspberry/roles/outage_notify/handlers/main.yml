@@ -1,0 +1,9 @@
+---
+- name: Restart outage monitor
+  ansible.builtin.systemd:
+    name: raspberry-outage.service
+    state: restarted
+    daemon_reload: true
+  when:
+    - outage_notify_bot_token | length > 0
+    - outage_notify_chat_id | length > 0
