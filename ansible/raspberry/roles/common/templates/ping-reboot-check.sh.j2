@@ -7,6 +7,7 @@ LOGGER=/usr/bin/logger
 REBOOT=/sbin/reboot
 IP=/usr/bin/ip
 FAIL_FILE=/tmp/ping_reboot_fail_count
+REBOOT_MARKER=/var/lib/ping-reboot/reboot-requested
 MAX_FAILS=3
 MIN_UPTIME_SEC=600
 
@@ -32,6 +33,14 @@ check_connectivity() {
 if check_connectivity; then
     # Internet is available - reset fail counter and exit
     [ -f "$FAIL_FILE" ] && rm -f "$FAIL_FILE"
+    rm -f "$REBOOT_MARKER"
+    exit 0
+fi
+
+# Лише одна спроба reboot на збій. /tmp очищується при запуску, цей маркер — ні.
+# Скидаємо його тільки після успішної перевірки зовнішньої мережі.
+if [ -f "$REBOOT_MARKER" ]; then
+    $LOGGER -t ping-reboot "Already attempted reboot; waiting for internet recovery."
     exit 0
 fi
 
@@ -53,6 +62,10 @@ echo "$FAILS" > "$FAIL_FILE"
 $LOGGER -t ping-reboot "Network unreachable (failure $FAILS of $MAX_FAILS)"
 
 if [ "$FAILS" -ge "$MAX_FAILS" ]; then
+    if ! touch "$REBOOT_MARKER" || ! sync "$REBOOT_MARKER"; then
+        $LOGGER -t ping-reboot "Cannot persist reboot guard. Skipping reboot."
+        exit 1
+    fi
     $LOGGER -t ping-reboot "Max network failures reached ($FAILS). Rebooting system."
     rm -f "$FAIL_FILE"
     $REBOOT

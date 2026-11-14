@@ -45,7 +45,7 @@ class Messages(unittest.TestCase):
         message = m.build_message(previous(last_ts=3000), True, 40,
                                   boot_ts=1020, recovery_ts=1060)
         self.assertIn('час попереднього журналу некоректний', message)
-        self.assertNotIn('до поточного запуску: 0', message)
+        self.assertNotIn('до цього запуску: 0', message)
 
     def test_seconds_minutes_days(self):
         for seconds, text in [(0, '0 с'), (59, '59 с'), (60, '1 хв'),
@@ -105,7 +105,7 @@ class NetworkTransitions(unittest.TestCase):
         self.sample(s, True, 50, False)
         self.sample(s, True, 650, False)
         self.assertIn('за перевірками): 30 с', s['queue'][0]['text'])
-        self.assertIn('немає надійного часу', s['queue'][0]['text'])
+        self.assertIn('час запуску ще не синхронізовано', s['queue'][0]['text'])
 
     def test_second_outage_during_ntp_wait_keeps_both(self):
         s = state(False)
@@ -150,6 +150,47 @@ class NetworkTransitions(unittest.TestCase):
         self.assertEqual(len(s['queue']), 2)
         self.assertNotIn('через 50 с', s['queue'][0]['text'])
         self.assertIn('через 50 с', s['queue'][1]['text'])
+
+    def test_one_outage_is_not_repeated_for_each_queued_boot(self):
+        s = state()
+        s['queue'].insert(0, dict(boot='older', prev=previous(last_ts=900)))
+        s['outage'] = dict(boot='older', mono=10, ts=1000)
+        self.sample(s, True, 12960)
+        texts = [event['text'] for event in s['queue']]
+        self.assertNotIn('Без інтернету', texts[0])
+        self.assertNotIn('до виявлення інтернету', texts[0])
+        self.assertIn('Відкладене повідомлення', texts[0])
+        self.assertIn('Без інтернету (за перевірками): 3 год 36 хв', texts[1])
+
+    def test_recovery_with_only_old_boot_events_is_separate(self):
+        s = state(False)
+        s['queue'].append(dict(boot='older', prev=previous()))
+        s['outage'] = dict(boot='a', mono=10, ts=1010)
+        self.sample(s, True, 40)
+        self.assertEqual(len(s['queue']), 2)
+        self.assertNotIn('Без інтернету', s['queue'][0]['text'])
+        self.assertIn('інтернет відновлено', s['queue'][1]['text'])
+        self.assertIn('30 с', s['queue'][1]['text'])
+
+    def test_boot_timestamp_survives_next_boot(self):
+        s = state()
+        self.sample(s, False, 20, True)
+        self.assertEqual(s['queue'][0]['boot_ts'], 1000)
+        # Новий boot має інший uptime і відновлює мережу без NTP.
+        s['queue'].append(dict(boot='b', prev=previous(last_ts=1100)))
+        self.sample(s, True, 50, False, bid='b')
+        self.sample(s, True, 650, False, bid='b')
+        old = s['queue'][0]['text']
+        self.assertIn('Відкладене повідомлення з попереднього запуску', old)
+        self.assertIn('до цього запуску: 0 с', old)
+        self.assertNotIn('час цього запуску не було збережено', old)
+
+    def test_old_event_without_timestamp_has_specific_explanation(self):
+        message = m.build_message(previous(), True, None, historical_boot=True,
+                                  outage_sec=12960)
+        self.assertIn('час цього запуску не було збережено', message)
+        self.assertIn('3 год 36 хв', message)
+        self.assertNotIn('час запуску ще не синхронізовано', message)
 
     def test_queue_survives_reload(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(m, 'HEARTBEAT_DIR', directory):

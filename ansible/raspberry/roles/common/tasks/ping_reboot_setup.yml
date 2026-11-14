@@ -1,4 +1,12 @@
 ---
+- name: Create persistent ping-reboot state directory
+  ansible.builtin.file:
+    path: /var/lib/ping-reboot
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
 - name: Deploy ping-reboot-check.sh script
   ansible.builtin.template:
     src: "ping-reboot-check.sh.j2"

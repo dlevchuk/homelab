@@ -217,7 +217,7 @@ def fmt_duration(seconds):
 
 
 def build_message(prev, synced, net_uptime, *, boot_ts=None, recovery_ts=None,
-                  outage_sec=None, outage_detected=False):
+                  outage_sec=None, outage_detected=False, historical_boot=False):
     if prev is None:
         lines = [f"ℹ️ {HOST}: завантажився, інтернет є (даних попереднього буту нема)"]
         if net_uptime is not None:
@@ -244,14 +244,19 @@ def build_message(prev, synced, net_uptime, *, boot_ts=None, recovery_ts=None,
         f"Остання активність: {last.strftime('%Y-%m-%d %H:%M:%S %Z')} ({prev['src']})",
     ]
 
-    if synced and boot_ts is not None:
+    if historical_boot:
+        lines.append("📨 Відкладене повідомлення з попереднього запуску Pi")
+
+    if boot_ts is not None:
         off_sec = boot_ts - prev["last_ts"]
         if off_sec >= 0:
-            lines.append(f"Від останньої активності до поточного запуску: {fmt_duration(off_sec)}")
+            lines.append(f"Від останньої активності до цього запуску: {fmt_duration(off_sec)}")
         else:
             lines.append("⏱ час попереднього журналу некоректний, проміжок між запусками невідомий")
     else:
-        lines.append("⏱ немає надійного часу запуску, проміжок між запусками невідомий")
+        reason = ("час цього запуску не було збережено" if historical_boot
+                  else "час запуску ще не синхронізовано")
+        lines.append(f"⏱ {reason}, проміжок між запусками невідомий")
 
     if outage_sec is not None:
         lines.append(f"Без інтернету (за перевірками): {fmt_duration(outage_sec)}")
@@ -328,6 +333,12 @@ def outage_duration(outage, bid, now, mono):
 def record_sample(state, bid, online, synced, now, mono, uptime):
     """Одна перевірка мережі; стан та повідомлення записуються до надсилання."""
     epoch = now if synced else None
+    # Зберігаємо календарний час запуску навіть без інтернету. Наступний reboot
+    # обнулить uptime, але ця мітка залишиться придатною для відкладеної події.
+    if synced:
+        for event in state["queue"]:
+            if event.get("boot") == bid and "text" not in event and event.get("boot_ts") is None:
+                event["boot_ts"] = now - uptime
     outage = state.get("outage")
     if not online:
         if state.get("recovery") is not None:
@@ -380,12 +391,14 @@ def finish_recovery(state, bid, synced, now, mono, uptime):
         event["text"] = build_message(
             event["prev"], recovery["ts"] is not None,
             recovery["uptime"] if same_boot else None,
-            boot_ts=now - uptime if synced and same_boot else None,
-            recovery_ts=recovery["ts"], outage_sec=recovery["duration"],
-            outage_detected=recovery["had_outage"],
+            boot_ts=event.get("boot_ts", now - uptime if synced and same_boot else None),
+            recovery_ts=recovery["ts"] if same_boot else None,
+            outage_sec=recovery["duration"] if same_boot else None,
+            outage_detected=recovery["had_outage"] if same_boot else False,
+            historical_boot=not same_boot,
         )
         event["ready_ts"] = epoch
-    if recovery["had_outage"] and not pending:
+    if recovery["had_outage"] and not any(event["boot"] == bid for event in pending):
         duration = recovery["duration"]
         text = f"🌐 {HOST}: інтернет відновлено"
         text += (f"\nБез інтернету (за перевірками): {fmt_duration(duration)}"
