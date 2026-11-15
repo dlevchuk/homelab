@@ -110,6 +110,11 @@ To-do items live in each browser's local storage and are not synced or included
 in server backups. Disable Glance with `enable_glance: false` and run the full
 role to remove its container while retaining the configuration directory.
 
+Glance and Hermes share an internal Docker network, `glance-hermes`, for
+the monitor's `http://hermes:9120/` check. Both retain their original bridge
+network and published ports. This avoids routing through Tailscale Serve
+from a Docker bridge; the clickable Hermes link remains HTTPS.
+
 To roll Pi 5 back to Homepage, set `enable_homepage: true`,
 `enable_glance: false` in its group variables and run the full `docker_apps`
 role (the full playbook handles disabled-container cleanup before starting

@@ -25,21 +25,26 @@
     keep_volumes: true
   when: not (enable_homepage | bool)
 
+- name: Prepare private Hermes monitoring network
+  ansible.builtin.include_tasks: docker_glance_hermes_network.yml
+  when: enable_hermes | bool and hermes_web_enabled | bool
+
 - name: Setup Glance container
   community.docker.docker_container:
     name: glance
     image: "{{ glance_image }}"
     state: started
     restart_policy: unless-stopped
+    networks: "{{ [{'name': 'bridge'}, {'name': 'glance-hermes'}] if enable_hermes | bool and hermes_web_enabled | bool else [{'name': 'bridge'}] }}"
     pid_mode: host
     volumes:
       - "{{ docker_dir }}/glance:/app/config:ro"
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /:/host/root:ro,rslave
-    ports:
-      - "{{ glance_port }}:8080"
     env:
       TZ: Europe/Kyiv
+    ports:
+      - "{{ glance_port }}:8080"
 
 - name: Wait for Glance dashboard
   ansible.builtin.uri:

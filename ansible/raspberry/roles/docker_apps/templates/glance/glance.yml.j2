@@ -62,7 +62,9 @@ pages:
               - title: {{ name | to_json }}
                 url: {{ service.href | to_json }}
                 icon: {{ ('di:' ~ service.icon) if not service.icon.startswith('mdi-') else ('mdi:' ~ service.icon[4:]) }}
-{% if service.siteMonitor is defined %}
+{% if service.container | default('') == 'hermes' %}
+                check-url: http://hermes:9120/
+{% elif service.siteMonitor is defined %}
                 check-url: {{ service.siteMonitor | to_json }}
 {% endif %}
 {% endfor %}

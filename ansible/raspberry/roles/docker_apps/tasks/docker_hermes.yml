@@ -8,12 +8,17 @@
     group: "{{ hermes_gid }}"
     mode: "0700"
 
+- name: Prepare private Glance monitoring network
+  ansible.builtin.include_tasks: docker_glance_hermes_network.yml
+  when: enable_glance | bool and hermes_web_enabled | bool
+
 - name: Setup Hermes Agent
   community.docker.docker_container:
     name: hermes
     image: "{{ hermes_image }}"
     command: "{{ hermes_command }}"
     state: started
+    networks: "{{ [{'name': 'bridge'}, {'name': 'glance-hermes'}] if enable_glance | bool and hermes_web_enabled | bool else [{'name': 'bridge'}] }}"
     volumes:
       - "{{ docker_dir }}/hermes:/opt/data"
     env:

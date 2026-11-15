@@ -1,0 +1,13 @@
+---
+- name: Check whether Hermes already exists
+  community.docker.docker_container_info:
+    name: hermes
+  register: glance_hermes_container
+  no_log: true
+
+- name: Ensure private Glance to Hermes monitoring network
+  community.docker.docker_network:
+    name: glance-hermes
+    internal: true
+    appends: true
+    connected: "{{ ['hermes'] if glance_hermes_container.exists else [] }}"
