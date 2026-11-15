@@ -1,5 +1,6 @@
 """Enable web access without replacing provider or messaging settings."""
 import os
+import json
 from pathlib import Path
 import secrets
 import sys
@@ -30,6 +31,11 @@ if values.get('TERMINAL_ENV') != 'local':
 config_path = home / 'config.yaml'
 config = safe_load(config_path.read_text()) if config_path.exists() else {}
 config = config or {}
+model = config.setdefault('model', {})
+for name, value in json.loads(sys.argv[4]).items():
+    if model.get(name) != value:
+        model[name] = value
+        changed = True
 webapp = config.setdefault('webapp', {})
 for name, value in {
     'enabled': True, 'host': '0.0.0.0', 'port': 9120, 'public_url': sys.argv[1],

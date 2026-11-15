@@ -1,0 +1,57 @@
+---
+- name: Ensure personal Telegram directories exist
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/hermes/{{ item }}"
+    state: directory
+    owner: "{{ hermes_uid }}"
+    group: "{{ hermes_gid }}"
+    mode: "0700"
+  loop:
+    - integrations/personal-telegram
+    - skills/personal-telegram
+
+- name: Deploy personal Telegram client and skill
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ docker_dir }}/hermes/{{ item.dest }}"
+    owner: "{{ hermes_uid }}"
+    group: "{{ hermes_gid }}"
+    mode: "0600"
+  loop:
+    - src: personal_telegram.py
+      dest: integrations/personal-telegram/client.py
+    - src: personal_telegram_skill.md
+      dest: skills/personal-telegram/SKILL.md
+
+- name: Create isolated personal Telegram Python environment
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - --user
+      - "{{ hermes_uid }}:{{ hermes_gid }}"
+      - hermes
+      - /opt/hermes/.venv/bin/python
+      - -m
+      - venv
+      - /opt/data/integrations/personal-telegram/venv
+    creates: "{{ docker_dir }}/hermes/integrations/personal-telegram/venv/pyvenv.cfg"
+
+- name: Install pinned Telethon in isolated environment
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - --user
+      - "{{ hermes_uid }}:{{ hermes_gid }}"
+      - hermes
+      - /opt/data/integrations/personal-telegram/venv/bin/python
+      - -m
+      - pip
+      - install
+      - --disable-pip-version-check
+      - "telethon=={{ hermes_telethon_version }}"
+      - qrcode==8.2
+  register: docker_apps_hermes_telethon_install
+  changed_when: "'Successfully installed' in docker_apps_hermes_telethon_install.stdout"
+  when: not ansible_check_mode

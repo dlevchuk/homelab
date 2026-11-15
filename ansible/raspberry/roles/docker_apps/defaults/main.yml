@@ -98,6 +98,10 @@ hermes_tailscale_serve: false
 hermes_tailscale_hostname: "{{ ansible_host }}"
 # Docker bridge gateway seen as the source of the host's reverse proxy.
 hermes_trusted_proxy: "172.17.0.1"
+hermes_personal_telegram: false
+hermes_telethon_version: "1.45.0"
+# Optional deployment-managed model keys; credentials remain in the private .env.
+hermes_model: {}
 
 # Dozzle hub: list of agents as host:port (set per host group)
 dozzle_remote_agents: []

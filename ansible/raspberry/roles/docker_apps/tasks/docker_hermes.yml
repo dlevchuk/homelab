@@ -24,6 +24,10 @@
       com.centurylinklabs.watchtower.enable: "false"
     restart_policy: unless-stopped
 
+- name: Manage personal Telegram integration
+  ansible.builtin.include_tasks: docker_hermes_personal_telegram.yml
+  when: hermes_personal_telegram | bool
+
 - name: Configure Hermes web access and persistent login
   ansible.builtin.command:
     argv:
@@ -38,6 +42,7 @@
       - "{{ hermes_web_public_url }}"
       - "{{ hermes_dashboard_public_url }}"
       - "{{ hermes_trusted_proxy }}"
+      - "{{ hermes_model | to_json }}"
     stdin: "{{ lookup('file', role_path ~ '/files/configure_hermes_web.py') }}"
   register: docker_apps_hermes_web_config
   changed_when: "'changed' in docker_apps_hermes_web_config.stdout"

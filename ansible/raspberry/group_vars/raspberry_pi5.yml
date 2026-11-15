@@ -31,6 +31,11 @@ hermes_web_public_url: "https://pi5.tail72e9f.ts.net:8443"
 hermes_dashboard_public_url: "https://pi5.tail72e9f.ts.net"
 hermes_tailscale_serve: true
 hermes_tailscale_hostname: "pi5.tail72e9f.ts.net"
+hermes_personal_telegram: true
+# 3.8 Flash currently stalls before the first response on this deployment.
+hermes_model:
+  provider: gemini
+  default: gemini-3.5-flash
 
 # Beszel hub працює на pi4, тут тільки agent
 enable_beszel: false
