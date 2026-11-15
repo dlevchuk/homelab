@@ -19,6 +19,14 @@
   when: enable_homepage | default(true) | bool
   tags: [homepage]
 
+- name: Manage Glance
+  ansible.builtin.include_tasks:
+    file: docker_glance.yml
+    apply:
+      tags: [glance]
+  when: enable_glance | bool
+  tags: [glance]
+
 - name: Manage Portainer (hub / agent)
   ansible.builtin.include_tasks: docker_portainer.yml
   when: (enable_portainer | default(true) | bool) or (enable_portainer_agent | default(false) | bool)

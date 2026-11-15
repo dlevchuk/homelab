@@ -8,6 +8,8 @@
   loop:
     - name: homepage
       enabled: "{{ enable_homepage | bool }}"
+    - name: glance
+      enabled: "{{ enable_glance | bool }}"
     - name: portainer
       enabled: "{{ enable_portainer | bool }}"
     - name: portainer_agent

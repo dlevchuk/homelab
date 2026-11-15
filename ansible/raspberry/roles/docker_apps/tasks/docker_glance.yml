@@ -1,0 +1,52 @@
+---
+- name: Ensure Glance configuration directory exists
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/glance"
+    state: directory
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
+    mode: "0755"
+
+- name: Render Glance from the existing Homepage service and bookmark definitions
+  ansible.builtin.template:
+    src: glance/glance.yml.j2
+    dest: "{{ docker_dir }}/glance/glance.yml"
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
+    mode: "0644"
+  vars:
+    glance_services: "{{ lookup('ansible.builtin.template', 'homepage/services.yaml.j2') | from_yaml }}"
+    glance_bookmarks: "{{ lookup('ansible.builtin.template', 'homepage/bookmarks.yaml.j2') | from_yaml }}"
+
+- name: Remove disabled Homepage before switching the dashboard port
+  community.docker.docker_container:
+    name: homepage
+    state: absent
+    keep_volumes: true
+  when: not (enable_homepage | bool)
+
+- name: Setup Glance container
+  community.docker.docker_container:
+    name: glance
+    image: "{{ glance_image }}"
+    state: started
+    restart_policy: unless-stopped
+    pid_mode: host
+    volumes:
+      - "{{ docker_dir }}/glance:/app/config:ro"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/host/root:ro,rslave
+    ports:
+      - "{{ glance_port }}:8080"
+    env:
+      TZ: Europe/Kyiv
+
+- name: Wait for Glance dashboard
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ glance_port }}/"
+    status_code: 200
+  register: glance_http
+  retries: 12
+  delay: 5
+  until: glance_http.status == 200
+  when: not ansible_check_mode

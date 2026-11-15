@@ -61,6 +61,17 @@ docker_restore_force: false
 
 # Enabled active services
 enable_homepage: true
+enable_glance: false
+glance_image: glanceapp/glance:v0.8.8
+glance_port: 3006
+glance_background_color: "150 18 8"
+glance_primary_color: "145 45 68"
+glance_positive_color: "135 45 62"
+glance_repositories:
+  - glanceapp/glance
+  - home-assistant/core
+  - syncthing/syncthing
+  - henrygd/beszel
 enable_portainer: true         # Portainer hub (UI)
 enable_dozzle: true            # Dozzle hub (UI)
 enable_watchtower: true

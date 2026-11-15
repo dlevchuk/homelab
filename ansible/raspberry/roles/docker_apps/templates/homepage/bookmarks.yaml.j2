@@ -1,6 +1,11 @@
 ---
 
 - Personal:
+{% if enable_hermes | default(false) | bool and hermes_web_enabled | default(false) | bool %}
+    - Hermes Dashboard:
+        - icon: mdi-robot
+          href: "{{ hermes_dashboard_public_url }}/?profile=default"
+{% endif %}
     - OneMoreThing:
         - icon: mdi-format-list-checks
           href: https://dlevchuk.github.io/OneMoreThing
@@ -8,7 +13,7 @@
         - icon: raspberry-pi
           href: http://zero.tail72e9f.ts.net:8080
 {% if 'raspberry_pi4' in group_names %}
-    - Pi5:
+    - Pi5 Glance:
         - icon: raspberry-pi
           href: http://pi5.tail72e9f.ts.net:3005
 {% endif %}
