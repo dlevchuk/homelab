@@ -65,3 +65,6 @@ pi5_fan_curve:
 # Wi-Fi: multi-network + fallback AP, same NetworkManager backend as Pi 4.
 # Raspberry Pi OS Trixie uses NetworkManager, including netplan-generated profiles.
 enable_wifi: true
+
+# Wishlist price / stock monitoring; API and UI stay on loopback.
+enable_changedetection: true

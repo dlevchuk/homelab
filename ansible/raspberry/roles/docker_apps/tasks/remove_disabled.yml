@@ -6,6 +6,8 @@
     state: absent
     keep_volumes: true
   loop:
+    - name: changedetection
+      enabled: "{{ enable_changedetection | bool }}"
     - name: homepage
       enabled: "{{ enable_homepage | bool }}"
     - name: glance

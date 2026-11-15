@@ -86,6 +86,15 @@
 {% endif %}
 
 - Applications:
+{% if enable_changedetection | default(false) | bool %}
+    - Changedetection:
+        icon: changedetection
+        href: http://localhost:{{ changedetection_port }}
+        description: Wishlist prices · open SSH tunnel first
+        server: my-docker
+        container: changedetection
+        showStats: true
+{% endif %}
 {% if enable_hermes | default(false) | bool and hermes_web_enabled | default(false) | bool %}
     - Hermes:
         icon: mdi-robot

@@ -1,0 +1,103 @@
+---
+- name: Install exporter prerequisites
+  ansible.builtin.apt:
+    name: [git, python3, openssh-client, util-linux]
+    state: present
+  when: enable_wishlist_price_sync | bool
+
+- name: Require exporter API key
+  ansible.builtin.assert:
+    that:
+      - changedetection_api_key | length > 0
+      - enable_changedetection | bool
+    fail_msg: Bootstrap changedetection and supply CHANGEDETECTION_API_KEY first.
+  no_log: true
+  when: enable_wishlist_price_sync | bool
+
+- name: Check dedicated GitHub deploy key
+  ansible.builtin.stat:
+    path: "{{ wishlist_deploy_key }}"
+  register: wishlist_key
+  when: enable_wishlist_price_sync | bool
+
+- name: Require preinstalled dedicated GitHub deploy key
+  ansible.builtin.assert:
+    that: wishlist_key.stat.exists
+    fail_msg: Install the dedicated writable deploy key and verified github.com known_hosts for the pi user; see README.
+  when: enable_wishlist_price_sync | bool
+
+- name: Prepare exporter directory
+  ansible.builtin.file:
+    path: "{{ wishlist_sync_dir }}"
+    state: directory
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
+    mode: "0700"
+  when: enable_wishlist_price_sync | bool
+
+- name: Clone wishlist once (runtime service updates checkout)
+  ansible.builtin.git:
+    repo: "{{ wishlist_repository }}"
+    dest: "{{ wishlist_sync_dir }}/repo"
+    version: "{{ wishlist_branch }}"
+    key_file: "{{ wishlist_deploy_key }}"
+    update: false
+    accept_hostkey: false
+  become_user: "{{ docker_user }}"
+  when: enable_wishlist_price_sync | bool
+
+- name: Write private exporter environment
+  ansible.builtin.copy:
+    dest: "{{ wishlist_sync_dir }}/environment"
+    owner: "{{ docker_user }}"
+    group: "{{ docker_user }}"
+    mode: "0600"
+    content: |
+      CHANGEDETECTION_URL=http://127.0.0.1:{{ changedetection_port }}
+      CHANGEDETECTION_API_KEY={{ changedetection_api_key }}
+      GIT_SSH_COMMAND="ssh -i {{ wishlist_deploy_key }} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+  no_log: true
+  when: enable_wishlist_price_sync | bool
+
+- name: Install wishlist sync runner
+  ansible.builtin.template:
+    src: wishlist-price-sync.sh.j2
+    dest: /usr/local/bin/wishlist-price-sync
+    owner: root
+    group: root
+    mode: "0755"
+  when: enable_wishlist_price_sync | bool
+
+- name: Install wishlist systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: [wishlist-price-sync.service, wishlist-price-sync.timer]
+  register: wishlist_units
+  when: enable_wishlist_price_sync | bool
+
+- name: Enable wishlist price sync timer
+  ansible.builtin.systemd_service:
+    name: wishlist-price-sync.timer
+    enabled: true
+    state: started
+    daemon_reload: "{{ wishlist_units is changed }}"
+  when: enable_wishlist_price_sync | bool
+
+- name: Check for an installed wishlist timer
+  ansible.builtin.stat:
+    path: /etc/systemd/system/wishlist-price-sync.timer
+  register: wishlist_timer
+  when: not (enable_wishlist_price_sync | bool)
+
+- name: Disable wishlist price sync timer
+  ansible.builtin.systemd_service:
+    name: wishlist-price-sync.timer
+    enabled: false
+    state: stopped
+  when:
+    - not (enable_wishlist_price_sync | bool)
+    - wishlist_timer.stat.exists

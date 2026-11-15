@@ -116,3 +116,17 @@ hermes_model: {}
 
 # Dozzle hub: list of agents as host:port (set per host group)
 dozzle_remote_agents: []
+
+# Website change monitoring (enabled only on Pi 5).
+enable_changedetection: false
+changedetection_image: ghcr.io/dgtlmoon/changedetection.io:latest
+changedetection_port: 5000
+changedetection_api_key: "{{ lookup('env', 'CHANGEDETECTION_API_KEY') }}"
+changedetection_telegram_token: "{{ lookup('env', 'TELEGRAM_TOKEN') }}"
+changedetection_telegram_chat_id: "{{ lookup('env', 'TELEGRAM_TO') }}"
+# Opt in after bootstrap: API key and a writable GitHub deploy key are required.
+enable_wishlist_price_sync: false
+wishlist_repository: git@github.com:dlevchuk/OneMoreThing.git
+wishlist_branch: main
+wishlist_sync_dir: /home/pi/wishlist-price-sync
+wishlist_deploy_key: /home/pi/.ssh/wishlist_prices

@@ -1,0 +1,18 @@
+#!/bin/bash
+set -euo pipefail
+exec 9>{{ wishlist_sync_dir | quote }}/sync.lock
+flock -n 9 || exit 0
+cd {{ (wishlist_sync_dir ~ '/repo') | quote }}
+# A dedicated checkout; stop if someone has made uncommitted edits.
+test -z "$(git status --porcelain)" || { echo "Dirty exporter checkout; inspect it before retrying" >&2; exit 1; }
+git fetch origin {{ wishlist_branch | quote }}
+git -c user.name='Wishlist price monitor' -c user.email='wishlist-monitor@users.noreply.github.com' rebase {{ ('origin/' ~ wishlist_branch) | quote }}
+result=0
+python3 scripts/sync-prices.py || result=$?
+git add -- data/prices.json
+if ! git diff --cached --quiet; then
+  git -c user.name='Wishlist price monitor' -c user.email='wishlist-monitor@users.noreply.github.com' commit -m 'Update monitored prices'
+fi
+# Also retries a commit whose push failed on the previous run.
+git push origin {{ ('HEAD:' ~ wishlist_branch) | quote }}
+exit "$result"

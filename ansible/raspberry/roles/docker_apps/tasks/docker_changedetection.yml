@@ -1,0 +1,73 @@
+---
+- name: Create private changedetection datastore
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/changedetection"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Start changedetection
+  community.docker.docker_container:
+    name: changedetection
+    image: "{{ changedetection_image }}"
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "{{ docker_dir }}/changedetection:/datastore"
+    ports:
+      - "127.0.0.1:{{ changedetection_port }}:5000"
+    env:
+      TZ: "{{ timezone }}"
+      FETCH_WORKERS: "2"
+      MINIMUM_SECONDS_RECHECK_TIME: "3600"
+      LOGGER_LEVEL: INFO
+
+- name: Wait for changedetection
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ changedetection_port }}/"
+    status_code: [200, 302]
+    follow_redirects: none
+  register: changedetection_http
+  retries: 12
+  delay: 5
+  until: changedetection_http.status in [200, 302]
+  when: not ansible_check_mode
+
+- name: Read notification destinations
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ changedetection_port }}/api/v1/notifications"
+    headers:
+      x-api-key: "{{ changedetection_api_key }}"
+    return_content: true
+  register: changedetection_notifications
+  no_log: true
+  when:
+    - not ansible_check_mode
+    - changedetection_api_key | length > 0
+    - changedetection_telegram_token | length > 0
+    - changedetection_telegram_chat_id | length > 0
+
+- name: Add Telegram destination without replacing other destinations
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ changedetection_port }}/api/v1/notifications"
+    method: POST
+    headers:
+      x-api-key: "{{ changedetection_api_key }}"
+    body_format: json
+    body:
+      notification_urls:
+        - "tgram://{{ changedetection_telegram_token }}/{{ changedetection_telegram_chat_id }}"
+    status_code: [200, 201]
+  no_log: true
+  when:
+    - not ansible_check_mode
+    - changedetection_api_key | length > 0
+    - changedetection_telegram_token | length > 0
+    - changedetection_telegram_chat_id | length > 0
+    - ('tgram://' ~ changedetection_telegram_token ~ '/' ~ changedetection_telegram_chat_id) not in (changedetection_notifications.json.notification_urls | default([]))
+
+- name: Bootstrap instructions
+  ansible.builtin.debug:
+    msg: Open through SSH tunnel, set UI password, copy Settings / API key to CHANGEDETECTION_API_KEY, then rerun to configure Telegram. See README.
+  when: changedetection_api_key | length == 0

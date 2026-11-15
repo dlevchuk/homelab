@@ -1,0 +1,11 @@
+[Unit]
+Description=Synchronize wishlist prices every six hours
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:30:00
+RandomizedDelaySec=10min
+Persistent=true
+Unit=wishlist-price-sync.service
+
+[Install]
+WantedBy=timers.target

@@ -99,6 +99,21 @@
   ansible.builtin.include_tasks: docker_beszel.yml
   when: (enable_beszel | default(false) | bool) or (enable_beszel_agent | default(false) | bool)
 
+- name: Manage changedetection and wishlist price sync
+  ansible.builtin.include_tasks:
+    file: docker_changedetection.yml
+    apply:
+      tags: [changedetection]
+  when: enable_changedetection | bool
+  tags: [changedetection]
+
+- name: Manage wishlist price synchronization timer
+  ansible.builtin.include_tasks:
+    file: wishlist_price_sync.yml
+    apply:
+      tags: [changedetection]
+  tags: [changedetection]
+
 # Always included: tasks inside switch cron to present/absent by flags
 - name: Manage backups (cron)
   ansible.builtin.include_tasks: docker_backup.yml
