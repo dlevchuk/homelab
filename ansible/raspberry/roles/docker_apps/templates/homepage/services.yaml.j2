@@ -89,8 +89,8 @@
 {% if enable_changedetection | default(false) | bool %}
     - Changedetection:
         icon: changedetection
-        href: http://localhost:{{ changedetection_port }}
-        description: Wishlist prices · open SSH tunnel first
+        href: {{ changedetection_public_url if changedetection_tailscale_enabled else "http://localhost:" ~ changedetection_port }}
+        description: Wishlist prices · {{ "Tailscale" if changedetection_tailscale_enabled else "SSH tunnel" }}
         server: my-docker
         container: changedetection
         showStats: true

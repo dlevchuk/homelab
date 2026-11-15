@@ -343,7 +343,8 @@ to apply these limits. See [policy, overrides and verification](ansible/raspberr
 Pi 5 runs `ghcr.io/dgtlmoon/changedetection.io:latest` through the existing
 `docker_apps` role. Set `changedetection_image` to a tested tag/digest to pin it;
 the initial image pull and ARM64 runtime must be verified on the Pi.
-The container binds **127.0.0.1:5000**, with two fetch workers and a one-hour
+The container binds **the Pi’s Tailscale IPv4 address:5000** and **127.0.0.1:5000**,
+with two fetch workers and a one-hour
 minimum check interval. Configure each watch for six hours. Datastore:
 `/home/pi/docker/changedetection` (private, included in Docker backups and restore).
 These backups contain API and Telegram credentials. No browser container is
@@ -359,16 +360,18 @@ ansible-playbook -i ansible/raspberry/hosts ansible/raspberry/site.yml \
   -e ansible_ssh_private_key_file="$HOME/.ssh/raspberry"
 ```
 
-Open an SSH tunnel from your computer:
+Open `http://pi5.tail72e9f.ts.net:5000` from a device connected to your tailnet.
+Set a UI password and copy the key from Settings → API. The Glance/Homepage
+link points to this address; run the full playbook or the `glance` tag to refresh
+it. No SSH tunnel is needed. Tailnet ACLs must allow port 5000.
 
-```bash
-ssh -N -i ~/.ssh/raspberry -L 5000:127.0.0.1:5000 pi@pi5.tail72e9f.ts.net
-```
-
-Visit `http://localhost:5000`, set a UI password and copy the key from
-Settings → API. The Glance/Homepage link uses this same local tunnel;
-run the full playbook or the `glance` tag to refresh the dashboard.
-Port 5000 is not published to LAN/Tailscale/public interfaces.
+`changedetection_tailscale_enabled: true` on Pi 5 makes Ansible discover and
+validate its local Tailscale IPv4 using `tailscale ip -4`; a missing address
+fails deployment instead of publishing on all interfaces. Loopback remains
+available for the exporter and notification provisioning. The port is not bound
+to LAN addresses or `0.0.0.0`. The default on other hosts remains loopback only.
+If the Pi receives a different Tailscale IPv4, rerun the playbook to update the
+Docker binding. Tailscale must be running before the container starts.
 
 Supply `CHANGEDETECTION_API_KEY`, `TELEGRAM_TOKEN` and `TELEGRAM_TO` to the
 Ansible controller environment, or override the corresponding

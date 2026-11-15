@@ -121,6 +121,8 @@ dozzle_remote_agents: []
 enable_changedetection: false
 changedetection_image: ghcr.io/dgtlmoon/changedetection.io:latest
 changedetection_port: 5000
+changedetection_tailscale_enabled: false
+changedetection_public_url: "http://{{ ansible_host }}:{{ changedetection_port }}"
 changedetection_api_key: "{{ lookup('env', 'CHANGEDETECTION_API_KEY') }}"
 changedetection_telegram_token: "{{ lookup('env', 'TELEGRAM_TOKEN') }}"
 changedetection_telegram_chat_id: "{{ lookup('env', 'TELEGRAM_TO') }}"

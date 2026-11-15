@@ -66,5 +66,6 @@ pi5_fan_curve:
 # Raspberry Pi OS Trixie uses NetworkManager, including netplan-generated profiles.
 enable_wifi: true
 
-# Wishlist price / stock monitoring; API and UI stay on loopback.
+# Wishlist monitoring: UI on Tailscale, local API retained for the exporter.
 enable_changedetection: true
+changedetection_tailscale_enabled: true
