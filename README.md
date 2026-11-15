@@ -80,6 +80,56 @@ Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Ru
 - **Watchdog Setup**: hardware watchdog for automatic reboot on hangs
 - **Cron Management**: cron job setup for scheduled tasks
 
+### Hermes Agent (Pi 5)
+
+The `docker_apps` role installs the official ARM64-compatible
+`nousresearch/hermes-agent:stable` image on pi5 only. State, credentials and
+sessions persist in `/home/pi/docker/hermes` and are included in Docker backups.
+Watchtower updates are disabled for this container. The Docker socket is not
+mounted. Web ports 9119 (settings dashboard) and 9120 (chat) bind to host
+loopback. Tailscale Serve exposes them over HTTPS only within the tailnet:
+443 for the dashboard and 8443 for chat. This requires Tailscale Serve/HTTPS
+to be enabled for the tailnet. `hermes_trusted_proxy` must match the Docker
+bridge gateway (`docker network inspect bridge`); pi5 uses `172.17.0.1`.
+Terminal tools use the local backend inside the Hermes container.
+See the [official Docker guide](https://hermes-agent.nousresearch.com/docs/user-guide/docker).
+
+Deploy only Hermes from the repository root (override the inventory's legacy key path):
+
+```bash
+ansible-playbook -i ansible/raspberry/hosts ansible/raspberry/site.yml \
+  --limit rpi-pi5 --tags hermes \
+  -e ansible_ssh_private_key_file="$HOME/.ssh/raspberry"
+```
+
+Pi5 runs `gateway run` with the dashboard and Webapp enabled. Ansible generates
+a persistent random login in `/home/pi/docker/hermes/.env` on first deployment.
+Open `https://pi5.tail72e9f.ts.net` through Tailscale to configure providers
+and messaging; `https://pi5.tail72e9f.ts.net:8443` serves the chat interface.
+The login username is `hermes`; retrieve the generated password on pi5:
+
+```bash
+sudo sed -n '/^HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=/p' /home/pi/docker/hermes/.env
+```
+
+Configure a dedicated Telegram bot and allowed Telegram user IDs. Do not reuse
+the outage notification bot. An interactive setup wizard is also available.
+For Gemini, select **Google AI Studio / Gemini** and supply a Google AI Studio
+API key (`GOOGLE_API_KEY`, also recognized as `GEMINI_API_KEY`). Select an available
+model in the wizard. See the [provider reference](https://hermes-agent.nousresearch.com/docs/integrations/providers).
+
+```bash
+ssh -i ~/.ssh/raspberry pi@pi5.tail72e9f.ts.net
+docker exec -it hermes hermes setup
+```
+
+Use `docker exec hermes hermes gateway status` and a message from an allowed
+Telegram account to verify the gateway. Ansible leaves wizard-managed credentials
+and other configuration intact on subsequent runs, merging web listener, proxy
+and container-local terminal settings. Tailscale Serve is configured per port;
+unrelated listeners are retained. Disabling Hermes does not delete its existing
+Tailscale Serve routes; remove those explicitly if decommissioning the service.
+
 ### Deprecated
 
 Goodreads, IMDb, Feedly and GitHub quotas scripts no longer work (sites removed the feeds / APIs or block scraping). They live in [scripts/deprecated](scripts/deprecated/README.md) together with the last good backups, their workflows are disabled. Use manual CSV export for Goodreads and IMDb.

@@ -82,6 +82,22 @@ enable_music_assistant: false
 enable_home_assistant: false
 enable_beszel: false
 enable_beszel_agent: false
+enable_hermes: false
+
+# Official multi-architecture image; state and credentials live under /opt/data.
+hermes_image: nousresearch/hermes-agent:stable
+hermes_command: "sleep infinity"
+# Runtime account in the official image (different from the host's pi user).
+hermes_uid: "10000"
+hermes_gid: "10000"
+hermes_web_enabled: false
+hermes_bind_address: "127.0.0.1"
+hermes_web_public_url: "http://{{ homepage_host }}:9120"
+hermes_dashboard_public_url: "http://{{ homepage_host }}:9119"
+hermes_tailscale_serve: false
+hermes_tailscale_hostname: "{{ ansible_host }}"
+# Docker bridge gateway seen as the source of the host's reverse proxy.
+hermes_trusted_proxy: "172.17.0.1"
 
 # Dozzle hub: list of agents as host:port (set per host group)
 dozzle_remote_agents: []

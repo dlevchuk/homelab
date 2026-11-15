@@ -42,6 +42,8 @@
       enabled: "{{ enable_music_assistant | bool }}"
     - name: homeassistant
       enabled: "{{ enable_home_assistant | bool }}"
+    - name: hermes
+      enabled: "{{ enable_hermes | bool }}"
     - name: beszel
       enabled: "{{ enable_beszel | bool }}"
     - name: beszel-agent

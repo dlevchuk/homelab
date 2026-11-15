@@ -22,6 +22,16 @@ enable_music_assistant: false
 # Home Assistant працює тільки на pi5
 enable_home_assistant: true
 
+# Hermes Agent: web access only on the Tailscale interface.
+enable_hermes: true
+hermes_command: "gateway run"
+hermes_web_enabled: true
+hermes_bind_address: "127.0.0.1"
+hermes_web_public_url: "https://pi5.tail72e9f.ts.net:8443"
+hermes_dashboard_public_url: "https://pi5.tail72e9f.ts.net"
+hermes_tailscale_serve: true
+hermes_tailscale_hostname: "pi5.tail72e9f.ts.net"
+
 # Beszel hub працює на pi4, тут тільки agent
 enable_beszel: false
 enable_beszel_agent: true

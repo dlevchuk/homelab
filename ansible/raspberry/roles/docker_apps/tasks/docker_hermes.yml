@@ -1,0 +1,88 @@
+---
+# https://hermes-agent.nousresearch.com/docs/user-guide/docker
+- name: Ensure Hermes state directory exists
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/hermes"
+    state: directory
+    owner: "{{ hermes_uid }}"
+    group: "{{ hermes_gid }}"
+    mode: "0700"
+
+- name: Setup Hermes Agent
+  community.docker.docker_container:
+    name: hermes
+    image: "{{ hermes_image }}"
+    command: "{{ hermes_command }}"
+    state: started
+    volumes:
+      - "{{ docker_dir }}/hermes:/opt/data"
+    env:
+      TZ: "{{ timezone }}"
+      HERMES_DASHBOARD: "{{ hermes_web_enabled | ternary('1', '0') }}"
+    published_ports: "{{ [hermes_bind_address ~ ':9119:9119', hermes_bind_address ~ ':9120:9120'] if hermes_web_enabled else [] }}"
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    restart_policy: unless-stopped
+
+- name: Configure Hermes web access and persistent login
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - -i
+      - --user
+      - "{{ hermes_uid }}:{{ hermes_gid }}"
+      - hermes
+      - /opt/hermes/.venv/bin/python
+      - '-'
+      - "{{ hermes_web_public_url }}"
+      - "{{ hermes_dashboard_public_url }}"
+      - "{{ hermes_trusted_proxy }}"
+    stdin: "{{ lookup('file', role_path ~ '/files/configure_hermes_web.py') }}"
+  register: docker_apps_hermes_web_config
+  changed_when: "'changed' in docker_apps_hermes_web_config.stdout"
+  no_log: true
+  when:
+    - hermes_web_enabled | bool
+    - not ansible_check_mode
+
+- name: Read Tailscale HTTPS configuration
+  ansible.builtin.command:
+    argv: [tailscale, serve, status, --json]
+  register: docker_apps_hermes_serve
+  changed_when: false
+  when:
+    - hermes_web_enabled | bool
+    - hermes_tailscale_serve | bool
+    - not ansible_check_mode
+
+- name: Configure Hermes HTTPS proxies within the tailnet
+  ansible.builtin.command:
+    argv:
+      - tailscale
+      - serve
+      - --bg
+      - "--https={{ item.port }}"
+      - --yes
+      - "http://{{ hermes_bind_address }}:{{ item.target }}"
+  loop:
+    - {port: 443, target: 9119}
+    - {port: 8443, target: 9120}
+  changed_when: true
+  when:
+    - hermes_web_enabled | bool
+    - hermes_tailscale_serve | bool
+    - not ansible_check_mode
+    - >-
+      (docker_apps_hermes_serve.stdout | from_json).get('Web', {}).get(
+        hermes_tailscale_hostname ~ ':' ~ item.port, {}).get('Handlers', {}).get(
+        '/', {}).get('Proxy', '') != 'http://' ~ hermes_bind_address ~ ':' ~ item.target
+
+- name: Restart Hermes after web configuration changes
+  community.docker.docker_container:
+    name: hermes
+    state: started
+    restart: true
+  when:
+    - docker_apps_hermes_web_config is changed
+    - not ansible_check_mode

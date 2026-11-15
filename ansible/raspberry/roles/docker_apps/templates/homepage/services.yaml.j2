@@ -86,6 +86,16 @@
 {% endif %}
 
 - Applications:
+{% if enable_hermes | default(false) | bool and hermes_web_enabled | default(false) | bool %}
+    - Hermes:
+        icon: mdi-robot
+        href: {{ hermes_web_public_url }}
+        description: AI agent · Web chat & Telegram
+        server: my-docker
+        container: hermes
+        showStats: true
+{% endif %}
+
     - Syncthing:
         icon: syncthing
         href: http://{{ app_host }}:8384
