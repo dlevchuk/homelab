@@ -8,8 +8,8 @@ test -z "$(git status --porcelain)" || { echo "Dirty exporter checkout; inspect 
 git fetch origin {{ wishlist_branch | quote }}
 git -c user.name='Wishlist price monitor' -c user.email='wishlist-monitor@users.noreply.github.com' rebase {{ ('origin/' ~ wishlist_branch) | quote }}
 result=0
-python3 scripts/sync-prices.py || result=$?
-git add -- data/prices.json
+python3 -B scripts/sync-prices.py --state {{ (wishlist_sync_dir ~ "/watch-state.json") | quote }} || result=$?
+git add -- data/prices.json data/monitoring-status.json
 if ! git diff --cached --quiet; then
   git -c user.name='Wishlist price monitor' -c user.email='wishlist-monitor@users.noreply.github.com' commit -m 'Update monitored prices'
 fi

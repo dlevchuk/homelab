@@ -399,10 +399,10 @@ See [API documentation](https://changedetection.io/docs/api_v1/) and
 ### Publish prices to OneMoreThing
 
 The exporter lives in `dlevchuk/OneMoreThing`: `scripts/sync-prices.py`.
-Its README describes `config/price-watches.json`. Publish those files to that
-repository before enabling synchronization. The initial mapping is empty;
-real watch UUIDs, selectors and extraction rules must be configured in the UI
-and that mapping before any prices appear.
+Its README describes automatic reconciliation from the wishlist catalog and
+optional shop profiles. Publish those files before enabling synchronization.
+Watches are provisioned automatically; explicit UUID mappings are only needed
+for exceptions. Sources without exact UAH structured prices need shop profiles.
 
 1. On Pi, create `/home/pi/.ssh/wishlist_prices` as a dedicated Ed25519 key
    owned by `pi`, mode `0600`. Add only its public key as a **write-enabled
@@ -414,8 +414,9 @@ and that mapping before any prices appear.
 3. The role creates a dedicated checkout in `/home/pi/wishlist-price-sync/repo`
    and a private environment file. The systemd timer runs every six hours
    with up to ten minutes jitter and catches up after boot. It fetches/rebases
-   the configured branch, exports observations, commits only `data/prices.json`
-   if changed, and pushes. SSH deploy-key pushes trigger the existing Pages
+   the configured branch, reconciles watches, exports observations, and commits
+   only `data/prices.json` and `data/monitoring-status.json` when changed. It then
+   pushes. SSH deploy-key pushes trigger the existing Pages
    workflow. Protected branch rules must permit this key's pushes, or use a
    branch/workflow appropriate to your repository policy.
 
@@ -450,3 +451,37 @@ Validation without changing hosts:
 .venv/bin/ansible-playbook -i ansible/raspberry/hosts ansible/raspberry/site.yml \
   --syntax-check
 ```
+
+### Automatic card import and watch provisioning
+
+OneMoreThing now includes **Actions → Add wishlist card from URL**. Enter a
+public product URL and select a priority. The workflow extracts title, image and
+description from JSON-LD/Open Graph, updates the static catalog, and dispatches
+the Pages deployment. Shops with anti-bot/JavaScript-only pages can require a
+manual card; the importer stops when reliable metadata is absent. New gift IDs
+still require applying the generated catalog SQL to the wishlist database using
+the existing documented procedure; no privileged database key is provisioned here.
+
+Once `enable_wishlist_price_sync` is enabled, each timer run reconciles watches
+from `data/wishes.json`. URL choice: explicit `monitoring.url`, legacy watch rule,
+`localUrl`, then `originalUrl`. Deterministic integration-owned titles allow
+recovery after interrupted requests without recreating watches on every run.
+Removed/disabled/replaced sources are paused, never deleted; manually created
+watches remain untouched. Set `monitoring: false` on a gift to opt out.
+
+The exporter reads exact UAH Product/Offer JSON-LD from changedetection's last
+HTML snapshot without issuing another shop request. Aggregate price ranges,
+foreign currencies, conflicting variants and absent structured data need a shop
+profile/explicit extraction rule. Profiles live in `config/shop-profiles.json`
+in OneMoreThing; IDs and manual watch UUIDs are optional. Profile keys can be
+hostnames or named presets selected by `monitoring.profile`. See its README.
+Default watches report text changes and track JSON-LD pricing; configure
+`includeFilters` for noisy shops. Telegram defaults are inherited from the service.
+
+`watch-state.json` is stored privately next to the exporter environment, outside
+the repository. `data/monitoring-status.json` exposes only gift IDs and short
+statuses (`ok`, `disabled`, `needs_review`, `watch_sync_failed`,
+`duplicate_watches`). It contains no tokens, watch UUIDs or captured shop HTML.
+Deploy the updated OneMoreThing code before the new runner, since the runner
+stages this status file as well as prices. The existing deploy-key/API bootstrap
+is still required once; subsequent card and watch creation is automated.
