@@ -104,8 +104,10 @@ a Pi, while changedetection's datastore is restored by the existing Docker backu
 
 Set `enable_wishlist_price_sync: false` to stop/disable its timer and retain data. `enable_changedetection: false`
 removes the container on a full playbook run, retaining its datastore. To switch
-off both, set both flags to false and run the full playbook. Completed gifts must have their mapping removed and
-watch paused manually; no privileged wishlist database credentials are used.
+off both, set both flags to false and run the full playbook. Completed gift IDs are read from the same public catalog API as the website;
+their integration-owned watches are deleted automatically and are not recreated.
+Pi 4 needs no privileged database credentials. Archived price history remains visible
+in completed cards.
 
 Validation without changing hosts:
 
@@ -120,9 +122,12 @@ OneMoreThing now includes **Actions → Add wishlist card from URL**. Enter a
 public product URL and select a priority. The workflow extracts title, image and
 description from JSON-LD/Open Graph, updates the static catalog, and dispatches
 the Pages deployment. Shops with anti-bot/JavaScript-only pages can require a
-manual card; the importer stops when reliable metadata is absent. New gift IDs
-still require applying the generated catalog SQL to the wishlist database using
-the existing documented procedure; no privileged database key is provisioned here.
+manual card; the importer stops when reliable metadata or an exact price is absent.
+An explicit workflow option allows a card without monitoring. New gift IDs are
+automatically synchronized to the database before the Pages deployment through
+a Supabase Edge Function that verifies the GitHub OIDC identity. Manual catalog SQL
+is no longer required for new wishes. No privileged database key is provisioned
+on Pi 4 or in GitHub; the server credential stays inside Supabase.
 
 Once `enable_wishlist_price_sync` is enabled, each timer run reconciles watches
 from `data/wishes.json`. Only the card’s `originalUrl` (the «Джерело» link) is monitored.
