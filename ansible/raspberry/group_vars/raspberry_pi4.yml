@@ -17,3 +17,8 @@ enable_beszel_agent: true
 # Wi-Fi: multi-network + fallback AP.
 # Pi 4 runs NetworkManager (migrated by hand from dhcpcd + wpa_supplicant)
 enable_wifi: true
+
+# Wishlist monitoring migrated from Pi 5. Run migrate-wishlist.yml before deploying.
+enable_changedetection: true
+changedetection_tailscale_enabled: true
+enable_wishlist_price_sync: true

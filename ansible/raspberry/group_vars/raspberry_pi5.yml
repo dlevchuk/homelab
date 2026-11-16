@@ -67,6 +67,6 @@ pi5_fan_curve:
 enable_wifi: true
 
 # Wishlist monitoring: UI on Tailscale, local API retained for the exporter.
-enable_changedetection: true
-changedetection_tailscale_enabled: true
-enable_wishlist_price_sync: true
+enable_changedetection: false
+changedetection_tailscale_enabled: false
+enable_wishlist_price_sync: false

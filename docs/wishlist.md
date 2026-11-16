@@ -2,7 +2,7 @@
 
 [← Repository overview](../README.md)
 
-Pi 5 runs `ghcr.io/dgtlmoon/changedetection.io:latest` through the existing
+Pi 4 runs `ghcr.io/dgtlmoon/changedetection.io:latest` through the existing
 `docker_apps` role. Set `changedetection_image` to a tested tag/digest to pin it;
 the initial image pull and ARM64 runtime must be verified on the Pi.
 The container binds **the Pi’s Tailscale IPv4 address:5000** and **127.0.0.1:5000**,
@@ -18,16 +18,16 @@ Deploy from this repository root:
 
 ```bash
 ansible-playbook -i ansible/raspberry/hosts ansible/raspberry/site.yml \
-  --limit rpi-pi5 --tags changedetection \
+  --limit rpi-pi4 --tags changedetection \
   -e ansible_ssh_private_key_file="$HOME/.ssh/raspberry"
 ```
 
-Open `http://pi5.tail72e9f.ts.net:5000` from a device connected to your tailnet.
+Open `http://raspberrypi.tail72e9f.ts.net:5000` from a device connected to your tailnet.
 Set a UI password and copy the key from Settings → API. The Glance/Homepage
 link points to this address; run the full playbook or the `glance` tag to refresh
 it. No SSH tunnel is needed. Tailnet ACLs must allow port 5000.
 
-`changedetection_tailscale_enabled: true` on Pi 5 makes Ansible discover and
+`changedetection_tailscale_enabled: true` on Pi 4 makes Ansible discover and
 validate its local Tailscale IPv4 using `tailscale ip -4`; a missing address
 fails deployment instead of publishing on all interfaces. Loopback remains
 available for the exporter and notification provisioning. The port is not bound
@@ -71,13 +71,13 @@ for exceptions. Sources without exact structured prices need extraction profiles
    deploy key** in OneMoreThing → Settings → Deploy keys. Do not reuse the
    infrastructure SSH key. Install a verified GitHub host key in pi's
    `~/.ssh/known_hosts`; strict host key verification remains enabled.
-2. Set `enable_wishlist_price_sync: true` in Pi 5 group vars and supply
+2. Set `enable_wishlist_price_sync: true` in Pi 4 group vars and supply
    `CHANGEDETECTION_API_KEY`. Rerun the Ansible command above.
 3. The role creates a dedicated checkout in `/home/pi/wishlist-price-sync/repo`
    and a private environment file. The systemd timer runs every six hours
    with up to ten minutes jitter and catches up after boot. It fetches/rebases
    the configured branch, reconciles watches, exports observations, and commits
-   only `data/prices.json` and `data/monitoring-status.json` when changed. It then
+   `data/prices.json`, `data/monitoring-status.json` and `data/price-history.json` when changed. It then
    pushes. SSH deploy-key pushes trigger the existing Pages
    workflow. Protected branch rules must permit this key's pushes, or use a
    branch/workflow appropriate to your repository policy.
@@ -149,3 +149,41 @@ statuses (`ok`, `disabled`, `needs_review`, `watch_sync_failed`,
 Deploy the updated OneMoreThing code before the new runner, since the runner
 stages this status file as well as prices. The existing deploy-key/API bootstrap
 is still required once; subsequent card and watch creation is automated.
+
+## Migration from Pi 5 to Pi 4
+
+Run `ansible/raspberry/migrate-wishlist.yml` from the repository root **before**
+pushing the host enable/disable flags to CI. Both hosts must be online:
+
+```bash
+.venv/bin/ansible-playbook -i ansible/raspberry/hosts \
+  ansible/raspberry/migrate-wishlist.yml \
+  -e ansible_ssh_private_key_file="$HOME/.ssh/raspberry"
+```
+
+The playbook refuses to overwrite an existing destination datastore. It stops
+both the source publisher and container, transfers the persistent datastore,
+API/Telegram configuration, exporter checkout/state and dedicated deploy key
+through a private temporary archive, and merges GitHub known-host entries without
+replacing Pi 4’s existing file. It verifies the API on Pi 4 before removing the
+Pi 5 container. A failure stops the destination and restores the source timer
+and container. Temporary credential archives are removed; the original Pi 5
+bind-mount data is retained as rollback material. Do not rerun over a populated
+destination without inspection. Normal CI then keeps Pi 4 enabled and Pi 5 disabled.
+
+New URL: `http://raspberrypi.tail72e9f.ts.net:5000`. The same existing API key and
+Telegram settings remain valid. Update Homepage on Pi 4 and Glance on Pi 5 with
+the normal playbook/tags. The monitoring UI and exporter both live on Pi 4.
+
+After migration, wait for current checks, audit with OneMoreThing’s
+`scripts/audit-monitors.py`, then use `--prune` to delete confirmed failing
+integration-owned monitors. Preserve and commit the generated
+`config/monitoring-disabled.json` so reconciliation does not recreate them.
+Existing source datastore is the rollback copy for this cleanup. Pending first
+checks and unrelated manual monitors are never deleted by the audit tool.
+
+The exporter now appends real successful price observations to
+`data/price-history.json`; the existing publisher stages this file and the site
+renders its history as an SVG graph. No prices are fabricated for dates before
+recording began. The runner tolerates a checkout from before history support
+until the new OneMoreThing code is published.

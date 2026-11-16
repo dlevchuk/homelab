@@ -10,6 +10,7 @@ git -c user.name='Wishlist price monitor' -c user.email='wishlist-monitor@users.
 result=0
 python3 -B scripts/sync-prices.py --state {{ (wishlist_sync_dir ~ "/watch-state.json") | quote }} || result=$?
 git add -- data/prices.json data/monitoring-status.json
+if [ -f data/price-history.json ]; then git add -- data/price-history.json; fi
 if ! git diff --cached --quiet; then
   git -c user.name='Wishlist price monitor' -c user.email='wishlist-monitor@users.noreply.github.com' commit -m 'Update monitored prices'
 fi

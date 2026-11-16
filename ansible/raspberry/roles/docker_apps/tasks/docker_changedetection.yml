@@ -33,6 +33,7 @@
     ports: "{{ ['127.0.0.1:' ~ changedetection_port ~ ':5000'] + ([changedetection_tailscale_ip.stdout | trim ~ ':' ~ changedetection_port ~ ':5000'] if changedetection_tailscale_enabled else []) }}"
     env:
       TZ: "{{ timezone }}"
+      BASE_URL: "{{ changedetection_public_url }}"
       FETCH_WORKERS: "2"
       MINIMUM_SECONDS_RECHECK_TIME: "3600"
       LOGGER_LEVEL: INFO
