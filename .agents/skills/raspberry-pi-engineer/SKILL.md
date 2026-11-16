@@ -1,0 +1,42 @@
+---
+name: raspberry-pi-engineer
+description: >-
+  Розробляй і підтримуй Raspberry Pi homelab цього проєкту: Ansible, Docker,
+  systemd, Tailscale, NetworkManager, GPIO/SPI, thermal dashboard, моніторинг
+  та відновлення після перебоїв живлення. Використовуй для конфігурації,
+  діагностики та змін сервісів Pi 4, Pi 5 і Zero 2 W та їхніх датчиків.
+  Не застосовуй до незалежних Windows/WSL задач або загальних Linux питань.
+---
+
+# Raspberry Pi Engineer
+
+Працюй українською. Зберігай дані та віддалений доступ; враховуй обмеження конкретної плати.
+
+Корінь проєкту визначай за `ansible/raspberry/site.yml` (локально `/Users/last/Documents/GitHub/raspberry`). Шляхи коду нижче відносні до кореня репозиторію.
+
+Перед роботою прочитай [стек](references/stack.md), inventory, `group_vars` потрібного хоста та defaults/tasks відповідної ролі. Знімок стека не доводить поточного runtime стану. Коментарі можуть застаріти: перевіряй значення flags і реалізацію.
+
+Для змін залежностей, dashboard, hardware та діагностики прочитай [уроки й приклади](references/corrections-and-examples.md). Не перетворюй окреме виправлення на універсальну заборону.
+
+## Робочі правила
+
+- Встанови цільовий хост і шар проблеми: hardware/живлення, ОС/мережа, Docker/systemd чи застосунок. Результат локальної команди на Mac/в контейнері не описує стан Pi.
+- Постійні зміни роби в наявній Ansible ролі: tasks, defaults, templates/files і host overrides. Узгоджене ручне виправлення на Pi відобрази в Ansible в межах задачі.
+- Зберігай ідемпотентність, перезапускай сервіси через handlers після змін. Перевіряй архітектуру ОС і підтримку образу, не виводь її лише з моделі плати.
+- Зберігай SSH/Tailscale шлях керування. Для наявного Wi-Fi використовуй NetworkManager; зберігай чужі профілі та не вимикай глобальний wpa_supplicant лише через його присутність.
+- У схемі підключення вказуй фізичний пін, BCM GPIO, напругу й зайняті інтерфейси. Перевіряй фактичний модуль перед перепідключенням.
+- Зберігай bind mounts, volumes, SQLite й облікові дані. `enable_*: false` прибирає керований контейнер зі збереженням даних; враховуй окреме правило Beszel agent.
+- Передавай секрети існуючим каналом GitHub Secrets → env → файли `0600`, захищай секретні Ansible tasks через `no_log`. Не додавай значення секретів до git чи скіла.
+- Розрізняй локальну перевірку, `--check --diff`, deployment і runtime перевірку. Check mode пропускає частину shell/command tasks і не доводить працездатність сервісу.
+- Перевіряй відповідний шар: наявні Python regression tests, потрібний lint/syntax check; після дозволеного deployment — unit/container, журнали, цільовий endpoint. Документаційна зміна не потребує повного deployment.
+- Наприкінці вкажи, що змінилося, що перевірено, чи застосовано на Pi та які обмеження залишилися. Скіл не надає окремого дозволу на push, deployment, перезавантаження або зупинку сервісів.
+
+## Джерела за задачею
+
+- Deployment/CI/secrets: `docs/deployment.md`, `.github/workflows/ansible.yml`.
+- Мережа: `docs/wifi.md`, роль `wifi`.
+- Камера/сенсори: `docs/thermal-camera.md`, роль `thermal_cam`.
+- Backup/носії: `docs/backup-restore.md`; журнали: `docs/logging.md`.
+- Dashboard/assistant: `docs/glance.md`, `docs/hermes.md`.
+- Перебої: `docs/outage-notify.md`, `docs/power-alerts.md`.
+- Wishlist: `docs/wishlist.md`.
