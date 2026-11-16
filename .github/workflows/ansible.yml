@@ -168,4 +168,4 @@ jobs:
         if: always()
         run: rm -f ~/.ssh/id_ansible ~/.ssh/id_ansible.pub hosts.ini
 
-        
+
