@@ -9,17 +9,17 @@ jobs:
     if: false
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Tailscale
-      uses: tailscale/github-action@v3
+      uses: tailscale/github-action@v4
       with:
         oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
         oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
         tags: tag:ci
 
     - name: rsync deployments
-      uses: burnett01/rsync-deployments@5.2.1
+      uses: burnett01/rsync-deployments@9.0.4
       with:
         switches: -avz --delete --chmod=755
         path: scripts/deprecated/backup_feedly/feedly_backup.py
@@ -30,13 +30,13 @@ jobs:
         remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Install Python dependencies
-      uses: py-actions/py-dependency-install@v2
+      uses: py-actions/py-dependency-install@v4
       with:
         path: scripts/deprecated/backup_feedly/requirements.txt
         update-pip: "true"
 
     - name: executing remote ssh to setup cron
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@v1.2.5
       with:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
