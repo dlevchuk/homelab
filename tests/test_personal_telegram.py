@@ -70,7 +70,7 @@ class QrLogin(unittest.IsolatedAsyncioTestCase):
 
     async def test_qr_2fa_is_entered_locally(self):
         client = await self.run_qr(lambda needed: [needed()])
-        client.sign_in.assert_awaited_once_with(password='test')
+        client.sign_in.assert_awaited_once_with(password='test')  # pragma: allowlist secret -- dummy test password
 
     async def test_qr_expiry_has_bounded_retries(self):
         with self.assertRaisesRegex(ValueError, 'timed out'):

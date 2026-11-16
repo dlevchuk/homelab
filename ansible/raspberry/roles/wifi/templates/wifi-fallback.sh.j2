@@ -93,7 +93,7 @@ get_ap_client_count() {
 ensure_ap_profile() {
     if ! $NMCLI connection show id "$AP_CON_NAME" >/dev/null 2>&1; then
         if [ -z "$AP_PASSWORD" ]; then
-            log "WIFI_AP_PASSWORD not provided. Cannot create AP profile."
+            log "Hotspot password not provided in WIFI_CONFIG. Cannot create AP profile."
             return 1
         fi
         log "AP profile '$AP_CON_NAME' missing. Creating it..."
