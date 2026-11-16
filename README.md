@@ -299,7 +299,6 @@ Rules and behaviour:
 - All networks have the same priority (`wifi_client_priority`, 10): the Pi connects to whichever known network is available.
 - Profiles are named `wifi-<ssid>` and are created or updated by Ansible. Connections that were not created by the role are left alone.
 - The hotspot SSID is `<inventory_hostname>-ap` (for example `rpi-pi4-ap`), its address is `10.42.0.1/24`, and a connected client reaches the Pi with `ssh pi@10.42.0.1`.
-- Legacy fallback: if `WIFI_CONFIG` is empty, the role reads the separate secrets `WIFI_NETWORKS` (JSON array of the same network objects) and `WIFI_AP_PASSWORD`.
 - If no Wi-Fi secrets are set, the role skips client and hotspot profile creation, but still installs dependencies and deploys the fallback timer and script. Existing profiles are preserved.
 
 To change networks: update the secret, then run Actions → `Run Ansible Playbook` with `limit` for that Pi (first with `check`, if you want to see the diff).

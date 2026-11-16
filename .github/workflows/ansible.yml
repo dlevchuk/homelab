@@ -149,9 +149,6 @@ jobs:
           ANSIBLE_FORKS: "10"
           ANSIBLE_SSH_ARGS: "-o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=15 -o ConnectTimeout=15"
           ANSIBLE_CALLBACKS_ENABLED: "ansible.posix.profile_tasks,ansible.posix.timer"
-          WIFI_CONFIG: ${{ secrets.WIFI_CONFIG }}
-          WIFI_NETWORKS: ${{ secrets.WIFI_NETWORKS }}
-          WIFI_AP_PASSWORD: ${{ secrets.WIFI_AP_PASSWORD }}
         run: |
           EXTRA=""
           if [ "$CHECK_MODE" = "true" ]; then

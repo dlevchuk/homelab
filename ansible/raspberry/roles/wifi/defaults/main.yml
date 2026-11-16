@@ -1,6 +1,6 @@
 ---
-# Environment secret lookup: single JSON config (WIFI_CONFIG) or legacy separated secrets (WIFI_NETWORKS, WIFI_AP_PASSWORD)
-wifi_config_raw: "{{ lookup('ansible.builtin.env', 'WIFI_CONFIG') | default(lookup('ansible.builtin.env', 'WIFI_NETWORKS'), true) | default('', true) }}"
+# Environment secret lookup: single JSON config (WIFI_CONFIG)
+wifi_config_raw: "{{ lookup('ansible.builtin.env', 'WIFI_CONFIG') | default('', true) }}"
 wifi_config_parsed: >-
   {{
     (wifi_config_raw | from_json)
@@ -18,7 +18,6 @@ wifi_networks: >-
 wifi_ap_password: >-
   {{
     (wifi_config_parsed.ap_password if (wifi_config_parsed is mapping and 'ap_password' in wifi_config_parsed) else '')
-    | default(lookup('ansible.builtin.env', 'WIFI_AP_PASSWORD') | default('', true), true)
   }}
 
 wifi_interface: "wlan0"
