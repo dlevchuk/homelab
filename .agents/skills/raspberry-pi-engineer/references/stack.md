@@ -36,6 +36,8 @@ BME280: SPI, chip ID `0x60`, лише 3.3 V. Написи SCL/SDA на моду�
 
 ## Software і операції
 
+- Speedtest Tracker (`lscr.io/linuxserver/speedtest-tracker`): стандартний логін `admin@example.com`, пароль `password`, якщо їх не змінювали в застосунку. Це публічні початкові дані, а не підтверджені поточні облікові дані Pi. У проєкті вебпорт `8765`; конфігурація — `ansible/raspberry/roles/docker_apps/tasks/docker_speedtest.yml`. Джерело: [LinuxServer Application Setup](https://docs.linuxserver.io/images/docker-speedtest-tracker/#application-setup), перевірено 2026-11-17.
+
 - Ansible: `ansible/raspberry/site.yml`; ролі `logging`, `wifi`, `common`, `docker_apps`, `thermal_cam`, `beszel_agent`, `outage_notify`, `space_cowboy`.
 - Docker: `community.docker.docker_container`; Syncthing, Speedtest, Glances, Watchtower та інші застосунки залежать від defaults + host overrides. Наявність task-файла не означає enabled. Music Assistant вимкнений у Pi 5 попри коментар про його розташування.
 - NetworkManager/nmcli, fallback AP `10.42.0.1/24`, секрет `WIFI_CONFIG`; boot grace 3 хв, timer щохвилини, retry клієнтських мереж кожні 5 хв за відсутності AP-клієнтів. Роль не мігрує dhcpcd автоматично; зберігає netplan-generated профілі.
