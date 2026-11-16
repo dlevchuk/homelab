@@ -402,7 +402,7 @@ The exporter lives in `dlevchuk/OneMoreThing`: `scripts/sync-prices.py`.
 Its README describes automatic reconciliation from the wishlist catalog and
 optional shop profiles. Publish those files before enabling synchronization.
 Watches are provisioned automatically; explicit UUID mappings are only needed
-for exceptions. Sources without exact UAH structured prices need shop profiles.
+for exceptions. Sources without exact structured prices need extraction profiles. Prices retain the source currency.
 
 1. On Pi, create `/home/pi/.ssh/wishlist_prices` as a dedicated Ed25519 key
    owned by `pi`, mode `0600`. Add only its public key as a **write-enabled
@@ -463,15 +463,17 @@ still require applying the generated catalog SQL to the wishlist database using
 the existing documented procedure; no privileged database key is provisioned here.
 
 Once `enable_wishlist_price_sync` is enabled, each timer run reconciles watches
-from `data/wishes.json`. URL choice: explicit `monitoring.url`, legacy watch rule,
-`localUrl`, then `originalUrl`. Deterministic integration-owned titles allow
+from `data/wishes.json`. Only the card’s `originalUrl` (the «Джерело» link) is monitored.
+`localUrl` and URL overrides are ignored; cards without `originalUrl` are skipped.
+Old integration-owned watches for replaced local sources are paused, and old
+observations from those sources are removed instead of relabeled. Deterministic integration-owned titles allow
 recovery after interrupted requests without recreating watches on every run.
 Removed/disabled/replaced sources are paused, never deleted; manually created
 watches remain untouched. Set `monitoring: false` on a gift to opt out.
 
-The exporter reads exact UAH Product/Offer JSON-LD from changedetection's last
+The exporter reads exact Product/Offer JSON-LD in the source currency from changedetection's last
 HTML snapshot without issuing another shop request. Aggregate price ranges,
-foreign currencies, conflicting variants and absent structured data need a shop
+unknown/mixed currencies, conflicting variants and absent structured data need a source
 profile/explicit extraction rule. Profiles live in `config/shop-profiles.json`
 in OneMoreThing; IDs and manual watch UUIDs are optional. Profile keys can be
 hostnames or named presets selected by `monitoring.profile`. See its README.
