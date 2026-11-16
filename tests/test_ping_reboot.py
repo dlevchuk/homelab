@@ -18,7 +18,7 @@ class PingRebootTests(unittest.TestCase):
                              ('REBOOT=/sbin/reboot', 'REBOOT=mock_reboot'),
                              ('IP=/usr/bin/ip', 'IP=mock_ip'),
                              ('FAIL_FILE=/tmp/ping_reboot_fail_count', f'FAIL_FILE={fail}'),
-                             ('REBOOT_MARKER=/var/lib/ping-reboot/reboot-requested', f'REBOOT_MARKER={marker}'),
+                             ('REBOOT_MARKER=/var/lib/ping-reboot/reboot-requested', f'REBOOT_MARKER={marker}'),  # pragma: allowlist secret -- filesystem path
                              ('MIN_UPTIME_SEC=600', 'MIN_UPTIME_SEC=0')]:
                 source = source.replace(old, new)
             # Disable local-machine Wi-Fi tools; no host network or reboot is touched.

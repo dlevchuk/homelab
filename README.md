@@ -295,7 +295,7 @@ Networks and the hotspot password are not stored in git. They come from the GitH
 
 Rules and behaviour:
 
-- It must be valid JSON: no trailing commas, lowercase `true` / `false`, double quotes only, and `"` or `\` inside a password must be escaped. Validate before pasting into the secret: `jq -c . wifi.json` prints a compact one-line JSON or the error (do not commit the file).
+- It must be valid JSON: no trailing commas, lowercase `true` / `false`, double quotes only, and `"` or `\` inside a password must be escaped. Validate before saving `WIFI_CONFIG`: `jq -c . wifi.json` prints a compact one-line JSON or the error (do not commit the file).
 - All networks have the same priority (`wifi_client_priority`, 10): the Pi connects to whichever known network is available.
 - Profiles are named `wifi-<ssid>` and are created or updated by Ansible. Connections that were not created by the role are left alone.
 - The hotspot SSID is `<inventory_hostname>-ap` (for example `rpi-pi4-ap`), its address is `10.42.0.1/24`, and a connected client reaches the Pi with `ssh pi@10.42.0.1`.
