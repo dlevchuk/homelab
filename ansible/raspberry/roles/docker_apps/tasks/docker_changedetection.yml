@@ -83,5 +83,5 @@
 
 - name: Bootstrap instructions
   ansible.builtin.debug:
-    msg: "Open {{ changedetection_public_url if changedetection_tailscale_enabled else 'http://localhost:' ~ changedetection_port ~ ' through an SSH tunnel' }}, set UI password, copy Settings / API key to CHANGEDETECTION_API_KEY, then rerun to configure Telegram. See README."
+    msg: "Open {{ changedetection_public_url if changedetection_tailscale_enabled else 'http://localhost:' ~ changedetection_port ~ ' through an SSH tunnel' }}, set UI password, copy Settings / API key to CHANGEDETECTION_API_KEY, then rerun to configure Telegram. See docs/wishlist.md."
   when: changedetection_api_key | length == 0

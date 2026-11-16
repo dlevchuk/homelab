@@ -164,3 +164,17 @@ jobs:
       - name: Cleanup SSH Key & Inventory
         if: always()
         run: rm -f ~/.ssh/id_ansible ~/.ssh/id_ansible.pub hosts.ini
+
+      - name: Notify Telegram on failure
+        if: failure()
+        uses: appleboy/telegram-action@214f06cfa3d3a588c1472116889437e7c6fd29b1 # v1.1.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ❌ Workflow Failed
+
+            Workflow: ${{ github.workflow }}
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

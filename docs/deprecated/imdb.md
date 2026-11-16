@@ -1,5 +1,11 @@
 # IMDB Custom Lists Backup
 
+[← Documentation](../index.md) · [Source files](../../scripts/deprecated/backup_imdb_web/)
+
+Run local commands from `scripts/deprecated/backup_imdb_web/` in the repository.
+
+> Historical documentation for a retired integration. See the [current status](index.md) before using these instructions.
+
 Automated backup script for IMDB custom lists. This script scrapes public custom lists from an IMDB user profile and exports them to JSON format.
 
 ## Overview

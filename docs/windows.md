@@ -1,5 +1,7 @@
 # Windows (win10 -> win11 prep + apps + AutoHotkey)
 
+[← Documentation](index.md) · [Source files](../ansible/windows/)
+
 Ansible для Windows-хоста. Поки без реального хоста, запуск вручну (як laptop/wsl), в CI тільки lint. Підключення по OpenSSH через Tailscale.
 
 Ролі:
@@ -229,7 +231,7 @@ ansible-playbook site.yml --tags win11 -e win11_upgrade_iso_url=https://example/
 ## CI
 
 - `.github/workflows/ansible.yml` деплоїть тільки Pi і тригериться лише на `ansible/raspberry/**`, правки в `ansible/windows` його не запускають.
-- `.github/workflows/ansible_windows_lint.yml` на зміни в `ansible/windows/**` ганяє `ansible-playbook site.yml --syntax-check` і `ansible-lint --profile basic`. До хоста не підключається. Збій приходить у Telegram через `telegram_notify.yml`.
+- `.github/workflows/ci.yml` перевіряє зміни в `ansible/windows/**` у PR через `ansible-playbook site.yml --syntax-check` і `ansible-lint --profile basic`. До хоста не підключається; результат видно в check `CI checks`.
 
 ## Нюанси (win11_upgrade і SSH)
 

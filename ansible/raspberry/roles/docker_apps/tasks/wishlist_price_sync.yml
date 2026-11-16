@@ -23,7 +23,7 @@
 - name: Require preinstalled dedicated GitHub deploy key
   ansible.builtin.assert:
     that: wishlist_key.stat.exists
-    fail_msg: Install the dedicated writable deploy key and verified github.com known_hosts for the pi user; see README.
+    fail_msg: Install the dedicated writable deploy key and verified github.com known_hosts for the pi user; see docs/wishlist.md.
   when: enable_wishlist_price_sync | bool
 
 - name: Prepare exporter directory

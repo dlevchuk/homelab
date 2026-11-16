@@ -1,5 +1,7 @@
 # Fleet log retention
 
+[← Documentation](index.md) · [Source files](../ansible/raspberry/roles/logging/)
+
 The `logging` role runs on every host in `raspberry`, including Pi Zero.
 Defaults can be overridden in group_vars or host_vars.
 
@@ -32,7 +34,7 @@ quiet containers can retain logs older than seven days. Containers created outsi
 this playbook and application logs written inside volumes need their own policies.
 No Docker daemon restart or daemon configuration change is needed.
 
-Main variables are in [defaults/main.yml](defaults/main.yml).
+Main variables are in [defaults/main.yml](../ansible/raspberry/roles/logging/defaults/main.yml).
 
 Apply just the system logging role (does not update Docker containers):
 

@@ -1,4 +1,9 @@
 # light outage
+
+[← Documentation](index.md) · [Source files](../scripts/light_outage/)
+
+Run local commands from `scripts/light_outage/` in the repository.
+
 This script fetches the power outage schedule from energy-ua.info (via ScraperAPI / ZenRows proxies) and sends a daily summary to Telegram (and optionally Discord).
 
 ## Installation:

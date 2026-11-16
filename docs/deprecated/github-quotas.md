@@ -1,5 +1,11 @@
 # get github quotas
 
+[← Documentation](../index.md) · [Source files](../../scripts/deprecated/github_quotas/)
+
+Run local commands from `scripts/deprecated/github_quotas/` in the repository.
+
+> Historical documentation for a retired integration. See the [current status](index.md) before using these instructions.
+
 ⚠️ **DEPRECATED**: This script and workflow are no longer functional as GitHub has deprecated the billing API endpoints used by this script. The API endpoints (`/users/{username}/settings/billing/*`) are no longer available.
 
 This script was designed to get notifications to telegram about your github account quotas.

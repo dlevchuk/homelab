@@ -1,6 +1,10 @@
 # Deprecated scripts
 
-Scripts that no longer work. Kept for reference only, their workflows are disabled.
+[← Documentation](../index.md) · [Source files](../../scripts/deprecated/)
+
+Run local commands from `scripts/deprecated/` in the repository.
+
+Scripts that no longer work. Kept for reference only, their workflows have been removed (available in Git history).
 
 | Script | Status | Why | Replacement |
 | :--- | :--- | :--- | :--- |
@@ -12,5 +16,12 @@ Scripts that no longer work. Kept for reference only, their workflows are disabl
 
 Historical backups stay in their directories. `backup_imdb_web/imdb_backup.json` contains an older scraper log followed by JSON, so it is not directly parseable as JSON; preserve the original when recovering its data.
 
-Workflows are kept in `.github/workflows/` with `if: false` (manual `workflow_dispatch` only, job is skipped).
-Paths inside them already point to `scripts/deprecated/...`, so they can be re-enabled by removing `if: false`.
+## Historical guides
+
+- [Goodreads](goodreads.md)
+- [IMDb scraper](imdb.md)
+- [Legacy IMDb cookie export](imdb-legacy.md)
+- [Feedly](feedly.md)
+- [GitHub quotas](github-quotas.md)
+
+Script and backup paths in the table are relative to `scripts/deprecated/`.

@@ -1,4 +1,11 @@
 # feedly backup
+
+[← Documentation](../index.md) · [Source files](../../scripts/deprecated/backup_feedly/)
+
+Run local commands from `scripts/deprecated/backup_feedly/` in the repository.
+
+> Historical documentation for a retired integration. See the [current status](index.md) before using these instructions.
+
 This script allows you to backup your Feedly data, including your OPML file and saved articles, and receive notifications via Telegram about the backup status.
 > [!IMPORTANT]
 > Starting October 2023, Feedly developer tokens will require an upgrade to Feedly Pro. The backup process was rebuilt through [Axiom](https://axiom.ai/).

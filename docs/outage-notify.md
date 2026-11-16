@@ -1,5 +1,7 @@
 # Моніторинг перезапусків і мережі
 
+[← Documentation](index.md) · [Source files](../ansible/raspberry/roles/outage_notify/)
+
 `raspberry-outage.service` постійно перевіряє TCP-доступність `1.1.1.1:443`
 або `8.8.8.8:443`. Між циклами чекає 10 секунд; перевірки, NTP і надсилання
 додають час. Це перевірка зовнішньої мережі, доступність DNS і Telegram

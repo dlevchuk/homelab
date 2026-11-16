@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: CI checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Select checks
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import subprocess
+
+          event = os.environ['EVENT_NAME']
+          paths = []
+          if event == 'pull_request':
+              paths = subprocess.check_output([
+                  'git', 'diff', '--name-only', '-z',
+                  os.environ['BASE_SHA'] + '...' + os.environ['HEAD_SHA'],
+              ]).decode().split('\0')
+          all_checks = event == 'workflow_dispatch' or '.github/workflows/ci.yml' in paths
+          checks = {
+              'tests': all_checks or any(p.startswith(('tests/', 'ansible/raspberry/', 'scripts/')) for p in paths),
+              'windows': all_checks or any(p.startswith('ansible/windows/') for p in paths),
+              'security': all_checks or event == 'schedule' or any(
+                  p.startswith('.github/') or p == '.pre-commit-config.yaml' for p in paths
+              ),
+          }
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for name, enabled in checks.items():
+                  print(f'{name}={str(enabled).lower()}', file=output)
+                  print(f'{name}: {enabled}')
+          PY
+
+      - name: Set up Python
+        if: steps.changes.outputs.tests == 'true' || steps.changes.outputs.windows == 'true'
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+
+      - name: Python regression tests
+        if: steps.changes.outputs.tests == 'true'
+        run: python -m unittest discover -s tests -v
+
+      - name: Install Ansible lint tools
+        if: steps.changes.outputs.windows == 'true'
+        run: |
+          pip install ansible-core ansible-lint
+          ansible-galaxy collection install -r ansible/windows/requirements.yml
+
+      - name: Check Windows Ansible syntax and style
+        if: steps.changes.outputs.windows == 'true'
+        working-directory: ansible/windows
+        run: |
+          ansible-playbook site.yml --syntax-check
+          ansible-lint --profile basic site.yml
+
+      - name: Check GitHub Actions security
+        if: steps.changes.outputs.security == 'true'
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          advanced-security: false

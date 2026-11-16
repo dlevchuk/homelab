@@ -1,8 +1,10 @@
 # Thermal Camera Web Interface (Raspberry Pi Zero)
 
+[← Documentation](index.md) · [Source files](../ansible/raspberry/roles/thermal_cam/)
+
 `thermal_web.py` is a Python-based web server and video streamer designed for V4L2 thermal camera devices (e.g. `/dev/video0`). It uses `ffmpeg` to capture raw video, calculate Y-channel signal statistics (min, avg, max temperature/brightness), apply color palettes, stream MJPEG video via HTTP, record videos, and serve an interactive web dashboard.
 
-Everything here is deployed by the Ansible role `thermal_cam` (`ansible/raspberry/roles/thermal_cam`) via the `ansible.yml` workflow. Source files live in `files/`.
+Everything here is deployed by the Ansible role `thermal_cam` (`ansible/raspberry/roles/thermal_cam`) via the `ansible.yml` workflow. Source files live in `ansible/raspberry/roles/thermal_cam/files/`.
 
 ## Features
 

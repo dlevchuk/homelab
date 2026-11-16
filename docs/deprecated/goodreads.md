@@ -1,5 +1,11 @@
 # Goodreads Backup
 
+[← Documentation](../index.md) · [Source files](../../scripts/deprecated/backup_goodreads_web/)
+
+Run local commands from `scripts/deprecated/backup_goodreads_web/` in the repository.
+
+> Historical documentation for a retired integration. See the [current status](index.md) before using these instructions.
+
 Automated backup script for Goodreads books from public shelves. This script scrapes your Goodreads reading lists and exports them to JSON format.
 
 ## Overview

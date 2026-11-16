@@ -1,10 +1,16 @@
 # imdb-backup-lists (OUTDATED)
 
+[← Documentation](../index.md) · [Source files](../../scripts/deprecated/backup_imdb_outdated/)
+
+Run local commands from `scripts/deprecated/backup_imdb_outdated/` in the repository.
+
+> Historical documentation for a retired integration. See the [current status](index.md) before using these instructions.
+
 ⚠️ **This script is outdated and no longer works due to changes in the IMDB website structure.**
 
 ## Use the Working Version Instead
 
-Please use the updated script located in `../backup_imdb_web/` which uses web scraping and is compatible with the current IMDB site.
+Please use the updated script located in `scripts/deprecated/backup_imdb_web/` which uses web scraping and is compatible with the current IMDB site.
 
 The working version:
 - Uses web scraping instead of cookies (no authentication needed)
@@ -12,7 +18,7 @@ The working version:
 - Scrapes ratings, watchlist, reviews, and custom lists
 - Works with the current IMDB website structure
 
-See `../backup_imdb_web/README.md` for usage instructions.
+See the [IMDb scraper guide](imdb.md) for historical usage instructions; that integration is also retired.
 
 ---
 

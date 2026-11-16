@@ -5,18 +5,21 @@ on:
     - cron: "0 22 * * *"
   workflow_dispatch:
 
+concurrency:
+  group: power-alerts
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-
 
       - name: Setup Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -37,3 +40,17 @@ jobs:
           LOCATION_NAME: ${{ secrets.LOCATION_NAME }}
           LOCATION_URL: ${{ secrets.LOCATION_URL }}
         run: python scripts/light_outage/power.py
+
+      - name: Notify Telegram on failure
+        if: failure()
+        uses: appleboy/telegram-action@214f06cfa3d3a588c1472116889437e7c6fd29b1 # v1.1.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ❌ Workflow Failed
+
+            Workflow: ${{ github.workflow }}
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

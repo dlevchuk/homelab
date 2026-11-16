@@ -1,5 +1,9 @@
 # Meteo Data
 
+[← Documentation](index.md) · [Source files](../scripts/meteo_data/)
+
+Run local commands from `scripts/meteo_data/` in the repository.
+
 Automated weather fetching script for Slavutych that combines aviation weather (METAR from UKRR) and detailed forecast data. The script sends formatted weather updates via Telegram.
 
 ## Overview
