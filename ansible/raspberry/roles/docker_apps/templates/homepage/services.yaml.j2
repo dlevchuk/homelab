@@ -94,6 +94,12 @@
         server: my-docker
         container: changedetection
         showStats: true
+{% elif changedetection_hub_url is defined %}
+    - Changedetection:
+        icon: changedetection
+        href: {{ changedetection_hub_url }}
+        description: Wishlist prices · hosted on Pi 4
+        siteMonitor: {{ changedetection_hub_url }}
 {% endif %}
 {% if enable_hermes | default(false) | bool and hermes_web_enabled | default(false) | bool %}
     - Hermes:

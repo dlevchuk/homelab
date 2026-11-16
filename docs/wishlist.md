@@ -173,7 +173,9 @@ destination without inspection. Normal CI then keeps Pi 4 enabled and Pi 5 disab
 
 New URL: `http://raspberrypi.tail72e9f.ts.net:5000`. The same existing API key and
 Telegram settings remain valid. Update Homepage on Pi 4 and Glance on Pi 5 with
-the normal playbook/tags. The monitoring UI and exporter both live on Pi 4.
+the normal playbook/tags. The monitoring UI and exporter both live on Pi 4. Homepage on Pi 4 shows the
+local container card; Glance on Pi 5 keeps a remote link and HTTP monitor via
+`changedetection_hub_url`. Both use the stable Tailscale hostname.
 
 After migration, wait for current checks, audit with OneMoreThing’s
 `scripts/audit-monitors.py`, then use `--prune` to delete confirmed failing

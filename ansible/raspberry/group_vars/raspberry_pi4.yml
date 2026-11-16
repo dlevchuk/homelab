@@ -21,4 +21,5 @@ enable_wifi: true
 # Wishlist monitoring migrated from Pi 5. Run migrate-wishlist.yml before deploying.
 enable_changedetection: true
 changedetection_tailscale_enabled: true
+changedetection_public_url: "http://raspberrypi.tail72e9f.ts.net:5000"
 enable_wishlist_price_sync: true

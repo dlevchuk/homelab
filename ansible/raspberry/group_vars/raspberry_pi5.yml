@@ -70,3 +70,6 @@ enable_wifi: true
 enable_changedetection: false
 changedetection_tailscale_enabled: false
 enable_wishlist_price_sync: false
+
+# The service now lives on Pi 4; keep a remote link in Glance.
+changedetection_hub_url: "http://raspberrypi.tail72e9f.ts.net:5000"
