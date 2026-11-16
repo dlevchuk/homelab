@@ -150,42 +150,21 @@ Deploy the updated OneMoreThing code before the new runner, since the runner
 stages this status file as well as prices. The existing deploy-key/API bootstrap
 is still required once; subsequent card and watch creation is automated.
 
-## Migration from Pi 5 to Pi 4
+## Dashboards, cleanup and price history
 
-Run `ansible/raspberry/migrate-wishlist.yml` from the repository root **before**
-pushing the host enable/disable flags to CI. Both hosts must be online:
-
-```bash
-.venv/bin/ansible-playbook -i ansible/raspberry/hosts \
-  ansible/raspberry/migrate-wishlist.yml \
-  -e ansible_ssh_private_key_file="$HOME/.ssh/raspberry"
-```
-
-The playbook refuses to overwrite an existing destination datastore. It stops
-both the source publisher and container, transfers the persistent datastore,
-API/Telegram configuration, exporter checkout/state and dedicated deploy key
-through a private temporary archive, and merges GitHub known-host entries without
-replacing Pi 4’s existing file. It verifies the API on Pi 4 before removing the
-Pi 5 container. A failure stops the destination and restores the source timer
-and container. Temporary credential archives are removed; the original Pi 5
-bind-mount data is retained as rollback material. Do not rerun over a populated
-destination without inspection. Normal CI then keeps Pi 4 enabled and Pi 5 disabled.
-
-New URL: `http://raspberrypi.tail72e9f.ts.net:5000`. The same existing API key and
-Telegram settings remain valid. Update Homepage on Pi 4 and Glance on Pi 5 with
-the normal playbook/tags. The monitoring UI and exporter both live on Pi 4. Homepage on Pi 4 shows the
-local container card; Glance on Pi 5 keeps a remote link and HTTP monitor via
+The monitoring UI and exporter run on Pi 4 at
+`http://raspberrypi.tail72e9f.ts.net:5000`. Homepage on Pi 4 shows the local
+container card; Glance on Pi 5 keeps a remote link and HTTP monitor via
 `changedetection_hub_url`. Both use the stable Tailscale hostname.
 
-After migration, wait for current checks, audit with OneMoreThing’s
-`scripts/audit-monitors.py`, then use `--prune` to delete confirmed failing
-integration-owned monitors. Preserve and commit the generated
+Audit watches with OneMoreThing’s `scripts/audit-monitors.py`, then use
+`--prune` to delete confirmed failing integration-owned monitors. Back up the
+current datastore before deletion. Preserve and commit the generated
 `config/monitoring-disabled.json` so reconciliation does not recreate them.
-Existing source datastore is the rollback copy for this cleanup. Pending first
-checks and unrelated manual monitors are never deleted by the audit tool.
+Pending first checks and unrelated manual monitors are never deleted by the
+audit tool.
 
-The exporter now appends real successful price observations to
-`data/price-history.json`; the existing publisher stages this file and the site
-renders its history as an SVG graph. No prices are fabricated for dates before
-recording began. The runner tolerates a checkout from before history support
-until the new OneMoreThing code is published.
+The exporter appends real successful price observations to
+`data/price-history.json`; the publisher stages this file and the site renders
+its history as an SVG graph. No prices are fabricated for dates before
+recording began.
