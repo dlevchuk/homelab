@@ -1,0 +1,28 @@
+---
+- name: Check for existing Docker daemon configuration
+  ansible.builtin.stat:
+    path: /etc/docker/daemon.json
+  register: docker_daemon_config
+
+- name: Read existing Docker daemon configuration
+  ansible.builtin.slurp:
+    src: /etc/docker/daemon.json
+  register: docker_daemon_config_file
+  when: docker_daemon_config.stat.exists
+  no_log: true
+
+- name: Set Docker daemon DNS without replacing other settings
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: "{{ docker_daemon_settings | combine({'dns': docker_daemon_dns_servers}) | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: "0600"
+    validate: dockerd --validate --config-file=%s
+  vars:
+    docker_daemon_settings: "{{ (docker_daemon_config_file.content | default('') | b64decode or '{}') | from_json }}"
+  no_log: true
+  notify: Restart Docker daemon
+
+- name: Apply Docker DNS before managing application containers
+  ansible.builtin.meta: flush_handlers

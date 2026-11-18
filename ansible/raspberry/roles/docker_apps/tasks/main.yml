@@ -3,6 +3,14 @@
   ansible.builtin.include_tasks: install_docker.yml
   when: enable_docker_install | default(true) | bool
 
+- name: Configure Docker DNS defaults
+  ansible.builtin.include_tasks:
+    file: docker_daemon_dns.yml
+    apply:
+      tags: [docker_dns]
+  when: docker_daemon_dns_servers is defined
+  tags: [docker_dns]
+
 # Must run BEFORE any container is created
 - name: Restore docker data from backup archive (fresh system)
   ansible.builtin.include_tasks: docker_restore.yml

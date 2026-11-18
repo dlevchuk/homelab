@@ -27,6 +27,10 @@ enable_music_assistant: false
 # Home Assistant працює тільки на pi5
 enable_home_assistant: true
 
+# MagicDNS forwards both tailnet and public DNS queries on Pi 5.
+docker_daemon_dns_servers:
+  - "100.100.100.100"
+
 # Hermes Agent: web access only on the Tailscale interface.
 enable_hermes: true
 hermes_command: "gateway run"
