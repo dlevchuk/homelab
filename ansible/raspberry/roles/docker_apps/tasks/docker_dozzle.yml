@@ -1,6 +1,13 @@
 ---
 # https://dozzle.dev/guide/agent
 # Hub (UI) runs where enable_dozzle is true, agent where enable_dozzle_agent is true.
+- name: Create Dozzle hub data directory
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/dozzle"
+    state: directory
+    mode: "0755"
+  when: enable_dozzle | default(true) | bool
+
 - name: Setup Dozzle (hub)
   community.docker.docker_container:
     name: dozzle
@@ -10,6 +17,7 @@
          if (dozzle_remote_agents | default([]) | length > 0) else omit }}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - "{{ docker_dir }}/dozzle:/data"
     ports:
       - "8888:8080"
     restart_policy: always
