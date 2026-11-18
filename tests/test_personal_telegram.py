@@ -2,7 +2,9 @@
 import importlib.util
 from contextlib import redirect_stdout
 import io
+import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
@@ -42,6 +44,61 @@ class SendGuards(unittest.TestCase):
         for alias in ['../session', 'Name With Spaces', '']:
             with self.assertRaises(ValueError):
                 CLIENT.validate_alias(alias)
+
+
+class GroupSending(unittest.IsolatedAsyncioTestCase):
+    async def test_find_register_and_send_to_groups(self):
+        chat = type('Chat', (), {})
+        channel = type('Channel', (), {})
+        types = SimpleNamespace(Chat=chat, Channel=channel, PeerChat=object(),
+                                PeerChannel=object(), InputPeerChat=Mock(),
+                                InputPeerChannel=Mock(), InputPeerUser=Mock())
+        dialogs = [
+            SimpleNamespace(id=-42, name='Team', is_group=True, entity=chat(),
+                            input_entity=SimpleNamespace()),
+            SimpleNamespace(id=-1000000000042, name='Team Super', is_group=True,
+                            entity=channel(), input_entity=SimpleNamespace(access_hash=55)),
+            SimpleNamespace(id=-1000000000043, name='Team News', is_group=False,
+                            entity=channel()),
+        ]
+
+        async def iter_dialogs(ignore_migrated):
+            self.assertTrue(ignore_migrated)
+            for dialog in dialogs:
+                yield dialog
+
+        client = AsyncMock(return_value=SimpleNamespace(id=7))
+        client.iter_dialogs = iter_dialogs
+        request = Mock()
+        peers = {-42: (42, types.PeerChat), -1000000000042: (42, types.PeerChannel),
+                 42: (42, object())}
+        telethon = SimpleNamespace(
+            TelegramClient=Mock(return_value=client), types=types,
+            utils=SimpleNamespace(resolve_id=peers.__getitem__),
+            functions=SimpleNamespace(messages=SimpleNamespace(SendMessageRequest=request)))
+        with TemporaryDirectory() as directory, patch.object(CLIENT, 'HOME', Path(directory)), patch.dict('sys.modules', {'telethon': telethon}):
+            (CLIENT.HOME / 'credentials.json').write_text('{"api_id": 1, "api_hash": "test"}')
+            CLIENT.write_json(CLIENT.HOME / 'recipients.json', {'person': {'id': 42, 'access_hash': 99}})
+            with redirect_stdout(io.StringIO()) as output:
+                await CLIENT.run(SimpleNamespace(command='groups', query='team'))
+            self.assertEqual([entry['id'] for entry in json.loads(output.getvalue())],
+                             [-42, -1000000000042])
+            with redirect_stdout(io.StringIO()):
+                with self.assertRaisesRegex(ValueError, 'Group ID not found'):
+                    await CLIENT.run(SimpleNamespace(command='add-recipient', alias='news',
+                                                     group=-1000000000043))
+                for alias, group_id in [('group', -42), ('supergroup', -1000000000042)]:
+                    await CLIENT.run(SimpleNamespace(command='add-recipient', alias=alias, group=group_id))
+                for alias, expected_peer in [('group', types.InputPeerChat),
+                                             ('supergroup', types.InputPeerChannel),
+                                             ('person', types.InputPeerUser)]:
+                    with patch('sys.stdin', io.StringIO('Hello')):
+                        await CLIENT.run(SimpleNamespace(command='send', alias=alias,
+                                                         text_file='-', request_id=f'request_{alias}'))
+                    self.assertIs(request.call_args.kwargs['peer'], expected_peer.return_value)
+            types.InputPeerChat.assert_called_once_with(42)
+            types.InputPeerChannel.assert_called_once_with(42, 55)
+            types.InputPeerUser.assert_called_once_with(42, 99)
 
 
 class QrLogin(unittest.IsolatedAsyncioTestCase):

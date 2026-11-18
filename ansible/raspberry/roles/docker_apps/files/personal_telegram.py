@@ -32,7 +32,7 @@ def validate_alias(value):
 
 def prepare_send(args, recipients, sent):
     if args.alias not in recipients:
-        raise ValueError('Unknown recipient. Resolve and add the exact person first.')
+        raise ValueError('Unknown recipient. Resolve and add the exact person or group first.')
     text = sys.stdin.read() if args.text_file == '-' else Path(args.text_file).read_text()
     if not text.strip() or len(text.encode('utf-16-le')) // 2 > 4096:
         raise ValueError('Message must contain 1–4096 UTF-16 code units')
@@ -77,7 +77,7 @@ async def login_qr(client):
 
 
 async def run(args):
-    from telethon import TelegramClient, functions, types
+    from telethon import TelegramClient, functions, types, utils
     config_path = HOME / 'credentials.json'
     config = read_json(config_path, {})
     if args.command == 'login':
@@ -134,6 +134,26 @@ async def run(args):
                        'name': ' '.join(filter(None, [u.first_name, u.last_name]))}
                       for u in users if query in ' '.join(filter(None, [u.first_name, u.last_name, u.username])).casefold()]
             print(json.dumps(result[:20], ensure_ascii=False))
+        elif args.command == 'groups' or (args.command == 'add-recipient' and args.group is not None):
+            groups = []
+            async for dialog in client.iter_dialogs(ignore_migrated=True):
+                if not dialog.is_group or not isinstance(dialog.entity, (types.Chat, types.Channel)):
+                    continue
+                group = {'id': dialog.id, 'name': dialog.name}
+                if args.command == 'groups':
+                    if args.query.casefold() in dialog.name.casefold():
+                        groups.append(group)
+                        if len(groups) == 20:
+                            break
+                elif dialog.id == args.group:
+                    recipients[args.alias] = {
+                        **group, 'access_hash': getattr(dialog.input_entity, 'access_hash', None)}
+                    write_json(recipients_path, recipients)
+                    print(json.dumps({'alias': args.alias, **group}, ensure_ascii=False))
+                    return
+            if args.command == 'add-recipient':
+                raise ValueError('Group ID not found in this account’s dialogs. Run groups --query NAME.')
+            print(json.dumps(groups, ensure_ascii=False))
         elif args.command == 'add-recipient':
             entity = await client.get_entity(args.user)
             if not isinstance(entity, types.User) or entity.bot or entity.deleted:
@@ -146,13 +166,20 @@ async def run(args):
             print(json.dumps({'alias': args.alias, 'id': entity.id, 'name': recipients[args.alias]['name']}, ensure_ascii=False))
         elif args.command == 'send':
             recipient = recipients[args.alias]
+            peer_id, peer_type = utils.resolve_id(recipient['id'])
+            if peer_type is types.PeerChat:
+                peer = types.InputPeerChat(peer_id)
+            elif peer_type is types.PeerChannel:
+                peer = types.InputPeerChannel(peer_id, recipient['access_hash'])
+            else:
+                peer = types.InputPeerUser(peer_id, recipient['access_hash'])
             # Persist the Telegram random_id before sending: retries with the same
             # request ID use Telegram's own duplicate suppression, even after a crash.
             random_id = int.from_bytes(hashlib.sha256(args.request_id.encode()).digest()[:8], 'big', signed=True)
             sent[args.request_id] = {'fingerprint': fingerprint, 'message_id': None}
             write_json(sent_path, sent)
             result = await client(functions.messages.SendMessageRequest(
-                peer=types.InputPeerUser(recipient['id'], recipient['access_hash']),
+                peer=peer,
                 message=text, random_id=random_id, no_webpage=True))
             message_id = getattr(result, 'id', None)
             for update in getattr(result, 'updates', []):
@@ -174,16 +201,23 @@ def main():
     commands.add_parser('status')
     contacts = commands.add_parser('contacts')
     contacts.add_argument('--query', required=True)
+    groups = commands.add_parser('groups')
+    groups.add_argument('--query', required=True)
     add = commands.add_parser('add-recipient')
     add.add_argument('alias', type=validate_alias)
-    add.add_argument('--user', required=True, help='Exact @username or known numeric user ID')
+    target = add.add_mutually_exclusive_group(required=True)
+    target.add_argument('--user', help='Exact @username or known numeric user ID')
+    target.add_argument('--group', type=int, help='Negative group ID returned by groups')
     send = commands.add_parser('send')
     send.add_argument('alias', type=validate_alias)
     send.add_argument('--text-file', required=True, help='UTF-8 file, or - for stdin')
     send.add_argument('--request-id', required=True, help='Reuse this ID when retrying the same send')
     args = parser.parse_args()
-    if args.command == 'add-recipient' and args.user.isdigit():
-        args.user = int(args.user)
+    if args.command == 'add-recipient':
+        if args.group is not None and args.group >= 0:
+            add.error('--group requires a negative ID returned by groups')
+        if args.user is not None and args.user.isdigit():
+            args.user = int(args.user)
     with (HOME / '.lock').open('a') as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)

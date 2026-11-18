@@ -83,7 +83,11 @@ Only `login` prompts for credentials; other commands fail if not authorized.
 The client supports `status`, `contacts --query NAME`,
 `add-recipient ALIAS --user @username` (or a numeric user ID returned by
 contacts), and `send ALIAS --text-file FILE --request-id UUID`.
-Recipient aliases must resolve to individual human users, not bots or groups.
+To send to a group from the personal account, run `groups --query NAME` to
+find a group the account has joined. Copy its full negative ID and register
+it with `add-recipient ALIAS --group ID`. Use the same `send` command with
+the group alias. Basic groups and supergroups are supported. Telegram
+applies the account's existing posting permissions.
 Each retry must reuse its original UUID so Telegram can suppress duplicates.
 The skill instructs Hermes to send only when the owner explicitly requests the
 recipient and message, and to clarify ambiguous recipients or unspecified text.
