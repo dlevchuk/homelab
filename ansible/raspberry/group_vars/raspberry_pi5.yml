@@ -74,4 +74,3 @@ enable_wifi: true
 enable_changedetection: false
 changedetection_tailscale_enabled: false
 enable_wishlist_price_sync: false
-
