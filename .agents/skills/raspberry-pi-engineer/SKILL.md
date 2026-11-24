@@ -34,7 +34,7 @@ description: >-
 
 ## Джерела за задачею
 
-- Deployment/CI/secrets: `docs/deployment.md`, `.github/workflows/ansible.yml`.
+- Розгортання, CI та керування секретами: `docs/deployment.md`, `.github/workflows/ansible.yml`.
 - Мережа: `docs/wifi.md`, роль `wifi`.
 - Камера/сенсори: `docs/thermal-camera.md`, роль `thermal_cam`.
 - Backup/носії: `docs/backup-restore.md`; журнали: `docs/logging.md`.
