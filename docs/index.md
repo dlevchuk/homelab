@@ -17,7 +17,7 @@
 - [Wishlist monitoring](wishlist.md) — Changedetection.io and price synchronization.
 - [Thermal camera](thermal-camera.md) — streaming, sensors and telemetry.
 - [Power and internet recovery](outage-notify.md) — reboot events and durable notifications.
-- [Power alerts](power-alerts.md) — scheduled outage summaries.
+- [Power alerts](power-alerts.md) — text summaries from public Chernihivoblenergo JSON.
 - [Meteo](meteo.md) — weather reports; workflow currently disabled.
 
 ## Archive

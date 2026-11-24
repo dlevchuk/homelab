@@ -61,7 +61,7 @@ docs/              All infrastructure, service and archived guides
   cancel outdated runs; the weekly schedule runs the security audit only.
 - **Deployment:** Raspberry Pi changes on `main`, or manual execution; running
   deployments are allowed to finish.
-- **Power alerts:** daily on GitHub Actions, with manual execution available.
+- **Power alerts:** daily text summaries from public Chernihivoblenergo JSON, with manual execution available through GitHub Actions.
 - **Telegram:** failure notifications within deployment and power jobs.
 - **File checks:** formatting and secret detection through pre-commit.ci.
 
