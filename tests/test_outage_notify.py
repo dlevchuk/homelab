@@ -228,6 +228,37 @@ class NetworkTransitions(unittest.TestCase):
 
 
 class HistoryAndDelivery(unittest.TestCase):
+    def test_backlog_becomes_one_summary_with_latest_details(self):
+        s = state(False)
+        s['queue'] = [dict(boot=str(n), prev=previous(ping_reboot=True),
+                           text=f'event {n}', ready_ts=1000+n) for n in range(12)]
+        m.summarize_queue(s)
+        self.assertEqual(len(s['queue']), 1)
+        summary = s['queue'][0]
+        self.assertEqual(summary['summary']['events'], 12)
+        self.assertEqual(summary['summary']['boots'], 12)
+        self.assertEqual(summary['summary']['ping_reboots'], 12)
+        self.assertIn('Остання подія:\nevent 11', summary['text'])
+        self.assertEqual(summary['ready_ts'], 1000)
+
+    def test_failed_summary_can_merge_more_events_without_nesting(self):
+        s = state(False)
+        s['queue'] = [dict(text='old'), dict(text='panic', boot='b', prev=previous(panic=True))]
+        m.summarize_queue(s)
+        s['queue'].append(dict(text='latest'))
+        m.summarize_queue(s)
+        self.assertEqual(s['queue'][0]['summary']['events'], 3)
+        self.assertEqual(s['queue'][0]['summary']['panics'], 1)
+        self.assertEqual(s['queue'][0]['text'].count('накопичені події'), 1)
+
+    def test_summary_preserves_pending_events_and_single_message(self):
+        s = state(False)
+        ready = dict(text='one')
+        pending = dict(boot='b', prev=previous())
+        s['queue'] = [ready.copy(), pending.copy()]
+        m.summarize_queue(s)
+        self.assertEqual(s['queue'], [ready, pending])
+
     def test_short_unclean_boots_are_counted(self):
         short = dict(previous(clean=False), uptime=100)
         long = dict(previous(clean=False), uptime=1000)

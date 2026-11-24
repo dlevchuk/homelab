@@ -1,5 +1,2 @@
-cloudscraper
-beautifulsoup4
 requests
 pytz
-python-dotenv

@@ -2,64 +2,15 @@
 
 [← Documentation](index.md) · [Source files](../scripts/light_outage/)
 
-Run local commands from `scripts/light_outage/` in the repository.
+The script reads the community-maintained [Chernihivoblenergo schedule JSON](https://github.com/yaroslav2901/OE_OUTAGE_DATA/blob/main/data/Chernihivoblenergo.json) and sends a text summary to Telegram and optionally Discord. It uses the current Kyiv date and includes the next scheduled outage, the time until it, and all intervals for the selected group.
 
-This script fetches the power outage schedule from energy-ua.info (via ScraperAPI / ZenRows proxies) and sends a daily summary to Telegram (and optionally Discord).
+GitHub Actions runs the script daily and supports manual runs. The workflow uses the existing `LOCATION_NAME`, `TELEGRAM_TOKEN`, `TELEGRAM_TO`, and optional `DISCORD_WEBHOOK_URL` secrets. The repository variable `OUTAGE_GROUP` defaults to `5.1` (Tuzhar, Molodizhna 23). Set it to match the configured address if that address changes.
 
-## Installation:
+From the repository root, run locally with:
 
- Requirements
+```sh
+python -m pip install -r scripts/light_outage/requirements.txt
+LOCATION_NAME='Тужар' OUTAGE_GROUP=5.1 python scripts/light_outage/power.py
+```
 
-     Python 3.x
-     cloudscraper
-     beautifulsoup4
-     requests
-     pytz
-     python-dotenv
-
-Install: `pip install -r requirements.txt`
-
-
-## How it runs:
-
-Normally via GitHub Actions (`.github/workflows/power.yml`, daily at 22:00 UTC) with secrets:
-`TELEGRAM_TOKEN`, `TELEGRAM_TO`, `SCRAPER_API_KEY`, `ZENROWS_API_KEY`, `DISCORD_WEBHOOK_URL`, `LOCATION_NAME`, `LOCATION_URL`.
-
-## How to run locally:
-
-`power.py` reads plain environment variables and does **not** load a `.env` file by itself, so export them first:
-
-1. Create .env file:
-   ```
-     #telegram
-     TG_TOKEN=
-     TG_CHAT_ID=
-
-     #proxies (at least one is needed, the direct request is usually blocked)
-     SCRAPER_API_KEY=
-     ZENROWS_API_KEY=
-
-     #discord (optional)
-     DISCORD_WEBHOOK_URL=
-
-     #location configuration (required)
-     LOCATION_NAME='Name of your location (example: Чернігів)'
-     LOCATION_URL=https://chernigiv.energy-ua.info/grafik/
-   ```
-
-2. Load it and run the script:
-   ```
-     set -a; source .env; set +a
-     python power.py
-   ```
-
-## Features:
-
-- Daily schedule: sends a summary of all scheduled outages (next outage, time until it, all periods)
-- Fetch strategy: ScraperAPI standard request, then ScraperAPI premium, then ZenRows as a fallback
-- Timezone-aware: uses Ukraine timezone (Europe/Kyiv)
-- Telegram and optional Discord delivery
-- Fetch failures are reported as unavailable data, not as an absence of outages
-- Periods are interpreted for the current Kyiv date; past periods are not automatically shifted to tomorrow
-
-> Not implemented: real-time alerts ("30 minutes before an outage" / "power restored"). The script runs once per day.
+Set `TG_TOKEN` and `TG_CHAT_ID` to enable Telegram delivery, and optionally set `DISCORD_WEBHOOK_URL`. The JSON download is public and requires no proxy credentials. A missing date, missing group, incomplete schedule, or fetch failure is reported as unavailable. A complete schedule with no outage slots is reported as no outages.

@@ -1,32 +1,23 @@
-import warnings
-warnings.filterwarnings("ignore")
+import os
+import sys
 
-import os, requests, json, sys
+import requests
 from html import escape
 from datetime import datetime, timedelta
-from bs4 import BeautifulSoup
 import pytz
 
 LOCATION_NAME = os.environ.get("LOCATION_NAME")
-LOCATION_URL = os.environ.get("LOCATION_URL")
-
-if not LOCATION_NAME or not LOCATION_URL:
-    print("❌ Error: LOCATION_NAME and LOCATION_URL environment variables must be set.")
-    sys.exit(1)
-
-URLS = [
-    {
-        "name": LOCATION_NAME,
-        "url": LOCATION_URL
-    }
-]
-
+OUTAGE_GROUP = os.environ.get("OUTAGE_GROUP") or "5.1"
+SCHEDULE_URL = (
+    "https://raw.githubusercontent.com/yaroslav2901/OE_OUTAGE_DATA"
+    "/main/data/Chernihivoblenergo.json"
+)
+ukraine_tz = pytz.timezone("Europe/Kyiv")
 
 BOT_TOKEN = os.environ.get("TG_TOKEN")
 CHAT_ID = os.environ.get("TG_CHAT_ID")
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL")
-SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "")
-ZENROWS_API_KEY = os.environ.get("ZENROWS_API_KEY", "")
+
 
 def send_telegram(msg):
     if not BOT_TOKEN or not CHAT_ID:
@@ -63,79 +54,45 @@ def send_discord(msg):
     except Exception as e:
         print(f"Discord error: {e}")
 
-def fetch_with_zenrows(url):
-    if not ZENROWS_API_KEY:
-        print("⚠️ ZenRows API key missing, skipping fallback.")
-        return ""
+def parse_schedule(data, date, group):
+    midnight = datetime.combine(date, datetime.min.time())
+    day_key = str(int(ukraine_tz.localize(midnight).timestamp()))
+    slots = data["fact"]["data"][day_key][f"GPV{group}"]
+    if not isinstance(slots, dict) or set(slots) != {str(hour) for hour in range(1, 25)}:
+        raise ValueError("Expected a complete 24-hour schedule")
 
-    print("🔄 Switching to ZenRows fallback...")
-    proxy_url = "https://api.zenrows.com/v1/"
-    params = {
-        'apikey': ZENROWS_API_KEY,
-        'url': url,
-        'js_render': 'true',
-        'wait_for': '.periods_items',
+    # The source numbers hours starting at 1 and marks the half hours without power.
+    outage_halves = {
+        "yes": (False, False),
+        "no": (True, True),
+        "first": (True, False),
+        "second": (False, True),
+        "maybe": (True, True),
+        "mfirst": (True, False),
+        "msecond": (False, True),
     }
+    halves = [half for hour in range(1, 25) for half in outage_halves[slots[str(hour)]]]
+    outages = []
+    start = None
+    for index, is_outage in enumerate([*halves, False]):
+        if is_outage and start is None:
+            start = ukraine_tz.localize(midnight + timedelta(minutes=30 * index))
+        elif not is_outage and start is not None:
+            end = ukraine_tz.localize(midnight + timedelta(minutes=30 * index))
+            outages.append({
+                "start_time": start.strftime("%H:%M"),
+                "end_time": end.strftime("%H:%M"),
+                "start": start,
+                "end": end,
+            })
+            start = None
+    return outages
 
-    try:
-        res = requests.get(proxy_url, params=params, timeout=60)
-        if res.status_code == 200:
-            print("✅ Success with ZenRows")
-            return res.text
-        else:
-            print(f"❌ ZenRows failed: {res.status_code} {res.text}")
-            return ""
-    except Exception as e:
-        print(f"❌ ZenRows request error: {e}")
-        return ""
 
-
-def fetch_with_proxy(url):
-    # Try ScraperAPI first
-    if SCRAPER_API_KEY:
-        proxy_url = "https://api.scraperapi.com"
-
-        # Tier 1: Cheap Attempt
-        print("🛰 Attempting ScraperAPI Standard Request (1 credit)...")
-        cheap_params = {
-            'api_key': SCRAPER_API_KEY,
-            'url': url,
-            'render': 'false',
-            'premium': 'false',
-            'country_code': 'ua'
-        }
-
-        try:
-            res = requests.get(proxy_url, params=cheap_params, timeout=45)
-            if res.status_code == 200 and "periods_items" in res.text:
-                print("✅ Success with ScraperAPI Standard Request")
-                return res.text
-            elif res.status_code in [403, 429]:
-                 print(f"⚠️ ScraperAPI blocked or quota exceeded: {res.status_code}")
-                 raise Exception("ScraperAPI Quota/Block")
-        except Exception as e:
-            print(f"⚠️ ScraperAPI Standard attempt failed: {e}")
-
-        # Tier 2: Premium Escalation
-        print("🚀 Escalating to ScraperAPI Premium...")
-        premium_params = cheap_params.copy()
-        premium_params.update({
-            'premium': 'true',
-            'render': 'true',
-        })
-
-        try:
-            res = requests.get(proxy_url, params=premium_params, timeout=90)
-            if res.status_code == 200 and "periods_items" in res.text:
-                 return res.text
-            elif res.status_code in [403, 429]:
-                 print(f"⚠️ ScraperAPI Premium blocked or quota exceeded: {res.status_code}")
-                 raise Exception("ScraperAPI Premium Quota/Block")
-        except Exception as e:
-            print(f"❌ ScraperAPI Premium attempt failed: {e}")
-
-    # Fallback to ZenRows if ScraperAPI failed or is missing
-    return fetch_with_zenrows(url)
+def fetch_outages(date, group):
+    response = requests.get(SCHEDULE_URL, timeout=20)
+    response.raise_for_status()
+    return parse_schedule(response.json(), date, group)
 
 
 def format_time_delta(minutes):
@@ -147,124 +104,77 @@ def format_time_delta(minutes):
     days = hours / 24
     return f"{days:.1f} днів"
 
-ukraine_tz = pytz.timezone('Europe/Kyiv')
-now = datetime.now(ukraine_tz)
+def main():
+    if not LOCATION_NAME:
+        sys.exit("❌ Error: LOCATION_NAME environment variable must be set.")
 
-print(f"Script run at: {now.strftime('%Y-%m-%d %H:%M %Z')}\n")
-
-all_outages = {}
-
-for item in URLS:
-    print(f"Fetching: {item['name']}")
-
+    now = datetime.now(ukraine_tz)
+    print(f"Script run at: {now.strftime('%Y-%m-%d %H:%M %Z')}\n")
+    print(f"Fetching: {LOCATION_NAME} (GPV{OUTAGE_GROUP})")
     try:
-        html = fetch_with_proxy(item["url"])
+        outages = fetch_outages(now.date(), OUTAGE_GROUP)
+        print(f"✓ Found {len(outages)} outage periods")
+    except (requests.RequestException, KeyError, TypeError, ValueError) as exc:
+        print(f"❌ Schedule unavailable: {exc}")
+        outages = None
 
-        if "Just a moment" in html or len(html) < 1000:
-            print("❌ Blocked or invalid response")
-            all_outages[item["name"]] = None
+    all_outages = {LOCATION_NAME: outages}
+
+    # Build message
+    message_parts = []
+    message_parts.append(f"📅 <b>Графік відключень</b>")
+    message_parts.append(f"🕐 {now.strftime('%d.%m.%Y %H:%M')}\n")
+
+    for location, outages in all_outages.items():
+        message_parts.append(f"🏠 <b>{escape(location)}</b>")
+
+        if outages is None:
+            message_parts.append("  ⚠️ Не вдалося отримати графік\n")
             continue
 
-        soup = BeautifulSoup(html, "html.parser")
-        spans = soup.select("div.periods_items > span")
-        print(f"✓ Found {len(spans)} outage periods")
+        if not outages:
+            message_parts.append("  ✅ Відключень немає\n")
+            continue
 
-        outages = []
-        for s in spans:
-            b = s.find_all("b")
-            if len(b) < 2:
-                continue
+        # Find next outage
+        next_outage = None
+        for outage in sorted(outages, key=lambda x: x['start']):
+            if outage['start'] > now:
+                next_outage = outage
+                break
 
-            try:
-                start_time = b[0].text.strip()
-                end_time = b[1].text.strip()
+        if next_outage:
+            delta_min = (next_outage['start'] - now).total_seconds() / 60
+            time_str = format_time_delta(delta_min)
 
-                # Parse times
-                start_naive = datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M").time())
-                end_naive = datetime.combine(now.date(), datetime.strptime(end_time, "%H:%M").time())
+            message_parts.append(f"  ⚡ Наступне відключення:")
+            message_parts.append(f"     Через <b>{time_str}</b>")
+            message_parts.append(f"     {next_outage['start_time']} – {next_outage['end_time']}\n")
 
-                # Make timezone aware BEFORE any comparisons
-                start = ukraine_tz.localize(start_naive)
-                end = ukraine_tz.localize(end_naive)
+        # Show all outages
+        message_parts.append("  📋 Всі відключення:")
+        for outage in outages:
+            status = ""
+            if outage['start'] <= now <= outage['end']:
+                status = " 🔴 зараз"
+            elif outage['start'] < now:
+                status = " ✓ пройшло"
 
-                # Handle overnight outages
-                if end <= start:
-                    end += timedelta(days=1)
+            message_parts.append(f"     {outage['start_time']} – {outage['end_time']}{status}")
 
-                outages.append({
-                    'start_time': start_time,
-                    'end_time': end_time,
-                    'start': start,
-                    'end': end
-                })
-                print(f"  - {start_time} – {end_time} ({start.strftime('%d.%m %H:%M')})")
+        message_parts.append("")
 
-            except Exception as e:
-                print(f"  ! Parse error: {e}")
-                import traceback
-                traceback.print_exc()
-                continue
+    message = "\n".join(message_parts)
 
-        all_outages[item["name"]] = outages
+    print(message)
+    print(f"{'='*60}\n")
 
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
-        all_outages[item["name"]] = None
+    send_telegram(message)
+    send_discord(message)
 
-print(f"\n{'='*60}")
+    print("✓ Script completed")
 
-# Build message
-message_parts = []
-message_parts.append(f"📅 <b>Графік відключень</b>")
-message_parts.append(f"🕐 {now.strftime('%d.%m.%Y %H:%M')}\n")
 
-for location, outages in all_outages.items():
-    message_parts.append(f"🏠 <b>{escape(location)}</b>")
 
-    if outages is None:
-        message_parts.append("  ⚠️ Не вдалося отримати графік\n")
-        continue
-
-    if not outages:
-        message_parts.append("  ✅ Відключень немає\n")
-        continue
-
-    # Find next outage
-    next_outage = None
-    for outage in sorted(outages, key=lambda x: x['start']):
-        if outage['start'] > now:
-            next_outage = outage
-            break
-
-    if next_outage:
-        delta_min = (next_outage['start'] - now).total_seconds() / 60
-        time_str = format_time_delta(delta_min)
-
-        message_parts.append(f"  ⚡ Наступне відключення:")
-        message_parts.append(f"     Через <b>{time_str}</b>")
-        message_parts.append(f"     {next_outage['start_time']} – {next_outage['end_time']}\n")
-
-    # Show all outages
-    message_parts.append("  📋 Всі відключення:")
-    for outage in outages:
-        status = ""
-        if outage['start'] <= now <= outage['end']:
-            status = " 🔴 зараз"
-        elif outage['start'] < now:
-            status = " ✓ пройшло"
-
-        message_parts.append(f"     {outage['start_time']} – {outage['end_time']}{status}")
-
-    message_parts.append("")
-
-message = "\n".join(message_parts)
-
-print(message)
-print(f"{'='*60}\n")
-
-send_telegram(message)
-send_discord(message)
-
-print("✓ Script completed")
+if __name__ == "__main__":
+    main()

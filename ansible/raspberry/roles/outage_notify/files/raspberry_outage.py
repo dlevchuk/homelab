@@ -407,6 +407,38 @@ def finish_recovery(state, bid, synced, now, mono, uptime):
     state["recovery"] = None
 
 
+def summarize_queue(state):
+    """Об'єднує готову чергу перед доставкою, зберігаючи підсумки повторних збоїв."""
+    ready = []
+    for event in state["queue"]:
+        if "text" not in event:
+            break
+        ready.append(event)
+    if len(ready) < 2:
+        return
+    counts = {"events": 0, "boots": 0, "panics": 0, "ping_reboots": 0}
+    for event in ready:
+        previous = event.get("prev") or {}
+        totals = event.get("summary", {
+            "events": 1, "boots": int("boot" in event),
+            "panics": int(bool(previous.get("panic"))),
+            "ping_reboots": int(bool(previous.get("ping_reboot"))),
+        })
+        for key in counts:
+            counts[key] += totals[key]
+    latest = ready[-1]
+    detail = latest.get("latest_text", latest["text"])
+    text = (f"📋 {HOST}: накопичені події — {counts['events']}\n"
+            f"Запусків Pi: {counts['boots']}\n"
+            f"Подій із ознаками kernel panic / lockup: {counts['panics']}\n"
+            f"Подій із позначкою ping-reboot: {counts['ping_reboots']}\n\n"
+            f"Остання подія:\n{detail}")
+    state["queue"][:len(ready)] = [{
+        "text": text, "latest_text": detail, "summary": counts,
+        "ready_ts": ready[0].get("ready_ts"),
+    }]
+
+
 def run_monitor():
     state = load_state()
     bid = boot_id()
@@ -427,6 +459,7 @@ def run_monitor():
         now, mono, uptime = time.time(), time.monotonic(), uptime_sec()
         before = json.dumps(state, sort_keys=True)
         record_sample(state, bid, online, synced, now, mono, uptime)
+        summarize_queue(state)
         if json.dumps(state, sort_keys=True) != before:
             save_state(state)
         if online:
