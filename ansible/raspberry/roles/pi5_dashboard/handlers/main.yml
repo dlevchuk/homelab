@@ -1,0 +1,5 @@
+---
+- name: Restart pi5-dashboard
+  ansible.builtin.systemd:
+    name: pi5-dashboard
+    state: restarted

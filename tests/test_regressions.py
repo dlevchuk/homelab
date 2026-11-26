@@ -134,7 +134,7 @@ class ThermalTests(unittest.TestCase):
         namespace = dict(
             time=Mock(time=lambda: 1000), get_kyiv_now=lambda: datetime(2026, 11, 12, 12),
             OUTAGE_CACHE_LOCK=threading.Lock(), OUTAGE_FETCH_LOCK=threading.Lock(),
-            OUTAGE_CACHE={'data': None}, _outage_cache_valid=lambda *args: False,
+            CHERNIHIV_OUTAGE_GROUP='', OUTAGE_CACHE={'data': None}, _outage_cache_valid=lambda *args: False,
             determine_outage_url=lambda *args: ('https://example.test', 'home'),
             reverse_geocode_location=lambda *args: {}, fetch_energy_html=lambda *args: '',
             re=re, _recompute_outage_status=lambda data, now: data,

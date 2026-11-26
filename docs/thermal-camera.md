@@ -13,7 +13,6 @@ Everything here is deployed by the Ansible role `thermal_cam` (`ansible/raspberr
 - **Video Recording**: Start/stop recording MJPEG stream to `.avi` video files (`/record/start`, `/record/stop`).
 - **Temperature & Health Monitoring**: `/health` JSON endpoint providing frame counters, streaming FPS, temperature/Y-stats, and restart tracking.
 - **BME280 Environmental Monitoring**: Temperature, humidity, and pressure are read over SPI0/CE0 and shown above the Host System card.
-- **Buzzer Control**: The dashboard's Signal button plays a PWM tone on GPIO18.
 - **Built-in Web Dashboard**: Served directly from `/` with interactive controls, snapshots, full-screen mode, air raid alerts map, and weather radar widget.
 - **Systemd Integration**: Runs automatically as a background service via `thermal-web.service`.
 - **Daily Supabase Sync**: A systemd timer pushes new BME280 readings and outage stats from local SQLite to Supabase once a day (see [Supabase Sync](#supabase-sync)).
@@ -29,7 +28,7 @@ Everything here is deployed by the Ansible role `thermal_cam` (`ansible/raspberr
   - `ffmpeg` (compiled with `v4l2` support)
   - V4L2 thermal camera device at `/dev/video0`
   - `python3-spidev` for the BME280 SPI reader
-  - `python3-gpiozero` and `python3-lgpio` for PWM buzzer control
+  - `python3-gpiozero` and `python3-lgpio` for the legacy PWM buzzer endpoint
   - SPI enabled in Raspberry Pi OS
 
 The `thermal_cam` role installs the packages, enables SPI (`dtparam=spi=on`, reboots the Pi if it changed) and adds the user to the `spi,gpio,video` groups. For a manual setup:
@@ -63,9 +62,8 @@ The BME280 is used in **SPI mode**. The built-in reader uses `python3-spidev` di
 | BME280 | `SDA` | 19 | GPIO10 / SPI0 MOSI |
 | BME280 | `SDO` | 21 | GPIO9 / SPI0 MISO |
 | BME280 | `CSB` | 24 | GPIO8 / SPI0 CE0 |
-| MH-FMD buzzer | `VCC` | 4 | 5 V |
-| MH-FMD buzzer | `GND` | 6 | Ground |
-| MH-FMD buzzer | `SIG` / `I/O` | 12 | GPIO18 / PWM0 |
+
+The MH-FMD buzzer is connected to [Raspberry Pi 5](pi5-dashboard.md).
 
 Do not connect BME280 to 5 V. `i2cdetect` cannot see this BME280 configuration because the module is connected through SPI, not I²C. A working sensor identifies itself with SPI chip ID `0x60`.
 

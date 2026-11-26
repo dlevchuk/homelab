@@ -1393,7 +1393,6 @@ PAGE = """<!doctype html>
             <button onclick="snapshot()">📷 Snapshot</button>
             <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
             <button id="recBtn" onclick="toggleRecord()">⏺ Record</button>
-            <button id="buzzerBtn" onclick="triggerBuzzer()">🔔 Сигнал</button>
           </div>
           <div class="bar" id="modes">
             <button data-mode="gray" onclick="setMode('gray')">Gray</button>
@@ -1949,12 +1948,6 @@ function playAlertSound(){
   }catch(e){}
 }
 function muteAudioAlert(){ audioMuted = true; }
-
-async function triggerBuzzer(){
-  try{
-    await fetch('/buzzer/beep');
-  }catch(e){}
-}
 
 function syncStreamImg(){
   const img = document.getElementById('stream');
@@ -2760,10 +2753,10 @@ const PINOUT_DEFS = [
   { pin: 2, name: "5v Power", sub: "5V DC", type: "pwr5", isPwr: true },
   // Pair 2: Pin 3 & Pin 4
   { pin: 3, name: "GPIO 2", sub: "SDA / I2C1", type: "i2c", gpio: 2 },
-  { pin: 4, name: "5v Power", sub: "5V DC • Buzzer VCC", type: "pwr5", isPwr: true, device: "🔔 Buzzer VCC" },
+  { pin: 4, name: "5v Power", sub: "5V DC", type: "pwr5", isPwr: true },
   // Pair 3: Pin 5 & Pin 6
   { pin: 5, name: "GPIO 3", sub: "SCL / I2C1", type: "i2c", gpio: 3 },
-  { pin: 6, name: "Ground", sub: "0V GND • Buzzer GND", type: "gnd", isGnd: true, device: "🔔 Buzzer GND" },
+  { pin: 6, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
   // Pair 4: Pin 7 & Pin 8
   { pin: 7, name: "GPIO 4", sub: "GPCLK0", type: "gpio", gpio: 4 },
   { pin: 8, name: "GPIO 14", sub: "TXD / UART", type: "uart", gpio: 14 },
@@ -2772,7 +2765,7 @@ const PINOUT_DEFS = [
   { pin: 10, name: "GPIO 15", sub: "RXD / UART", type: "uart", gpio: 15 },
   // Pair 6: Pin 11 & Pin 12
   { pin: 11, name: "GPIO 17", sub: "General IO", type: "gpio", gpio: 17 },
-  { pin: 12, name: "GPIO 18", sub: "Buzzer (PWM0)", type: "pcm", gpio: 18, device: "🔔 Buzzer" },
+  { pin: 12, name: "GPIO 18", sub: "PCM CLK / PWM0", type: "pcm", gpio: 18 },
   // Pair 7: Pin 13 & Pin 14
   { pin: 13, name: "GPIO 27", sub: "General IO", type: "gpio", gpio: 27 },
   { pin: 14, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },

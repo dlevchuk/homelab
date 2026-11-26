@@ -23,6 +23,10 @@
       when: "'raspberry_zero' not in group_names"
     - role: thermal_cam
       when: "'raspberry_zero' in group_names"
+    - role: pi5_dashboard
+      when:
+        - "'raspberry_pi5' in group_names"
+        - enable_pi5_dashboard | default(false) | bool
     - role: beszel_agent
       when: "'raspberry_zero' in group_names"
     - role: outage_notify

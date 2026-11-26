@@ -1,0 +1,20 @@
+[Unit]
+Description=Raspberry Pi 5 Sensors and Pinout Web Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User={{ ansible_user | default('pi') }}
+Group={{ ansible_user | default('pi') }}
+WorkingDirectory=/home/{{ ansible_user | default('pi') }}
+Environment=PYTHONUNBUFFERED=1
+Environment=DASHBOARD_PORT={{ pi5_dashboard_port | default(8080) }}
+ExecStart=/usr/bin/python3 /home/{{ ansible_user | default('pi') }}/pi5_dashboard.py
+Restart=always
+RestartSec=3
+
+# Hardware access for GPIO and SPI
+SupplementaryGroups=gpio spi video
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,48 @@
+---
+- name: Install Pi 5 dashboard hardware dependencies
+  ansible.builtin.apt:
+    name:
+      - python3-libgpiod
+      - python3-spidev
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  notify: Restart pi5-dashboard
+
+- name: Determine Pi boot directory
+  ansible.builtin.include_role:
+    name: common
+    tasks_from: boot_dir.yml
+  when: boot_dir is not defined
+
+- name: Enable SPI for the dashboard LEDs
+  ansible.builtin.lineinfile:
+    path: "{{ boot_dir }}/config.txt"
+    regexp: '^#?dtparam=spi='
+    line: 'dtparam=spi=on'
+  notify: Reboot Pi
+
+- name: Deploy Pi 5 dashboard script
+  ansible.builtin.copy:
+    src: pi5_dashboard.py
+    dest: "/home/{{ ansible_user | default('pi') }}/pi5_dashboard.py"
+    owner: "{{ ansible_user | default('pi') }}"
+    group: "{{ ansible_user | default('pi') }}"
+    mode: "0755"
+  notify: Restart pi5-dashboard
+
+- name: Deploy Pi 5 dashboard systemd service
+  ansible.builtin.template:
+    src: pi5-dashboard.service.j2
+    dest: /etc/systemd/system/pi5-dashboard.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart pi5-dashboard
+
+- name: Ensure Pi 5 dashboard service is enabled and started
+  ansible.builtin.systemd:
+    name: pi5-dashboard
+    daemon_reload: true
+    state: started
+    enabled: true
