@@ -2,12 +2,14 @@
 # Old weekly tar jobs (replaced by the script below)
 - name: Remove legacy backup crons
   ansible.builtin.cron:
-    name: "{{ item }}"
+    name: "{{ item.name }}"
     state: absent
-    user: root
+    user: "{{ item.user }}"
   loop:
-    - "backup thunderbird"
-    - "backup docker"
+    - { name: "backup thunderbird", user: "root" }
+    - { name: "backup docker", user: "root" }
+    - { name: "backup thunderbird", user: "{{ ansible_user | default('pi') }}" }
+    - { name: "backup docker", user: "{{ ansible_user | default('pi') }}" }
 
 - name: Install curl (Telegram alerts)
   ansible.builtin.apt:

@@ -51,6 +51,9 @@ enable_beszel: false
 enable_beszel_agent: true
 beszel_hub_url: "http://raspberrypi.tail72e9f.ts.net:8090"
 
+# Кулер Pi 5 на 40-pin GPIO гребінці (GPIO 18 / Pin 12 PWM)
+pi5_fan_gpio: 18
+
 # Крива кулера Pi 5 (температура в мільйонних °C, швидкість 0-255)
 pi5_fan_curve:
   fan_temp0: 45000
