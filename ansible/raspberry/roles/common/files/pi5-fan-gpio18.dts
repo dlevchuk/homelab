@@ -1,0 +1,29 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    fragment@0 {
+        target-path = "/pwm-fan";
+
+        __overlay__ {
+            /* RP1 routes GPIO18 to PWM0 channel 2. Preserve the 25 kHz period. */
+            pwms = <&rp1_pwm0 2 40000 0>;
+            pinctrl-names = "default";
+            pinctrl-0 = <&pi5_fan_tach>;
+            interrupts-extended = <&rp1_gpio 23 2>; /* Falling edge */
+            pulses-per-revolution = <2>;
+        };
+    };
+
+    fragment@1 {
+        target = <&rp1_gpio>;
+
+        __overlay__ {
+            pi5_fan_tach: fan-tach-pins {
+                pins = "gpio23";
+                function = "gpio";
+                bias-pull-up;
+            };
+        };
+    };
+};

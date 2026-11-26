@@ -14,11 +14,17 @@ The SC1148 cooler gets +5 V and GND from the breadboard rails. The YwRobot
 545043 powers the +5 V rail, and physical pin 20 provides the common
 ground with the Pi 5. Physical pin 18 (BCM GPIO24) carries the buzzer signal.
 The cooler uses physical pin 12 (BCM GPIO18) for PWM and physical pin 16
-(BCM GPIO23) for tach. Tachometer readings are currently unavailable.
+(BCM GPIO23) for tach. The dashboard displays measured RPM from the
+kernel fan driver when the tachometer is available.
 
 The 40-pin view shows live GPIO modes and levels from Raspberry Pi OS
 `pinctrl`. Hover, focus, or tap a pin for details. Physical pins 2 and 4
 are labeled as 5 V power pins and have no device tag. The breadboard has its own +5 V supply.
+
+Ansible loads `pi5-fan-gpio18` after the standard `pwm-fan` overlay to route
+the fan driver to RP1 PWM0 channel 2 and count falling edges on GPIO23
+using two pulses per revolution. The existing fan curve stays active.
+A reboot applies the overlay.
 
 The SC1148 card has separate controls for maximum speed and off. They set
 the current PWM cooling state to its maximum or zero at any CPU temperature.

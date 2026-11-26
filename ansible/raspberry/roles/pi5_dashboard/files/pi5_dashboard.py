@@ -230,7 +230,8 @@ def get_system_status():
 
     # 2. Fan status
     fan_state = None
-    fan_pwm = 0
+    fan_pwm = None
+    fan_rpm = None
     try:
         fans = [
             device for device in Path("/sys/class/thermal").glob("cooling_device*")
@@ -241,15 +242,13 @@ def get_system_status():
     except (OSError, ValueError):
         pass
     try:
-        with open('/sys/class/hwmon/hwmon2/pwm1', 'r') as f:
-            fan_pwm = int(f.read().strip())
-    except:
-        for p in ('/sys/class/hwmon/hwmon1/pwm1', '/sys/class/hwmon/hwmon3/pwm1'):
-            if os.path.exists(p):
-                try:
-                    with open(p, 'r') as f: fan_pwm = int(f.read().strip())
-                    break
-                except: pass
+        for device in Path("/sys/class/hwmon").glob("hwmon*"):
+            if (device / "name").read_text().strip() == "pwmfan":
+                fan_pwm = int((device / "pwm1").read_text())
+                fan_rpm = int((device / "fan1_input").read_text())
+                break
+    except (OSError, ValueError):
+        pass
 
     # 3. Uptime
     uptime_str = "-"
@@ -280,6 +279,7 @@ def get_system_status():
         "cpu_temp": cpu_temp,
         "fan_state": fan_state,
         "fan_pwm": fan_pwm,
+        "fan_rpm": fan_rpm,
         "uptime": uptime_str,
         "throttled": throttled
     }
@@ -847,6 +847,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <span class="stat-label">ШІМ (0-255)</span>
             <span class="stat-val" id="fan-pwm">-</span>
           </div>
+          <div class="stat-box">
+            <span class="stat-label">Оберти (RPM)</span>
+            <span class="stat-val" id="fan-rpm">-</span>
+          </div>
         </div>
         <div class="btn-row">
           <button id="fan-on" class="btn-green" onclick="setFan(true)" disabled>Максимальні оберти</button>
@@ -969,7 +973,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     </div>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-yellow"></div>
-                      <span>Tach → пін 16 (GPIO 23) • зчитування не налаштовано</span>
+                      <span>Tach → пін 16 (GPIO 23)</span>
                     </div>
                   </div>
 
@@ -1108,7 +1112,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       { pin: 14, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
       // Pair 8: Pin 15 & Pin 16
       { pin: 15, name: "GPIO 22", sub: "General IO", type: "gpio", gpio: 22 },
-      { pin: 16, name: "GPIO 23", sub: "Tach • зчитування не налаштовано", type: "gpio", gpio: 23, device: "🌀 Кулер Tach" },
+      { pin: 16, name: "GPIO 23", sub: "Вхід тахометра", type: "gpio", gpio: 23, device: "🌀 Кулер Tach" },
       // Pair 9: Pin 17 & Pin 18
       { pin: 17, name: "3v3 Power", sub: "3.3V DC", type: "pwr3", isPwr: true },
       { pin: 18, name: "GPIO 24", sub: "Вихід сигналу", type: "gpio", gpio: 24, device: "🔔 Зумер I/O" },
@@ -1300,7 +1304,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('fan-state').textContent = data.fan_state === null ? '-' : 'Рівень ' + data.fan_state + '/4';
         document.getElementById('fan-on').disabled = data.fan_state === null;
         document.getElementById('fan-off').disabled = data.fan_state === null;
-        document.getElementById('fan-pwm').textContent   = data.fan_pwm;
+        document.getElementById('fan-pwm').textContent = data.fan_pwm ?? '-';
+        document.getElementById('fan-rpm').textContent = data.fan_rpm ?? '-';
         updatePinoutState(data.gpio || {});
 
         // Virtual LEDs
