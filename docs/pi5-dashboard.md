@@ -18,12 +18,12 @@ The cooler uses physical pin 12 (BCM GPIO18) for PWM and physical pin 16
 
 The 40-pin view shows live GPIO modes and levels from Raspberry Pi OS
 `pinctrl`. Hover, focus, or tap a pin for details. Physical pins 2 and 4
-have empty labels in this view because the breadboard has its own +5 V supply.
+are labeled as 5 V power pins and have no device tag. The breadboard has its own +5 V supply.
 
-The SC1148 card has an on/off button. On requests the maximum cooling state.
-Off requests state zero only below the first configured cooling threshold (45 °C by default).
-Both commands set the current PWM fan state, and the kernel can change it as
-temperature changes. The breadboard keeps supplying the fan with +5 V.
+The SC1148 card has separate controls for maximum speed and off. They set
+the current PWM cooling state to its maximum or zero at any CPU temperature.
+The kernel fan curve remains active and may change the state on a later
+thermal update. The breadboard keeps supplying the fan with +5 V.
 
 The role installs `python3-libgpiod` and `python3-spidev`. When it enables SPI in the boot configuration, Ansible reboots the Pi to apply the change. The dashboard uses the RP1 GPIO controller and `/dev/spidev0.0`.
 

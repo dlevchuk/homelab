@@ -216,16 +216,17 @@ def get_gpio_status():
 
 
 def get_system_status():
-    # 1. CPU temp
+    # CPU temperature
     cpu_temp = None
     try:
-        out = subprocess.check_output(['vcgencmd', 'measure_temp'], text=True)
-        cpu_temp = out.replace("temp=", "").replace("'C", "").strip()
-    except:
+        cpu_temp_mc = int(Path("/sys/class/thermal/thermal_zone0/temp").read_text())
+        cpu_temp = f"{cpu_temp_mc / 1000:.1f}"
+    except (OSError, ValueError):
         try:
-            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
-                cpu_temp = f"{float(f.read().strip()) / 1000.0:.1f}"
-        except: pass
+            output = subprocess.check_output(["vcgencmd", "measure_temp"], text=True, timeout=1)
+            cpu_temp = output.replace("temp=", "").replace("'C", "").strip()
+        except (OSError, subprocess.SubprocessError):
+            pass
 
     # 2. Fan status
     fan_state = None
@@ -381,7 +382,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       gap: 6px;
       transition: all 0.15s ease;
     }
-    button:hover { background: #323a45; border-color: #536074; transform: translateY(-1px); }
+    button:not(.pin-circle):hover { background: #323a45; border-color: #536074; transform: translateY(-1px); }
     button:active { transform: translateY(0); }
     button.btn-green { background: #1b5e20; border-color: #2e7d32; }
     button.btn-green:hover { background: #2e7d32; }
@@ -718,7 +719,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .pin-label.left{justify-content:flex-end;text-align:right}
     .pin-label.right{justify-content:flex-start;text-align:left}
     .pin-sub{font-size:9.5px;opacity:0.8;font-weight:normal}
-    .pin-circle{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;color:#fff;cursor:pointer;position:relative;border:1.5px solid rgba(0,0,0,0.4);transition:transform 0.15s, box-shadow 0.15s}
+    .pin-circle{width:20px;height:20px;padding:0;justify-self:center;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;color:#fff;cursor:pointer;position:relative;border:1.5px solid rgba(0,0,0,0.4);transition:transform 0.15s, box-shadow 0.15s}
     .pin-circle:hover{transform:scale(1.3);z-index:10;box-shadow:0 0 8px #fff}
     .pin-circle .pin-dot{width:6px;height:6px;border-radius:50%;background:#fff}
     .pin-circle.rect{border-radius:3px}
@@ -848,7 +849,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
         <div class="btn-row">
-          <button id="fan-toggle" onclick="toggleFan()" disabled>Увімкнути кулер</button>
+          <button id="fan-on" class="btn-green" onclick="setFan(true)" disabled>Максимальні оберти</button>
+          <button id="fan-off" class="btn-red" onclick="setFan(false)" disabled>Вимкнути кулер</button>
         </div>
         <div id="fan-control-status" role="status"></div>
       </div>
@@ -1085,10 +1087,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     const PINOUT_DEFS = [
       // Pair 1: Pin 1 & Pin 2
       { pin: 1, name: "3v3 Power", sub: "3.3V DC", type: "pwr3", isPwr: true },
-      { pin: 2, name: "", sub: "", type: "pwr5" },
+      { pin: 2, name: "5v Power", sub: "5V DC", type: "pwr5", isPwr: true },
       // Pair 2: Pin 3 & Pin 4
       { pin: 3, name: "GPIO 2", sub: "SDA / I2C1", type: "i2c", gpio: 2 },
-      { pin: 4, name: "", sub: "", type: "pwr5" },
+      { pin: 4, name: "5v Power", sub: "5V DC", type: "pwr5", isPwr: true },
       // Pair 3: Pin 5 & Pin 6
       { pin: 5, name: "GPIO 3", sub: "SCL / I2C1", type: "i2c", gpio: 3 },
       { pin: 6, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
@@ -1296,10 +1298,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         // Fan stats
         document.getElementById('fan-temp').textContent  = data.cpu_temp ? data.cpu_temp + '°C' : '-';
         document.getElementById('fan-state').textContent = data.fan_state === null ? '-' : 'Рівень ' + data.fan_state + '/4';
-        const fanButton = document.getElementById('fan-toggle');
-        fanButton.disabled = data.fan_state === null;
-        fanButton.dataset.enabled = String(data.fan_state === 0);
-        fanButton.textContent = data.fan_state > 0 ? 'Вимкнути кулер' : 'Увімкнути кулер';
+        document.getElementById('fan-on').disabled = data.fan_state === null;
+        document.getElementById('fan-off').disabled = data.fan_state === null;
         document.getElementById('fan-pwm').textContent   = data.fan_pwm;
         updatePinoutState(data.gpio || {});
 
@@ -1342,9 +1342,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
-    async function toggleFan() {
-      const button = document.getElementById('fan-toggle');
-      await sendControl('/api/fan', { enabled: button.dataset.enabled === 'true' }, 'fan-control-status');
+    async function setFan(enabled) {
+      await sendControl('/api/fan', { enabled }, 'fan-control-status');
       await updateStatus();
     }
 
@@ -1429,9 +1428,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             except (OSError, subprocess.TimeoutExpired):
                 self._json({"ok": False, "error": "Керування кулером недоступне"}, status=503)
                 return
-            if result.returncode == 2 and not enabled:
-                self._json({"ok": False, "error": "Кулер потрібен для охолодження CPU"}, status=409)
-            elif result.returncode:
+            if result.returncode:
                 self._json({"ok": False, "error": "Керування кулером недоступне"}, status=503)
             else:
                 self._json({"ok": True})
