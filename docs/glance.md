@@ -6,7 +6,9 @@ Pi 5 runs Glance at `http://pi5.tail72e9f.ts.net:3005`, replacing Homepage.
 The old Homepage configuration directory is retained for rollback; Pi 4 keeps
 its existing Homepage dashboard. The forest-green theme,
 weather for Odesa, clock, calendar, Docker status, service checks, bookmarks,
-release feed and browser-local to-do list are managed by Ansible.
+release feed and browser-local to-do list are managed by Ansible. The Applications
+section links to [Pi 5 Sensors](http://pi5.tail72e9f.ts.net:8080/) when the
+[GPIO dashboard](pi5-dashboard.md) is enabled.
 
 ```bash
 ansible-playbook -i ansible/raspberry/hosts ansible/raspberry/site.yml \

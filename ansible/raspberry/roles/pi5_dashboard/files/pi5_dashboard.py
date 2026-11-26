@@ -192,6 +192,29 @@ def pir_monitor_thread():
 
 threading.Thread(target=pir_monitor_thread, daemon=True).start()
 
+def get_gpio_status():
+    try:
+        output = subprocess.check_output(
+            ["/usr/bin/pinctrl", "get", "0-27"], text=True, timeout=1,
+            stderr=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+
+    states = {}
+    for line in output.splitlines():
+        pin, separator, description = line.partition(":")
+        config, divider, signal = description.partition("|")
+        fields = config.split()
+        levels = signal.split()
+        if separator and divider and pin.strip().isascii() and pin.strip().isdigit() and fields and levels:
+            mode = fields[0].lower()
+            level = levels[0].lower()
+            if mode.isascii() and mode.isalnum() and level in {"hi", "lo", "--"}:
+                states[int(pin)] = {"mode": mode, "level": level}
+    return states
+
+
 def get_system_status():
     # 1. CPU temp
     cpu_temp = None
@@ -205,12 +228,17 @@ def get_system_status():
         except: pass
 
     # 2. Fan status
-    fan_state = 0
+    fan_state = None
     fan_pwm = 0
     try:
-        with open('/sys/class/thermal/cooling_device0/cur_state', 'r') as f:
-            fan_state = int(f.read().strip())
-    except: pass
+        fans = [
+            device for device in Path("/sys/class/thermal").glob("cooling_device*")
+            if (device / "type").read_text().strip() == "pwm-fan"
+        ]
+        if len(fans) == 1:
+            fan_state = int((fans[0] / "cur_state").read_text())
+    except (OSError, ValueError):
+        pass
     try:
         with open('/sys/class/hwmon/hwmon2/pwm1', 'r') as f:
             fan_pwm = int(f.read().strip())
@@ -241,6 +269,7 @@ def get_system_status():
     except: pass
 
     return {
+        "gpio": get_gpio_status(),
         "pir_state": pir_current_state,
         "pir_count": pir_count,
         "pir_last": pir_last_time,
@@ -677,58 +706,40 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .ywrobot-rail.rgnd { background: rgba(84,110,122,0.12); border: 1px solid rgba(84,110,122,0.3); color: #90a4ae; }
 
     /* Pinout Widget Styles */
-    .pinout-container {
-      background: #2b3d26;
-      border-radius: 8px;
-      padding: 12px;
-      color: #fff;
-      box-shadow: inset 0 0 12px rgba(0,0,0,0.6);
-      border: 1px solid #3c5435;
-    }
-    .pinout-header {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-      padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);
-    }
-    .pinout-title { font-size: 14px; font-weight: 700; line-height: 1.2; }
-    .pinout-subtitle { font-size: 10px; color: rgba(255,255,255,0.75); }
-    .pinout-board { display: flex; flex-direction: column; gap: 2.5px; }
-    .pin-row { display: grid; grid-template-columns: 1fr 22px 22px 1fr; gap: 4px; align-items: center; }
-    .pin-label {
-      font-size: 10.5px; font-weight: 500; padding: 2px 6px; border-radius: 4px;
-      display: flex; align-items: center; gap: 4px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .pin-label.left { justify-content: flex-end; text-align: right; }
-    .pin-label.right { justify-content: flex-start; text-align: left; }
-    .pin-sub { font-size: 9px; opacity: 0.8; font-weight: normal; }
-    .pin-circle {
-      width: 18px; height: 18px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 8px; font-weight: bold; cursor: pointer; position: relative;
-      border: 1.5px solid rgba(0,0,0,0.5);
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .pin-circle:hover { transform: scale(1.3); z-index: 10; box-shadow: 0 0 8px #fff; }
-    .pin-circle .pin-dot { width: 5px; height: 5px; border-radius: 50%; background: #fff; }
-    .pin-circle.rect { border-radius: 3px; }
-    .p-pwr5 { background: #e53935; }
-    .p-pwr3 { background: #fb8c00; }
-    .p-gnd { background: #212121; border-color: #111; }
-    .p-gpio { background: #7cb342; }
-    .p-spi { background: #d81b60; }
-    .p-pcm { background: #00897b; }
-    .p-i2c { background: #5c6bc0; }
-    .p-uart { background: #ef6c00; }
-    .pin-tag {
-      font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 700; letter-spacing: 0.02em;
-    }
-    .pin-tag.active-dev {
-      background: #ffd600; color: #000; box-shadow: 0 0 6px #ffd600;
-    }
-    #pin-info-bar {
-      margin-top: 10px; background: rgba(0,0,0,0.5); border-radius: 6px;
-      padding: 6px 10px; font-size: 11px; color: #e0e0e0;
-    }
+    .pinout-container{background:#4d6a45;border-radius:8px;padding:12px;margin-top:14px;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;box-shadow:inset 0 0 10px rgba(0,0,0,0.5)}
+    .pinout-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.2)}
+    .pinout-logo{display:grid;grid-template-columns:repeat(3, 7px);gap:2px}
+    .pinout-logo span{width:7px;height:7px;border-radius:1px}
+    .pinout-title{font-size:15px;font-weight:700;line-height:1.2;color:#fff}
+    .pinout-subtitle{font-size:10px;color:rgba(255,255,255,0.7);font-weight:400}
+    .pinout-board{display:flex;flex-direction:column;gap:3px}
+    .pin-row{display:grid;grid-template-columns:1fr 24px 24px 1fr;gap:4px;align-items:center}
+    .pin-label{font-size:11px;font-weight:500;padding:2px 6px;border-radius:4px;display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .2s}
+    .pin-label.left{justify-content:flex-end;text-align:right}
+    .pin-label.right{justify-content:flex-start;text-align:left}
+    .pin-sub{font-size:9.5px;opacity:0.8;font-weight:normal}
+    .pin-circle{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;color:#fff;cursor:pointer;position:relative;border:1.5px solid rgba(0,0,0,0.4);transition:transform 0.15s, box-shadow 0.15s}
+    .pin-circle:hover{transform:scale(1.3);z-index:10;box-shadow:0 0 8px #fff}
+    .pin-circle .pin-dot{width:6px;height:6px;border-radius:50%;background:#fff}
+    .pin-circle.rect{border-radius:3px}
+    /* Pin Color Categories */
+    .p-pwr5{background:#e53935}
+    .p-pwr3{background:#fb8c00}
+    .p-gnd{background:#212121;border-color:#111}
+    .p-gpio{background:#7cb342}
+    .p-i2c{background:#039be5}
+    .p-uart{background:#5e35b1}
+    .p-spi{background:#d81b60}
+    .p-pcm{background:#00897b}
+    .pin-tag{font-size:8px;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,0.4);margin-left:4px;font-weight:600;letter-spacing:0.02em}
+    .pin-tag.hi{background:#4caf50;color:#fff}
+    .pin-tag.lo{background:#37474f;color:#b0bec5}
+    .pin-tag.active-dev{background:#ffeb3b;color:#000;font-weight:bold;box-shadow:0 0 6px #ffeb3b}
+    #pin-info-bar{margin-top:10px;background:rgba(0,0,0,0.4);border-radius:6px;padding:8px 10px;font-size:11.5px;min-height:22px;display:flex;align-items:center;justify-content:space-between;color:#e0e0e0}
+
+    .pin-circle:focus-visible{outline:2px solid #fff;outline-offset:2px}
+    #pin-info-bar{flex-wrap:wrap;gap:6px}
+    #pin-legend{flex-wrap:wrap}
   </style>
 </head>
 <body>
@@ -836,6 +847,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <span class="stat-val" id="fan-pwm">-</span>
           </div>
         </div>
+        <div class="btn-row">
+          <button id="fan-toggle" onclick="toggleFan()" disabled>Увімкнути кулер</button>
+        </div>
+        <div id="fan-control-status" role="status"></div>
       </div>
 
     </div>
@@ -859,11 +874,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div class="pi5-box-title">🍓 Raspberry Pi 5</div>
 
               <div class="pi5-pin-row">
-                <div class="pi5-pin-num">6</div>
-                <div class="pi5-wire wire-black"></div>
-                <div class="pi5-pin-label">GND (Земля)</div>
-              </div>
-              <div class="pi5-pin-row">
                 <div class="pi5-pin-num">12</div>
                 <div class="pi5-wire wire-orange"></div>
                 <div class="pi5-pin-label">GPIO 18 • PWM Кулер</div>
@@ -871,7 +881,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <div class="pi5-pin-row">
                 <div class="pi5-pin-num">16</div>
                 <div class="pi5-wire wire-yellow"></div>
-                <div class="pi5-pin-label">GPIO 23 • Tach кулер</div>
+                <div class="pi5-pin-label">GPIO 23 • Tach кулера</div>
               </div>
               <div class="pi5-pin-row">
                 <div class="pi5-pin-num">18</div>
@@ -882,6 +892,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <div class="pi5-pin-num">19</div>
                 <div class="pi5-wire wire-purple"></div>
                 <div class="pi5-pin-label">GPIO 10 • SPI MOSI LED</div>
+              </div>
+              <div class="pi5-pin-row">
+                <div class="pi5-pin-num">20</div>
+                <div class="pi5-wire wire-black"></div>
+                <div class="pi5-pin-label">GND • Спільна земля макетки</div>
               </div>
               <div class="pi5-pin-row">
                 <div class="pi5-pin-num">22</div>
@@ -928,7 +943,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <div class="bb-hole"></div><div class="bb-hole"></div><div class="bb-hole"></div>
                     <div class="bb-hole"></div><div class="bb-hole"></div><div class="bb-hole"></div>
                     <div class="bb-hole"></div><div class="bb-hole"></div><div class="bb-hole"></div>
-                    <span class="bb-rail-desc">Спільна земля з Pi 5 Pin 6</span>
+                    <span class="bb-rail-desc">Спільна земля з Pi 5 • пін 20</span>
                   </div>
                 </div>
 
@@ -952,7 +967,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     </div>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-yellow"></div>
-                      <span>Tach → Pin 16 (GPIO 23)</span>
+                      <span>Tach → пін 16 (GPIO 23) • зчитування не налаштовано</span>
                     </div>
                   </div>
 
@@ -1003,7 +1018,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     </div>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-black"></div>
-                      <span>GND (середній)</span>
+                      <span>GND ← рейка GND (середній контакт)</span>
                     </div>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-green"></div>
@@ -1024,16 +1039,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="tab-panel" id="tab-pinout">
           <div class="pinout-container">
             <div class="pinout-header">
+              <div class="pinout-logo">
+                <span style="background:#00e676"></span><span style="background:#00e676"></span><span style="background:#00e676"></span>
+                <span style="background:#d50000"></span><span style="background:#d50000"></span><span style="background:#d50000"></span>
+                <span style="background:#d50000"></span><span style="background:#d50000"></span><span style="background:#d50000"></span>
+              </div>
               <div>
                 <div class="pinout-title">Raspberry Pi 5 Pinout</div>
-                <div class="pinout-subtitle">Поточний стан 40-пінової гребінки та підключення</div>
+                <div class="pinout-subtitle">40-Pin GPIO Real-Time Status & Devices</div>
               </div>
             </div>
+
             <div class="pinout-board" id="pinout-board">
-              <!-- Генерується JS -->
+              <!-- Rendered by JavaScript -->
             </div>
+
             <div id="pin-info-bar">
-              💡 Наведіть курсор або натисніть на пін для інформації
+              <span id="pin-info-text">💡 Наведіть курсор або натисніть на пін для перегляду деталей</span>
+              <span id="pin-legend" style="font-size:10px;opacity:0.8;display:flex;gap:6px">
+                <span style="color:#ff8a80">● 5V</span>
+                <span style="color:#ffb74d">● 3.3V</span>
+                <span style="color:#81c784">● GPIO</span>
+                <span style="color:#90caf9">● I2C/UART/PCM</span>
+              </span>
             </div>
           </div>
         </div><!-- /tab-pinout -->
@@ -1055,87 +1083,144 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     // ===== PINOUT =====
     const PINOUT_DEFS = [
-      { pin: 1,  name: "3v3 Power",  sub: "3.3V DC", type: "pwr3" },
-      { pin: 2,  name: "",          sub: "", type: "pwr5" },
-      { pin: 3,  name: "GPIO 2",     sub: "SDA / I2C1", type: "i2c" },
-      { pin: 4,  name: "",          sub: "", type: "pwr5" },
-      { pin: 5,  name: "GPIO 3",     sub: "SCL / I2C1", type: "i2c" },
-      { pin: 6,  name: "Ground",     sub: "0V GND • Спільна земля з макеткою", type: "gnd", device: "⏚ GND макетки" },
-      { pin: 7,  name: "GPIO 4",     sub: "GPCLK0", type: "gpio" },
-      { pin: 8,  name: "GPIO 14",    sub: "TXD / UART", type: "uart" },
-      { pin: 9,  name: "Ground",     sub: "0V GND", type: "gnd" },
-      { pin: 10, name: "GPIO 15",    sub: "RXD / UART", type: "uart" },
-      { pin: 11, name: "GPIO 17",    sub: "General IO", type: "gpio" },
-      { pin: 12, name: "GPIO 18",    sub: "PWM0 • ШІМ Active Cooler", type: "pcm", device: "🌀 Кулер (PWM0)" },
-      { pin: 13, name: "GPIO 27",    sub: "General IO", type: "gpio" },
-      { pin: 14, name: "Ground",     sub: "0V GND", type: "gnd" },
-      { pin: 15, name: "GPIO 22",    sub: "General IO", type: "gpio" },
-      { pin: 16, name: "GPIO 23",    sub: "Active Cooler Tach", type: "gpio", device: "🌀 Кулер (TACH)" },
-      { pin: 17, name: "3v3 Power",  sub: "3.3V DC", type: "pwr3" },
-      { pin: 18, name: "GPIO 24",    sub: "MH-FMD Buzzer", type: "gpio", device: "🔔 Зумер (Сигнал)" },
-      { pin: 19, name: "GPIO 10",    sub: "SPI0 MOSI • WS2813 DIN", type: "spi", device: "💡 WS2813 (DIN)" },
-      { pin: 20, name: "Ground",     sub: "0V GND", type: "gnd" },
-      { pin: 21, name: "GPIO 9",     sub: "SPI0 MISO", type: "spi" },
-      { pin: 22, name: "GPIO 25",    sub: "HC-SR505 PIR Motion", type: "gpio", device: "👁️ Датчик руху (OUT)" },
-      { pin: 23, name: "GPIO 11",    sub: "SPI0 SCLK", type: "spi" },
-      { pin: 24, name: "GPIO 8",     sub: "SPI0 CE0", type: "spi" },
-      { pin: 25, name: "Ground",     sub: "0V GND", type: "gnd" },
-      { pin: 26, name: "GPIO 7",     sub: "SPI0 CE1", type: "spi" },
-      { pin: 27, name: "GPIO 0",     sub: "ID_SD", type: "i2c" },
-      { pin: 28, name: "GPIO 1",     sub: "ID_SC", type: "i2c" },
-      { pin: 29, name: "GPIO 5",     sub: "General IO", type: "gpio" },
-      { pin: 30, name: "Ground",     sub: "0V GND", type: "gnd" },
-      { pin: 31, name: "GPIO 6",     sub: "General IO", type: "gpio" },
-      { pin: 32, name: "GPIO 12",    sub: "PWM0_CHAN0", type: "pcm" },
-      { pin: 33, name: "GPIO 13",    sub: "PWM0_CHAN1", type: "pcm" },
-      { pin: 34, name: "Ground",     sub: "0V GND", type: "gnd" },
-      { pin: 35, name: "GPIO 19",    sub: "PCM FS", type: "pcm" },
-      { pin: 36, name: "GPIO 16",    sub: "General IO", type: "gpio" },
-      { pin: 37, name: "GPIO 26",    sub: "General IO", type: "gpio" },
-      { pin: 38, name: "GPIO 20",    sub: "PCM DIN", type: "pcm" },
-      { pin: 39, name: "Ground",     sub: "0V GND", type: "gnd" },
-      { pin: 40, name: "GPIO 21",    sub: "PCM DOUT", type: "pcm" }
+      // Pair 1: Pin 1 & Pin 2
+      { pin: 1, name: "3v3 Power", sub: "3.3V DC", type: "pwr3", isPwr: true },
+      { pin: 2, name: "", sub: "", type: "pwr5" },
+      // Pair 2: Pin 3 & Pin 4
+      { pin: 3, name: "GPIO 2", sub: "SDA / I2C1", type: "i2c", gpio: 2 },
+      { pin: 4, name: "", sub: "", type: "pwr5" },
+      // Pair 3: Pin 5 & Pin 6
+      { pin: 5, name: "GPIO 3", sub: "SCL / I2C1", type: "i2c", gpio: 3 },
+      { pin: 6, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
+      // Pair 4: Pin 7 & Pin 8
+      { pin: 7, name: "GPIO 4", sub: "GPCLK0", type: "gpio", gpio: 4 },
+      { pin: 8, name: "GPIO 14", sub: "TXD / UART", type: "uart", gpio: 14 },
+      // Pair 5: Pin 9 & Pin 10
+      { pin: 9, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
+      { pin: 10, name: "GPIO 15", sub: "RXD / UART", type: "uart", gpio: 15 },
+      // Pair 6: Pin 11 & Pin 12
+      { pin: 11, name: "GPIO 17", sub: "General IO", type: "gpio", gpio: 17 },
+      { pin: 12, name: "GPIO 18", sub: "PWM0_CHAN2", type: "pcm", gpio: 18, device: "🌀 Кулер PWM" },
+      // Pair 7: Pin 13 & Pin 14
+      { pin: 13, name: "GPIO 27", sub: "General IO", type: "gpio", gpio: 27 },
+      { pin: 14, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
+      // Pair 8: Pin 15 & Pin 16
+      { pin: 15, name: "GPIO 22", sub: "General IO", type: "gpio", gpio: 22 },
+      { pin: 16, name: "GPIO 23", sub: "Tach • зчитування не налаштовано", type: "gpio", gpio: 23, device: "🌀 Кулер Tach" },
+      // Pair 9: Pin 17 & Pin 18
+      { pin: 17, name: "3v3 Power", sub: "3.3V DC", type: "pwr3", isPwr: true },
+      { pin: 18, name: "GPIO 24", sub: "Вихід сигналу", type: "gpio", gpio: 24, device: "🔔 Зумер I/O" },
+      // Pair 10: Pin 19 & Pin 20
+      { pin: 19, name: "GPIO 10", sub: "MOSI / SPI0", type: "spi", gpio: 10, device: "💡 WS2813 DIN" },
+      { pin: 20, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true, device: "⏚ GND макетки" },
+      // Pair 11: Pin 21 & Pin 22
+      { pin: 21, name: "GPIO 9", sub: "MISO / SPI0", type: "spi", gpio: 9 },
+      { pin: 22, name: "GPIO 25", sub: "Вхід", type: "gpio", gpio: 25, device: "👁️ PIR OUT" },
+      // Pair 12: Pin 23 & Pin 24
+      { pin: 23, name: "GPIO 11", sub: "SCLK / SPI0", type: "spi", gpio: 11 },
+      { pin: 24, name: "GPIO 8", sub: "CE0 / SPI0", type: "spi", gpio: 8 },
+      // Pair 13: Pin 25 & Pin 26
+      { pin: 25, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
+      { pin: 26, name: "GPIO 7", sub: "CE1 / SPI0", type: "spi", gpio: 7 },
+      // Pair 14: Pin 27 & Pin 28
+      { pin: 27, name: "GPIO 0", sub: "ID_SD (EEPROM)", type: "i2c", gpio: 0 },
+      { pin: 28, name: "GPIO 1", sub: "ID_SC (EEPROM)", type: "i2c", gpio: 1 },
+      // Pair 15: Pin 29 & Pin 30
+      { pin: 29, name: "GPIO 5", sub: "General IO", type: "gpio", gpio: 5 },
+      { pin: 30, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
+      // Pair 16: Pin 31 & Pin 32
+      { pin: 31, name: "GPIO 6", sub: "General IO", type: "gpio", gpio: 6 },
+      { pin: 32, name: "GPIO 12", sub: "PWM0", type: "pcm", gpio: 12 },
+      // Pair 17: Pin 33 & Pin 34
+      { pin: 33, name: "GPIO 13", sub: "PWM1", type: "pcm", gpio: 13 },
+      { pin: 34, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
+      // Pair 18: Pin 35 & Pin 36
+      { pin: 35, name: "GPIO 19", sub: "PCM FS / MISO", type: "pcm", gpio: 19 },
+      { pin: 36, name: "GPIO 16", sub: "General IO", type: "gpio", gpio: 16 },
+      // Pair 19: Pin 37 & Pin 38
+      { pin: 37, name: "GPIO 26", sub: "General IO", type: "gpio", gpio: 26 },
+      { pin: 38, name: "GPIO 20", sub: "PCM DIN / MOSI", type: "pcm", gpio: 20 },
+      // Pair 20: Pin 39 & Pin 40
+      { pin: 39, name: "Ground", sub: "0V GND", type: "gnd", isGnd: true },
+      { pin: 40, name: "GPIO 21", sub: "PCM DOUT / SCLK", type: "pcm", gpio: 21 }
     ];
+
+    let gpioState = {};
+    let selectedPin;
 
     function renderPinout() {
       const board = document.getElementById('pinout-board');
       let html = '';
       for (let i = 0; i < PINOUT_DEFS.length; i += 2) {
-        const left  = PINOUT_DEFS[i];
-        const right = PINOUT_DEFS[i+1];
-        const leftShape = left.pin === 1 ? 'rect' : '';
-        const leftTag  = left.device  ? `<span class="pin-tag active-dev">${left.device}</span>`  : '';
-        const rightTag = right.device ? `<span class="pin-tag active-dev">${right.device}</span>` : '';
+        const left = PINOUT_DEFS[i];
+        const right = PINOUT_DEFS[i + 1];
         html += `
           <div class="pin-row">
-            <div class="pin-label left" id="pin-lbl-${left.pin}">
-              ${leftTag}
+            <div class="pin-label left">
               <span class="pin-name">${left.name}</span>
+              ${left.sub ? `<span class="pin-sub">(${left.sub})</span>` : ''}
+              <span id="pin-tag-${left.pin}"></span>
             </div>
-            <div class="pin-circle p-${left.type} ${leftShape}" onmouseover="showPin(${left.pin})">
-              <div class="pin-dot"></div>
-            </div>
-            <div class="pin-circle p-${right.type}" onmouseover="showPin(${right.pin})">
-              <div class="pin-dot"></div>
-            </div>
-            <div class="pin-label right" id="pin-lbl-${right.pin}">
+            ${renderPinButton(left)}
+            ${renderPinButton(right)}
+            <div class="pin-label right">
+              <span id="pin-tag-${right.pin}"></span>
               <span class="pin-name">${right.name}</span>
-              ${rightTag}
+              ${right.sub ? `<span class="pin-sub">(${right.sub})</span>` : ''}
             </div>
           </div>
         `;
       }
       board.innerHTML = html;
       pinoutRendered = true;
+      updatePinoutState(gpioState);
     }
 
-    function showPin(pinNum) {
-      const p = PINOUT_DEFS.find(item => item.pin === pinNum);
-      if (!p) return;
-      const detail = p.name ? `: ${p.name} (${p.sub})` : '';
-      const dev = p.device ? ` ➜ <b>${p.device}</b>` : '';
-      document.getElementById('pin-info-bar').innerHTML =
-        `<b>Pin ${p.pin}</b>${detail}${dev}`;
+    function renderPinButton(pin) {
+      return `<button type="button" class="pin-circle p-${pin.type} ${pin.pin === 1 ? 'rect' : ''}"
+        aria-label="Pin ${pin.pin} ${pin.name}" onmouseover="showPinInfo(${pin.pin})"
+        onfocus="showPinInfo(${pin.pin})" onclick="showPinInfo(${pin.pin})">
+        <span class="pin-dot"></span>
+      </button>`;
+    }
+
+    function showPinInfo(pinNum) {
+      selectedPin = pinNum;
+      const pin = PINOUT_DEFS[pinNum - 1];
+      const state = gpioState[pin.gpio];
+      let info = `<b>Pin ${pin.pin}</b>`;
+      if (pin.name) info += `: ${pin.name} (${pin.sub})`;
+      if (pin.device) info += ` • <span style="color:#ffeb3b">Підключено за схемою: ${pin.device}</span>`;
+      if (state) {
+        const level = { hi: 'HIGH (1)', lo: 'LOW (0)' }[state.level] || '—';
+        info += ` • Mode: <b>${state.mode.toUpperCase()}</b> • Level: <b>${level}</b>`;
+      } else if (pin.isPwr) {
+        info += ' • Живлення';
+      } else if (pin.isGnd) {
+        info += ' • Заземлення (GND)';
+      }
+      document.getElementById('pin-info-text').innerHTML = info;
+    }
+
+    function updatePinoutState(states) {
+      gpioState = states;
+      if (!pinoutRendered) return;
+
+      for (const pin of PINOUT_DEFS) {
+        const tag = document.getElementById(`pin-tag-${pin.pin}`);
+        const state = gpioState[pin.gpio];
+        if (pin.device) {
+          tag.className = 'pin-tag active-dev';
+          tag.textContent = pin.device;
+        } else if (state) {
+          tag.className = 'pin-tag ' + (state.level === 'hi' ? 'hi' : 'lo');
+          tag.textContent = `${state.mode.toUpperCase()}:${state.level === '--' ? '—' : state.level.toUpperCase()}`;
+        } else {
+          tag.className = '';
+          tag.textContent = '';
+        }
+      }
+      if (selectedPin !== undefined) showPinInfo(selectedPin);
     }
 
     // ===== VIRTUAL LEDS =====
@@ -1210,8 +1295,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         // Fan stats
         document.getElementById('fan-temp').textContent  = data.cpu_temp ? data.cpu_temp + '°C' : '-';
-        document.getElementById('fan-state').textContent = 'Рівень ' + data.fan_state + '/4';
+        document.getElementById('fan-state').textContent = data.fan_state === null ? '-' : 'Рівень ' + data.fan_state + '/4';
+        const fanButton = document.getElementById('fan-toggle');
+        fanButton.disabled = data.fan_state === null;
+        fanButton.dataset.enabled = String(data.fan_state === 0);
+        fanButton.textContent = data.fan_state > 0 ? 'Вимкнути кулер' : 'Увімкнути кулер';
         document.getElementById('fan-pwm').textContent   = data.fan_pwm;
+        updatePinoutState(data.gpio || {});
 
         // Virtual LEDs
         const mode = data.led_mode;
@@ -1234,8 +1324,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }
     }
 
-    async function sendControl(path, payload) {
-      const status = document.getElementById('control-status');
+    async function sendControl(path, payload, statusId = 'control-status') {
+      const status = document.getElementById(statusId);
       try {
         const response = await fetch(path, {
           method: 'POST',
@@ -1250,6 +1340,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         status.textContent = error.message;
         return false;
       }
+    }
+
+    async function toggleFan() {
+      const button = document.getElementById('fan-toggle');
+      await sendControl('/api/fan', { enabled: button.dataset.enabled === 'true' }, 'fan-control-status');
+      await updateStatus();
     }
 
     function triggerBuzzer(mode) {
@@ -1320,7 +1416,26 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._json({"ok": False, "error": "Некоректний запит"}, status=400)
             return
 
-        if parsed.path == "/api/buzzer/beep":
+        if parsed.path == "/api/fan":
+            enabled = payload.get("enabled")
+            if self.headers.get_content_type() != "application/json" or not isinstance(enabled, bool):
+                self._json({"ok": False, "error": "Некоректний стан кулера"}, status=400)
+                return
+            try:
+                result = subprocess.run(
+                    ["/usr/bin/sudo", "-n", "/usr/local/sbin/pi5-fan-control", "on" if enabled else "off"],
+                    timeout=3, check=False,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                self._json({"ok": False, "error": "Керування кулером недоступне"}, status=503)
+                return
+            if result.returncode == 2 and not enabled:
+                self._json({"ok": False, "error": "Кулер потрібен для охолодження CPU"}, status=409)
+            elif result.returncode:
+                self._json({"ok": False, "error": "Керування кулером недоступне"}, status=503)
+            else:
+                self._json({"ok": True})
+        elif parsed.path == "/api/buzzer/beep":
             play_buzzer_beep(times=1, duration=0.1)
             self._json({"ok": True})
         elif parsed.path == "/api/buzzer/alarm":

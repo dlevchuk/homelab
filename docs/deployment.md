@@ -28,6 +28,22 @@ ansible-playbook -i ansible/wsl/hosts ansible/wsl/site.yml
 cd ansible/windows && ansible-playbook site.yml
 ```
 
+For pushes to `main`, CI scopes dashboard-only changes to the affected hosts
+and roles:
+
+| Changed path under `ansible/raspberry/` | Host | Tag |
+| --- | --- | --- |
+| `roles/pi5_dashboard/**` | `rpi-pi5` | `pi5_dashboard` |
+| `roles/thermal_cam/**` | `rpi-zero` | `thermal_cam` |
+| `roles/docker_apps/templates/glance/**` | `rpi-pi5` | `glance` |
+
+Changes to more than one listed component combine their hosts and tags. Shared
+changes, including Homepage templates used by both dashboards, trigger a full
+deployment. CI also uses a full deployment when it cannot establish the push
+diff or the previous commit has no successful push deployment. A scoped
+deployment fails if a selected host is offline, so a later push can fall back
+to the full playbook.
+
 Manual run of a single Pi from GitHub: Actions → `Run Ansible Playbook` → Run workflow → `limit` (`rpi-pi4`, `rpi-zero`, `rpi-pi5`). Tick `check` for a dry-run (`--check --diff`, nothing is changed on the hosts). Shell/command tasks are skipped in check mode, so treat the result as a preview, not a guarantee.
 
 ## Deployment

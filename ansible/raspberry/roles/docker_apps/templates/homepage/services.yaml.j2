@@ -111,6 +111,13 @@
         showStats: true
 {% endif %}
 
+{% if 'raspberry_pi5' in group_names and enable_pi5_dashboard | default(false) | bool %}
+    - Pi 5 Sensors:
+        icon: raspberry-pi
+        href: http://{{ app_host }}:{{ pi5_dashboard_port | default(8080) }}/
+        description: Sensors and GPIO pinout
+{% endif %}
+
     - Syncthing:
         icon: syncthing
         href: http://{{ app_host }}:8384

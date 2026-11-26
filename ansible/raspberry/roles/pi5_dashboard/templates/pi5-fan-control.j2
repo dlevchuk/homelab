@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+
+# This dashboard controls the single PWM fan registered by the Pi 5 overlay.
+fan=
+for device in /sys/class/thermal/cooling_device*; do
+    [ -r "$device/type" ] || continue
+    [ "$(cat "$device/type")" = pwm-fan ] || continue
+    [ -z "$fan" ] || exit 1
+    fan=$device
+done
+[ -n "$fan" ] || exit 1
+
+case "${1:-}" in
+    on)
+        state=$(cat "$fan/max_state")
+        ;;
+    off)
+        for zone in /sys/class/thermal/thermal_zone*; do
+            [ -r "$zone/type" ] || continue
+            [ "$(cat "$zone/type")" = cpu-thermal ] || continue
+            temperature=$(cat "$zone/temp")
+            [ "$temperature" -lt {{ pi5_fan_curve.fan_temp0 | int }} ] || exit 2
+            printf '0\n' > "$fan/cur_state"
+            exit
+        done
+        exit 1
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+printf '%s\n' "$state" > "$fan/cur_state"

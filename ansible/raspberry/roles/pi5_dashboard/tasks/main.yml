@@ -13,6 +13,8 @@
   ansible.builtin.include_role:
     name: common
     tasks_from: boot_dir.yml
+    apply:
+      tags: [pi5_dashboard]
   when: boot_dir is not defined
 
 - name: Enable SPI for the dashboard LEDs
@@ -21,6 +23,24 @@
     regexp: '^#?dtparam=spi='
     line: 'dtparam=spi=on'
   notify: Reboot Pi
+
+- name: Install the SC1148 fan control command
+  ansible.builtin.template:
+    src: pi5-fan-control.j2
+    dest: /usr/local/sbin/pi5-fan-control
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Allow the dashboard user to set the SC1148 fan state
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/pi5-fan-control
+    owner: root
+    group: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+    content: |
+      {{ ansible_user | default('pi') }} ALL=(root) NOPASSWD: /usr/local/sbin/pi5-fan-control on, /usr/local/sbin/pi5-fan-control off
 
 - name: Deploy Pi 5 dashboard script
   ansible.builtin.copy:

@@ -43,6 +43,7 @@ env:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   ansible_deploy:
@@ -52,6 +53,60 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Select deployment scope
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          MANUAL_LIMIT: ${{ inputs.limit || 'all' }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          limit="$MANUAL_LIMIT"
+          tags=""
+
+          if [[ "$EVENT" == push ]]; then
+            limit=all
+            changed=$(mktemp)
+            if git merge-base --is-ancestor "$BEFORE" "$AFTER" 2>/dev/null &&
+               git diff --name-only --no-renames -z "$BEFORE" "$AFTER" -- ansible/raspberry .github/workflows/ansible.yml > "$changed"; then
+              pi5_dashboard=false
+              thermal_cam=false
+              glance=false
+              shared=false
+              while IFS= read -r -d '' path; do
+                case "$path" in
+                  ansible/raspberry/roles/pi5_dashboard/*) pi5_dashboard=true ;;
+                  ansible/raspberry/roles/thermal_cam/*) thermal_cam=true ;;
+                  ansible/raspberry/roles/docker_apps/templates/glance/*) glance=true ;;
+                  *) shared=true ;;
+                esac
+              done < "$changed"
+
+              # Missing or superseded runs can leave changes from an earlier push pending.
+              if [[ "$shared" == false ]] && { "$pi5_dashboard" || "$thermal_cam" || "$glance"; }; then
+                previous=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ansible.yml/runs" \
+                  -f branch=main -f event=push -f status=success -f head_sha="$BEFORE" \
+                  --jq '.total_count' 2>/dev/null) || previous=0
+                if [[ "$previous" =~ ^[1-9][0-9]*$ ]]; then
+                  hosts=()
+                  roles=()
+                  if "$pi5_dashboard" || "$glance"; then hosts+=(rpi-pi5); fi
+                  if "$thermal_cam"; then hosts+=(rpi-zero); roles+=(thermal_cam); fi
+                  if "$pi5_dashboard"; then roles+=(pi5_dashboard); fi
+                  if "$glance"; then roles+=(glance); fi
+                  limit=$(IFS=,; echo "${hosts[*]}")
+                  tags=$(IFS=,; echo "${roles[*]}")
+                fi
+              fi
+            fi
+            rm -f "$changed"
+          fi
+
+          printf 'limit=%s\ntags=%s\n' "$limit" "$tags" >> "$GITHUB_OUTPUT"
+          echo "Deploy limit: $limit; tags: ${tags:-all}"
 
       - name: Connect Tailscale
         uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
@@ -82,6 +137,8 @@ jobs:
       - name: Setup SSH & Inventory
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          LIMIT: ${{ steps.scope.outputs.limit }}
+          TAGS: ${{ steps.scope.outputs.tags }}
         run: |
           # Remove local config files that might conflict in CI
           rm -f ansible/raspberry/group_vars/all
@@ -102,9 +159,15 @@ jobs:
           SSH_USER="${REMOTE_USER:-pi}"
 
           touch ~/.ssh/known_hosts
-          ssh-keyscan -T 5 -p "$PI4_PORT" -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh-keyscan -T 5 -p "$ZERO_PORT" -H "$THERMAL_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          ssh-keyscan -T 5 -p "$PI5_PORT" -H "$PI5_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          if [[ -z "$TAGS" || ",$LIMIT," == *",rpi-pi4,"* ]]; then
+            ssh-keyscan -T 5 -p "$PI4_PORT" -H "$REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          fi
+          if [[ -z "$TAGS" || ",$LIMIT," == *",rpi-zero,"* ]]; then
+            ssh-keyscan -T 5 -p "$ZERO_PORT" -H "$THERMAL_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          fi
+          if [[ -z "$TAGS" || ",$LIMIT," == *",rpi-pi5,"* ]]; then
+            ssh-keyscan -T 5 -p "$PI5_PORT" -H "$PI5_REMOTE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          fi
           chmod 600 ~/.ssh/known_hosts
 
           # Dynamic inventory: only reachable Pis are added.
@@ -114,10 +177,18 @@ jobs:
           add_host() {
             local group="$1" name="$2" host="$3" port="$4"
             echo "[$group]" >> hosts.ini
+            if [[ -n "$TAGS" && ",$LIMIT," != *",$name,"* ]]; then
+              echo ""
+              return
+            fi
             if [ -n "$host" ] && nc -z -w 5 "$host" "$port" >/dev/null 2>&1; then
               echo "$name ansible_host=$host ansible_port=$port" >> hosts.ini
               echo "OK: $name ($host:$port) reachable"
             else
+              if [[ -n "$TAGS" ]]; then
+                echo "::error::$name is unreachable for scoped deployment"
+                exit 1
+              fi
               echo "::warning::$name ($host:$port) is unreachable, skipping"
             fi
             echo "" >> hosts.ini
@@ -143,23 +214,27 @@ jobs:
 
       - name: Run Ansible playbook
         env:
-          LIMIT: ${{ inputs.limit || 'all' }}
+          LIMIT: ${{ steps.scope.outputs.limit }}
+          TAGS: ${{ steps.scope.outputs.tags }}
           CHECK_MODE: ${{ inputs.check && 'true' || 'false' }}
           ANSIBLE_PIPELINING: "True"
           ANSIBLE_FORKS: "10"
           ANSIBLE_SSH_ARGS: "-o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=15 -o ConnectTimeout=15"
           ANSIBLE_CALLBACKS_ENABLED: "ansible.posix.profile_tasks,ansible.posix.timer"
         run: |
-          EXTRA=""
+          extra=()
           if [ "$CHECK_MODE" = "true" ]; then
-            EXTRA="--check --diff"
+            extra+=(--check --diff)
             echo "::notice::Dry-run mode (--check --diff), nothing will be changed"
+          fi
+          if [[ -n "$TAGS" ]]; then
+            extra+=(--tags "$TAGS")
           fi
           ansible-playbook ansible/raspberry/site.yml \
             -i hosts.ini \
             --private-key=~/.ssh/id_ansible \
             --limit "$LIMIT" \
-            $EXTRA
+            "${extra[@]}"
 
       - name: Cleanup SSH Key & Inventory
         if: always()
