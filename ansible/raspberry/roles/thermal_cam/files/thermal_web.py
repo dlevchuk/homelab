@@ -623,17 +623,29 @@ class ThermalDB:
                 cols = [d[0] for d in cur.description]
                 return [dict(zip(cols, row)) for row in cur.fetchall()]
 
-    def query_outage_monthly(self, months=12):
+    def query_outage_days(self, days):
+        today = get_kyiv_now().date()
+        first_day = today - timedelta(days=days - 1)
+        with self._lock:
+            with self._connect() as conn:
+                cur = conn.execute(
+                    "SELECT date, MAX(outage_minutes) AS outage_minutes FROM outage_daily "
+                    "WHERE date BETWEEN ? AND ? GROUP BY date ORDER BY date",
+                    (first_day.isoformat(), today.isoformat()),
+                )
+                return [{"date": day, "outage_minutes": minutes} for day, minutes in cur.fetchall()]
+
+    def query_outage_monthly(self, months=12, first_month=""):
         """Години без світла по місяцях (останні N місяців, ASC). Дубль дати по різних локаціях -> MAX."""
         with self._lock:
             with self._connect() as conn:
                 cur = conn.execute(
                     "SELECT month, outage_minutes, days FROM ("
                     "SELECT substr(date, 1, 7) AS month, SUM(om) AS outage_minutes, COUNT(*) AS days FROM ("
-                    "SELECT date, MAX(outage_minutes) AS om FROM outage_daily GROUP BY date"
+                    "SELECT date, MAX(outage_minutes) AS om FROM outage_daily WHERE date >= ? GROUP BY date"
                     ") GROUP BY month ORDER BY month DESC LIMIT ?"
                     ") ORDER BY month ASC",
-                    (months,)
+                    (first_month, months)
                 )
                 cols = [d[0] for d in cur.description]
                 return [dict(zip(cols, row)) for row in cur.fetchall()]
@@ -951,13 +963,45 @@ def fetch_energy_html(url):
     return ""
 
 
+CHERNIHIV_SCHEDULE_URL = (
+    "https://raw.githubusercontent.com/yaroslav2901/OE_OUTAGE_DATA"
+    "/main/data/Chernihivoblenergo.json"
+)
+CHERNIHIV_OUTAGE_GROUP = os.environ.get("THERMAL_CHERNIHIV_OUTAGE_GROUP", "").strip()
+
+
+def fetch_chernihiv_periods(now, group):
+    day_key = str(int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()))
+    with urllib.request.urlopen(CHERNIHIV_SCHEDULE_URL, timeout=15) as response:
+        slots = json.load(response)["fact"]["data"][day_key][f"GPV{group}"]
+    if not isinstance(slots, dict) or set(slots) != {str(hour) for hour in range(1, 25)}:
+        raise ValueError("Expected a complete 24-hour schedule")
+
+    halves = {"yes": (False, False), "no": (True, True), "first": (True, False),
+              "second": (False, True), "maybe": (True, True), "mfirst": (True, False),
+              "msecond": (False, True)}
+    timeline = [off for hour in range(1, 25) for off in halves[slots[str(hour)]]]
+    midnight = datetime.combine(now.date(), datetime.min.time())
+    periods = []
+    start = None
+    for index, off in enumerate([*timeline, False]):
+        boundary = midnight + timedelta(minutes=30 * index)
+        if off and start is None:
+            start = boundary
+        elif not off and start is not None:
+            periods.append((start.strftime("%H:%M"), boundary.strftime("%H:%M")))
+            start = None
+    return periods
+
+
 def _outage_cache_valid(cache_key, today, now_ts):
     """Caller must hold OUTAGE_CACHE_LOCK."""
     if not OUTAGE_CACHE["data"] or OUTAGE_CACHE["key"] != cache_key:
         return False
     if OUTAGE_CACHE.get("date") != today:
         return False
-    if OUTAGE_CACHE.get("failed") and now_ts - OUTAGE_CACHE["timestamp"] >= OUTAGE_FAIL_RETRY_SEC:
+    needs_refresh = OUTAGE_CACHE.get("failed") or OUTAGE_CACHE["data"].get("url") == CHERNIHIV_SCHEDULE_URL
+    if needs_refresh and now_ts - OUTAGE_CACHE["timestamp"] >= OUTAGE_FAIL_RETRY_SEC:
         return False
     return True
 
@@ -996,7 +1040,7 @@ def _recompute_outage_status(cached, now):
 
 
 def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
-    cache_key = f"{round(lat,3)}_{round(lon,3)}_{custom_target}"
+    cache_key = f"v3_{CHERNIHIV_OUTAGE_GROUP}_{round(lat,3)}_{round(lon,3)}_{custom_target}"
     now_ts = time.time()
     now = get_kyiv_now()
     today = now.date().isoformat()
@@ -1021,22 +1065,35 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
         geo = reverse_geocode_location(lat, lon)
         display_name = geo.get("display_name", "")
 
-        html = fetch_energy_html(url)
-        if not html and "/" in url.replace("https://", ""):
+        if CHERNIHIV_OUTAGE_GROUP and urllib.parse.urlsplit(url).hostname == "chernigiv.energy-ua.info":
+            url = CHERNIHIV_SCHEDULE_URL
+            try:
+                span_matches = fetch_chernihiv_periods(now, CHERNIHIV_OUTAGE_GROUP)
+                fetch_ok = True
+            except (OSError, KeyError, TypeError, ValueError) as exc:
+                print(f"[Outage] Chernihiv JSON unavailable: {exc}", file=sys.stderr)
+                span_matches = []
+                fetch_ok = False
+        else:
+            html = fetch_energy_html(url)
             parts = url.split("/grafik/")
-            if len(parts) == 2 and "/" in parts[1]:
+            if not html and len(parts) == 2 and "/" in parts[1]:
                 simple_url = parts[0] + "/grafik/" + parts[1].split("/")[0]
                 html = fetch_energy_html(simple_url)
                 if html:
                     url = simple_url
+            fetch_ok = bool(html)
+            span_matches = re.findall(r"<span>\s*(?:<i></i>)?\s*З\s*<b>(\d{1,2}:\d{2})</b>\s*до\s*<b>(\d{1,2}:\d{2})</b>", html)
 
-        if not html and prev_good:
+        if not fetch_ok and prev_good:
             # Forced refresh failed: keep today's good data, don't overwrite with empty.
+            with OUTAGE_CACHE_LOCK:
+                OUTAGE_CACHE["timestamp"] = now_ts
+            save_outage_cache()
             print("[Outage] Fetch failed, keeping previous good cache")
             return _recompute_outage_status(prev_good, now)
 
         outages = []
-        span_matches = re.findall(r"<span>\s*(?:<i></i>)?\s*З\s*<b>(\d{1,2}:\d{2})</b>\s*до\s*<b>(\d{1,2}:\d{2})</b>", html)
 
         slots = [False] * 48
         total_minutes = 0
@@ -1066,7 +1123,7 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
             })
 
         base_data = {
-            "ok": bool(html),
+            "ok": fetch_ok,
             "location": loc_name,
             "display_name": display_name,
             "coords": {"lat": lat, "lon": lon},
@@ -1083,13 +1140,13 @@ def fetch_outage_data(lat, lon, custom_target="", force_refresh=False):
                 timestamp=now_ts,
                 key=cache_key,
                 date=today,
-                failed=not html,  # failed fetch is retried only after OUTAGE_FAIL_RETRY_SEC
+                failed=not fetch_ok,
                 data=result,
             )
         save_outage_cache()
 
         # A failed fetch must not overwrite a good daily summary with zero outages.
-        if not html:
+        if not fetch_ok:
             return result
 
         # Persist daily outage summary to SQLite
@@ -1647,8 +1704,11 @@ PAGE = """<!doctype html>
           <!-- Monthly infographic: hours without power -->
           <div class="outage-timeline-section">
             <div class="outage-timeline-header">
-              <span style="font-size:12px;font-weight:600;color:#bbb">📊 Години без світла по місяцях</span>
+              <span style="font-size:12px;font-weight:600;color:#bbb">📊 Години без світла</span>
               <div class="chart-ranges" id="om-ranges">
+                <button class="btn-sm" data-m="7d" onclick="setOmMonths('7d')">7 днів</button>
+                <button class="btn-sm" data-m="30d" onclick="setOmMonths('30d')">1 місяць</button>
+                <button class="btn-sm" data-m="3" onclick="setOmMonths(3)">3 місяці</button>
                 <button class="btn-sm" data-m="6" onclick="setOmMonths(6)">6 міс</button>
                 <button class="btn-sm active" data-m="12" onclick="setOmMonths(12)">12 міс</button>
                 <button class="btn-sm" data-m="24" onclick="setOmMonths(24)">24 міс</button>
@@ -2359,12 +2419,14 @@ async function loadCharts(){
 
 /* ---------- Outage monthly infographic ---------- */
 let omMonths = 12;
+let omRequest = 0;
 const MONTH_NAMES = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 
 function setOmMonths(m){
   omMonths = m;
   document.querySelectorAll('#om-ranges button').forEach(b=>{
-    b.classList.toggle('active', Number(b.dataset.m) === m);
+    b.classList.toggle('active', b.dataset.m === String(m));
+    b.setAttribute('aria-pressed', String(b.dataset.m === String(m)));
   });
   loadOutageMonthly();
 }
@@ -2374,8 +2436,16 @@ async function loadOutageMonthly(){
   const sumEl = document.getElementById('om-summary');
   const noteEl = document.getElementById('om-note');
   if(!barsEl) return;
+  const request = ++omRequest;
+  const daily = typeof omMonths === 'string';
+  const url = daily
+    ? `/api/db/outage?days=${parseInt(omMonths, 10)}&by_date=1`
+    : `/api/db/outage_monthly?months=${omMonths}${omMonths === 3 ? '&calendar=1' : ''}`;
   try{
-    const j = await fetch(`/api/db/outage_monthly?months=${omMonths}`).then(r => r.json());
+    const response = await fetch(url);
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+    const j = await response.json();
+    if(request !== omRequest) return;
     const rows = (j && j.rows) || [];
     if(!rows.length){
       barsEl.innerHTML = '';
@@ -2384,9 +2454,14 @@ async function loadOutageMonthly(){
       return;
     }
     const items = rows.map(r => {
+      const hours = r.outage_minutes / 60;
+      if(daily){
+        const [y, m, d] = r.date.split('-');
+        return {label: `${d}.${m}`, full: `${d}.${m}.${y}`, hours, days: 1, dim: 1,
+                partial: false, pct: hours / 24 * 100, perDay: hours};
+      }
       const [y, m] = r.month.split('-').map(Number);
       const dim = new Date(y, m, 0).getDate();
-      const hours = r.outage_minutes / 60;
       return {
         label: `${MONTH_NAMES[m - 1]} ${String(y).slice(2)}`,
         full: `${MONTH_NAMES[m - 1]} ${y}`,
@@ -2415,7 +2490,7 @@ async function loadOutageMonthly(){
         <span class="stat-sub">${pctAll.toFixed(1)}% часу без світла</span>
       </div>
       <div class="outage-metric-card">
-        <span class="stat-label">Найгірший місяць</span>
+        <span class="stat-label">${daily ? 'Найгірший день' : 'Найгірший місяць'}</span>
         <span class="stat-val" style="font-size:15px;color:#ffa726">${worst.full}</span>
         <span class="stat-sub">${worst.hours.toFixed(0)} год${worst.partial ? ' (неповний)' : ''}</span>
       </div>`;
@@ -2425,17 +2500,20 @@ async function loadOutageMonthly(){
       const cls = 'om-bar' + (i.partial ? ' partial' : '') + (i === worst ? ' worst' : '');
       const title = `${i.full}: ${i.hours.toFixed(1)} год без світла • ${i.perDay.toFixed(1)} год/добу • ${i.pct.toFixed(1)}% часу • дані за ${i.days} з ${i.dim} дн.`;
       return `<div class="om-col" title="${title}">
-        <span class="om-val">${i.hours.toFixed(0)}</span>
+        <span class="om-val">${daily ? Number(i.hours.toFixed(2)) : i.hours.toFixed(0)}</span>
         <div class="${cls}" style="height:${h}px"></div>
         <span class="om-label">${i.label}</span>
       </div>`;
     }).join('');
 
     const anyPartial = items.some(i => i.partial);
-    noteEl.textContent = anyPartial
+    noteEl.textContent = daily
+      ? 'Заплановані відключення за наявні дні. Дні без даних пропущено.'
+      : anyPartial
       ? 'Штриховані стовпчики: місяць неповний (дані накопичуються з дня, коли дашборд почав зберігати графік, або місяць ще триває). Значення - заплановані відключення за графіком.'
-      : 'Значення - заплановані відключення за графіком energy-ua.';
+      : 'Значення - заплановані відключення за графіком.';
   }catch(e){
+    if(request !== omRequest) return;
     console.error('Monthly outage load error:', e);
     noteEl.textContent = 'Помилка завантаження статистики';
   }
@@ -3440,7 +3518,8 @@ class Handler(BaseHTTPRequestHandler):
                 days = max(1, min(days, 365))
             except (ValueError, IndexError):
                 days = 30
-            rows = thermal_db.query_outage_daily(days=days)
+            rows = (thermal_db.query_outage_days(days) if qs.get("by_date") == ["1"]
+                    else thermal_db.query_outage_daily(days=days))
             self._json({"ok": True, "days": days, "count": len(rows), "rows": rows})
             return
 
@@ -3450,7 +3529,13 @@ class Handler(BaseHTTPRequestHandler):
                 months = max(1, min(months, 60))
             except (ValueError, IndexError):
                 months = 12
-            rows = thermal_db.query_outage_monthly(months=months)
+            first_month = ""
+            if months == 3 and qs.get("calendar") == ["1"]:
+                today = get_kyiv_now().date()
+                previous_month_end = today.replace(day=1) - timedelta(days=1)
+                first_month = ((previous_month_end.replace(day=1) - timedelta(days=1))
+                               .replace(day=1).isoformat())
+            rows = thermal_db.query_outage_monthly(months=months, first_month=first_month)
             self._json({"ok": True, "months": months, "count": len(rows), "rows": rows})
             return
 

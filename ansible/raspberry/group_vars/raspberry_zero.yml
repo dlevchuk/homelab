@@ -1,5 +1,6 @@
 ---
 # Beszel agent (Hub runs on pi4)
 enable_beszel_agent: true
+thermal_chernihiv_outage_group: "5.1"
 
 # Wi-Fi: Pi Zero uses NetworkManager (default)

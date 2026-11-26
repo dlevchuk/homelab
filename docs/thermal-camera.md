@@ -108,7 +108,11 @@ Do not connect BME280 to 5 V. `i2cdetect` cannot see this BME280 configuration b
 | `SCRAPER_API_KEY` | `""` | ScraperAPI key, proxy for the outage schedule fetch (optional) |
 | `ZENROWS_API_KEY` | `""` | ZenRows key, fallback proxy for the outage schedule fetch (optional) |
 
-`SCRAPER_API_KEY` and `ZENROWS_API_KEY` are loaded by `thermal-web.service` from `/home/pi/.thermal-web.env` (see [Secrets handling](#secrets-handling)). The direct request is tried first, proxies are used only when it fails.
+Set `thermal_chernihiv_outage_group` in Ansible to read the selected subgroup from the [public Chernihivoblenergo JSON](power-alerts.md) when the dashboard location is in the Chernihiv region. Set it to the subgroup for the dashboard's address and update it when the address changes. Opening the dashboard refreshes this schedule when the cache is at least 15 minutes old by default. The refresh button fetches it immediately. If a refresh fails, the dashboard keeps the last successful schedule for the current Kyiv date.
+
+For locations without a configured JSON subgroup, the dashboard tries the direct request first and uses optional proxies when it fails. `thermal-web.service` loads the subgroup and proxy keys from `/home/pi/.thermal-web.env` (see [Secrets handling](#secrets-handling)).
+
+The outage chart shows daily totals for the last 7 or 30 Kyiv calendar days, including today. The 3-month view shows monthly totals for the current month and the two preceding calendar months. Days without records are omitted from the totals.
 
 Variables used only by `supabase_sync.py` (provided via `/home/pi/.supabase.env`, see below):
 

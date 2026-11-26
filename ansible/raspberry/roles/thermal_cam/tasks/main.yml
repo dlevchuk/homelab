@@ -49,7 +49,7 @@
     mode: "0755"
 
 # --- secrets ---
-- name: Deploy thermal-web env file (proxy keys)
+- name: Deploy thermal-web outage settings
   ansible.builtin.copy:
     dest: "/home/{{ thermal_user }}/.thermal-web.env"
     owner: "{{ thermal_user }}"
@@ -58,6 +58,7 @@
     content: |
       SCRAPER_API_KEY={{ thermal_scraper_api_key }}
       ZENROWS_API_KEY={{ thermal_zenrows_api_key }}
+      THERMAL_CHERNIHIV_OUTAGE_GROUP={{ thermal_chernihiv_outage_group }}
   no_log: true
   notify: Restart thermal-web
 

@@ -72,4 +72,4 @@ See [workflow details and required checks](docs/deployment.md#workflows).
 Goodreads, IMDb, Feedly and GitHub quotas are retained under
 [the archive guide](docs/deprecated/index.md), together with historical backups.
 Their workflows were removed; Git history preserves them. Use manual CSV export
-for Goodreads and IMDb.
+for Goodreads. For IMDb, see the [Web Account Backup](https://github.com/dlevchuk/web-account-backup).
