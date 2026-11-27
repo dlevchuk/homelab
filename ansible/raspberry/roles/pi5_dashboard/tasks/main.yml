@@ -70,15 +70,28 @@
     enabled: true
     state: started
 
-- name: Build dashboard container image
-  community.docker.docker_image:
-    name: local/pi5-dashboard
-    tag: latest
-    source: build
-    force_source: true
-    build:
-      path: /opt/pi5-dashboard
-      pull: false
+- name: Ensure the BuildKit CLI plugin is installed
+  ansible.builtin.apt:
+    name: docker-buildx-plugin
+    state: present
+
+- name: Build dashboard image with the same BuildKit cache as local deployments
+  ansible.builtin.shell: |
+    set -eu
+    image=local/pi5-dashboard:latest
+    before=$(docker image ls --no-trunc --quiet "$image")
+    docker build --pull=false --provenance=false --quiet --tag "$image" /opt/pi5-dashboard
+    after=$(docker image ls --no-trunc --quiet "$image")
+    if [ "$before" != "$after" ]; then
+      echo image-changed
+    fi
+  environment:
+    DOCKER_BUILDKIT: "1"
+  register: dashboard_image_build
+  changed_when: "'image-changed' in dashboard_image_build.stdout_lines"
+  retries: 3
+  delay: 10
+  until: dashboard_image_build.rc == 0
 
 - name: Find RP1 device without acquiring GPIO lines
   ansible.builtin.command:
