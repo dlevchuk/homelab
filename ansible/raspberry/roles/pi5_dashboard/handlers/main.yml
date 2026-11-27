@@ -1,5 +1,9 @@
 ---
-- name: Restart pi5-dashboard
+- name: Restart pi5-dashboard-host
   ansible.builtin.systemd:
-    name: pi5-dashboard
+    name: pi5-dashboard-host
     state: restarted
+
+- name: Reload dashboard units
+  ansible.builtin.systemd:
+    daemon_reload: true

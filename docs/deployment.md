@@ -79,3 +79,5 @@ use a 100 MiB target and seven-day retention; rsyslog text logs rotate daily wit
 seven compressed archives and a 10 MiB threshold. Ansible-managed Docker containers
 use three 10 MiB log files each. The first full deployment may recreate containers
 to apply these limits. See [policy, overrides and verification](logging.md).
+
+The `pi5_dashboard` role deploys the Docker hardware dashboard and its local host helper. The former dashboard systemd unit is retired; persistent history stays in `/home/pi/docker/pi5-dashboard`. See [Pi 5 hardware app](pi5-dashboard.md) for operation and recovery.

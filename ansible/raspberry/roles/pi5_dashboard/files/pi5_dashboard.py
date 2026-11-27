@@ -14,12 +14,38 @@ from pathlib import Path
 import sys
 import time
 import json
+import sqlite3
+import socket
+import signal
+import http.client
+from contextlib import closing
 import threading
-import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
+
+HOST_SOCKET = os.environ.get("DASHBOARD_HOST_SOCKET", "/run/pi5-dashboard-host/api.sock")
+
+
+def host_request(method, path, payload=None):
+    connection = http.client.HTTPConnection("localhost", timeout=4)
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.settimeout(4)
+    try:
+        sock.connect(HOST_SOCKET)
+        connection.sock = sock
+        body = json.dumps(payload).encode() if payload is not None else None
+        connection.request(method, path, body, {"Content-Type": "application/json"})
+        response = connection.getresponse()
+        result = json.loads(response.read())
+        if response.status != 200:
+            raise OSError(result.get("error", "Host helper error"))
+        return result
+    finally:
+        connection.close()
+        sock.close()
+
 
 # Hardware locks and state
 hw_lock = threading.Lock()
@@ -29,7 +55,48 @@ pir_current_state = False
 auto_alarm_enabled = False
 led_current_mode = "off"  # "off", "color", "rainbow"
 led_color = [0, 0, 0]
-rainbow_running = False
+
+led_brightness = 100
+led_error = None
+led_generation = 0
+led_lock = threading.RLock()
+gpio_error = None
+
+HISTORY_DB = Path(os.environ.get("PIR_HISTORY_DB", "/data/motion.sqlite3"))
+
+
+def motion_history(timestamp=None):
+    """Keep the last 1000 rising edges, return the latest 20 for the dashboard."""
+    HISTORY_DB.parent.mkdir(parents=True, exist_ok=True)
+    with closing(sqlite3.connect(HISTORY_DB)) as db, db:
+        db.execute("CREATE TABLE IF NOT EXISTS motion (id INTEGER PRIMARY KEY, ts REAL NOT NULL)")
+        if timestamp is not None:
+            db.execute("INSERT INTO motion(ts) VALUES (?)", (timestamp,))
+            db.execute("DELETE FROM motion WHERE id NOT IN (SELECT id FROM motion ORDER BY id DESC LIMIT 1000)")
+        return [row[0] for row in db.execute("SELECT ts FROM motion ORDER BY id DESC LIMIT 20")]
+
+
+def motion_report(period, now=None):
+    now = time.time() if now is None else now
+    if period == "hour":
+        start, bucket_seconds, bucket_count = now - 3600, 300, 12
+    elif period == "today":
+        local = time.localtime(now)
+        start = time.mktime(local[:3] + (0, 0, 0) + local[6:])
+        bucket_seconds, bucket_count = 3600, 25
+    else:
+        raise ValueError("Invalid history period")
+    motion_history()  # Initialize the database on first use.
+    with closing(sqlite3.connect(HISTORY_DB)) as db, db:
+        timestamps = [row[0] for row in db.execute(
+            "SELECT ts FROM motion WHERE ts >= ? AND ts <= ? ORDER BY id DESC", (start, now))]
+    buckets = [0] * bucket_count
+    for timestamp in timestamps:
+        index = min(bucket_count - 1, int((timestamp - start) / bucket_seconds))
+        buckets[index] += 1
+    return {"events": timestamps[:20], "count": len(timestamps), "buckets": buckets,
+            "start": start, "bucket_seconds": bucket_seconds}
+
 
 # Try loading spidev
 try:
@@ -66,21 +133,28 @@ except Exception as e:
 BIT_0 = 0xC0
 BIT_1 = 0xFC
 
-def send_ws2813_pixels(pixels):
+def send_ws2813_pixels(pixels, brightness=None):
     """pixels: list of (r, g, b) tuples"""
+    global led_error
     if not spi:
-        return
+        led_error = "SPI недоступний"
+        raise OSError(led_error)
+    brightness = led_brightness if brightness is None else brightness
     buf = bytearray()
     for (r, g, b) in pixels:
         for byte_val in (g, r, b):
+            byte_val = byte_val * brightness // 100
             for bit_pos in range(7, -1, -1):
                 buf.append(BIT_1 if (byte_val >> bit_pos) & 1 else BIT_0)
     buf.extend(bytearray([0x00] * 300))
     with hw_lock:
         try:
             spi.xfer2(list(buf))
+            led_error = None
         except Exception as e:
-            print(f"[SPI] xfer error: {e}")
+            led_error = "Помилка передачі SPI"
+            print(f"[SPI] xfer error: {e}", flush=True)
+            raise OSError(led_error) from e
 
 def play_tone(freq=2200, duration=0.15):
     """Generate audio frequency square wave for passive buzzer"""
@@ -122,11 +196,9 @@ def play_buzzer_alarm():
                 print(f"[Buzzer] alarm error: {e}")
     threading.Thread(target=_worker, daemon=True).start()
 
-def rainbow_loop():
-    global rainbow_running
-    rainbow_running = True
-    def _wheel(pos):
-        pos = 255 - pos
+def rainbow_pixels(step):
+    def wheel(pos):
+        pos = 255 - (pos & 255)
         if pos < 85:
             return (255 - pos * 3, 0, pos * 3)
         if pos < 170:
@@ -134,48 +206,87 @@ def rainbow_loop():
             return (0, pos * 3, 255 - pos * 3)
         pos -= 170
         return (pos * 3, 255 - pos * 3, 0)
+    return [wheel(step), wheel(step + 128)]
 
-    step = 0
-    while rainbow_running and led_current_mode == "rainbow":
-        c1 = _wheel(step & 255)
-        c2 = _wheel((step + 128) & 255)
-        send_ws2813_pixels([c1, c2])
+
+def rainbow_loop(generation):
+    step = 4
+    while True:
+        with led_lock:
+            if generation != led_generation or led_current_mode != "rainbow":
+                return
+            try:
+                send_ws2813_pixels(rainbow_pixels(step))
+            except OSError:
+                return
         step = (step + 4) % 256
         time.sleep(0.04)
-    rainbow_running = False
+
 
 def start_rainbow():
-    global led_current_mode
-    led_current_mode = "rainbow"
-    if not rainbow_running:
-        threading.Thread(target=rainbow_loop, daemon=True).start()
+    global led_current_mode, led_generation
+    with led_lock:
+        send_ws2813_pixels(rainbow_pixels(0))
+        led_current_mode = "rainbow"
+        led_generation += 1
+        threading.Thread(target=rainbow_loop, args=(led_generation,), daemon=True).start()
+
 
 def set_led_solid_color(r, g, b):
-    global led_current_mode, led_color, rainbow_running
-    rainbow_running = False
-    led_current_mode = "color"
-    led_color = [r, g, b]
-    send_ws2813_pixels([(r, g, b), (r, g, b)])
+    global led_current_mode, led_color, led_generation
+    with led_lock:
+        send_ws2813_pixels([(r, g, b), (r, g, b)])
+        led_generation += 1
+        led_current_mode = "color"
+        led_color = [r, g, b]
+
 
 def turn_leds_off():
-    global led_current_mode, led_color, rainbow_running
-    rainbow_running = False
-    led_current_mode = "off"
-    led_color = [0, 0, 0]
-    send_ws2813_pixels([(0, 0, 0), (0, 0, 0)])
+    global led_current_mode, led_generation
+    with led_lock:
+        send_ws2813_pixels([(0, 0, 0), (0, 0, 0)])
+        led_generation += 1
+        led_current_mode = "off"
+
+
+def set_led_brightness(value):
+    global led_brightness, led_generation
+    with led_lock:
+        pixels = (rainbow_pixels(0) if led_current_mode == "rainbow" else
+                  [tuple(led_color)] * 2 if led_current_mode == "color" else [(0, 0, 0)] * 2)
+        send_ws2813_pixels(pixels, brightness=value)
+        led_brightness = value
+        if led_current_mode == "rainbow":
+            led_generation += 1
+            threading.Thread(target=rainbow_loop, args=(led_generation,), daemon=True).start()
+
+try:
+    turn_leds_off()
+except OSError:
+    pass
 
 # Background worker for HC-SR505 motion tracking
 def pir_monitor_thread():
-    global pir_count, pir_last_time, pir_current_state
+    global pir_count, pir_last_time, pir_current_state, gpio_error
     last_val = False
     while True:
         try:
             if gpio_req:
-                val = (gpio_req.get_value(25) == gpiod.line.Value.ACTIVE)
+                try:
+                    val = (gpio_req.get_value(25) == gpiod.line.Value.ACTIVE)
+                except Exception:
+                    gpio_error = "Помилка читання GPIO"
+                    time.sleep(0.1)
+                    continue
+                gpio_error = None
                 pir_current_state = val
                 if val and not last_val:
                     pir_count += 1
                     pir_last_time = time.strftime('%H:%M:%S')
+                    try:
+                        motion_history(time.time())
+                    except (OSError, sqlite3.Error) as error:
+                        print(f"[PIR history] {error}", flush=True)
                     if auto_alarm_enabled:
                         play_buzzer_beep(times=2, duration=0.06, interval=0.05)
                         if led_current_mode != "rainbow":
@@ -187,101 +298,38 @@ def pir_monitor_thread():
                                 send_ws2813_pixels([(0, 0, 0), (0, 0, 0)])
                 last_val = val
         except Exception as e:
-            pass
+            print(f"[PIR monitor] {e}", flush=True)
         time.sleep(0.1)
 
 threading.Thread(target=pir_monitor_thread, daemon=True).start()
 
-def get_gpio_status():
-    try:
-        output = subprocess.check_output(
-            ["/usr/bin/pinctrl", "get", "0-27"], text=True, timeout=1,
-            stderr=subprocess.DEVNULL,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return {}
-
-    states = {}
-    for line in output.splitlines():
-        pin, separator, description = line.partition(":")
-        config, divider, signal = description.partition("|")
-        fields = config.split()
-        levels = signal.split()
-        if separator and divider and pin.strip().isascii() and pin.strip().isdigit() and fields and levels:
-            mode = fields[0].lower()
-            level = levels[0].lower()
-            if mode.isascii() and mode.isalnum() and level in {"hi", "lo", "--"}:
-                states[int(pin)] = {"mode": mode, "level": level}
-    return states
-
-
 def get_system_status():
-    # CPU temperature
-    cpu_temp = None
+    host_error = None
     try:
-        cpu_temp_mc = int(Path("/sys/class/thermal/thermal_zone0/temp").read_text())
-        cpu_temp = f"{cpu_temp_mc / 1000:.1f}"
-    except (OSError, ValueError):
-        try:
-            output = subprocess.check_output(["vcgencmd", "measure_temp"], text=True, timeout=1)
-            cpu_temp = output.replace("temp=", "").replace("'C", "").strip()
-        except (OSError, subprocess.SubprocessError):
-            pass
-
-    # 2. Fan status
-    fan_state = None
-    fan_pwm = None
-    fan_rpm = None
-    try:
-        fans = [
-            device for device in Path("/sys/class/thermal").glob("cooling_device*")
-            if (device / "type").read_text().strip() == "pwm-fan"
-        ]
-        if len(fans) == 1:
-            fan_state = int((fans[0] / "cur_state").read_text())
-    except (OSError, ValueError):
-        pass
-    try:
-        for device in Path("/sys/class/hwmon").glob("hwmon*"):
-            if (device / "name").read_text().strip() == "pwmfan":
-                fan_pwm = int((device / "pwm1").read_text())
-                fan_rpm = int((device / "fan1_input").read_text())
-                break
-    except (OSError, ValueError):
-        pass
-
-    # 3. Uptime
-    uptime_str = "-"
-    try:
-        with open('/proc/uptime', 'r') as f:
-            secs = float(f.read().split()[0])
-            mins = int(secs // 60)
-            hrs = mins // 60
-            mins = mins % 60
-            uptime_str = f"{hrs}г {mins}хв"
-    except: pass
-
-    # 4. Throttling
-    throttled = "0x0"
-    try:
-        out = subprocess.check_output(['vcgencmd', 'get_throttled'], text=True)
-        throttled = out.replace("throttled=", "").strip()
-    except: pass
-
+        metrics = host_request("GET", "/status")
+    except (OSError, ValueError, http.client.HTTPException):
+        metrics = {"gpio": {}, "cpu_temp": None, "fan_state": None,
+                   "fan_pwm": None, "fan_rpm": None, "uptime": "-", "throttled": None}
+        host_error = "Host helper недоступний"
+    fan_rpm = metrics["fan_rpm"]
     return {
-        "gpio": get_gpio_status(),
+        **metrics,
+        "hardware": {
+            "pir": "GPIO недоступний" if gpio_req is None else gpio_error,
+            "buzzer": "GPIO недоступний" if gpio_req is None else None,
+            "spi": "SPI недоступний" if spi is None else led_error,
+            "tachometer": host_error or ("Тахометр недоступний" if fan_rpm is None else None),
+        },
+        "led_brightness": led_brightness,
+        "led_error": led_error,
         "pir_state": pir_current_state,
         "pir_count": pir_count,
+        "pir_history": motion_history(),
         "pir_last": pir_last_time,
         "auto_alarm": auto_alarm_enabled,
         "led_mode": led_current_mode,
         "led_color": led_color,
-        "cpu_temp": cpu_temp,
-        "fan_state": fan_state,
-        "fan_pwm": fan_pwm,
-        "fan_rpm": fan_rpm,
-        "uptime": uptime_str,
-        "throttled": throttled
+
     }
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -517,6 +565,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       margin-bottom: 5px;
       font-size: 11px;
     }
+    .pi5-rtc-row {
+      border-top: 1px solid #3c5435;
+      margin-top: 8px;
+      padding-top: 8px;
+    }
     .pi5-pin-num {
       width: 24px;
       height: 18px;
@@ -741,20 +794,57 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .pin-circle:focus-visible{outline:2px solid #fff;outline-offset:2px}
     #pin-info-bar{flex-wrap:wrap;gap:6px}
     #pin-legend{flex-wrap:wrap}
+    .wiring-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+    .wiring-heading h2{font-size:18px;margin:0}.wiring-heading p{font-size:12px;color:var(--text-dim);margin:8px 0 0}
+    .wiring-heading label{font-size:12px;white-space:nowrap;cursor:pointer}
+    .circuit-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+    .pinout-container{margin-top:0;min-width:0;background:#21382d;border:1px solid #42624e;box-shadow:none}
+    .breadboard-wrap{min-width:0;width:100%}.bb-modules{grid-template-columns:1fr}
+    .pin-row{grid-template-columns:minmax(0,1fr) 24px 24px minmax(0,1fr);margin:8px 0}
+    .pin-label{flex-wrap:wrap;white-space:normal;font-size:10px;padding:2px}.pin-sub{display:none}
+    .pin-tag.active-dev{background:#294b3b;color:#b7e9c7;box-shadow:none;font-size:9px}
+    .pin-circle{opacity:.6}.pin-circle[data-pin="12"],.pin-circle[data-pin="16"],.pin-circle[data-pin="18"],.pin-circle[data-pin="19"],.pin-circle[data-pin="20"],.pin-circle[data-pin="22"]{opacity:1}
+    .bb-module{cursor:pointer;transition:border-color .2s,background .2s}
+    .bb-module:focus-visible{outline:2px solid #65d9b4;outline-offset:3px}
+    .bb-module.connection-selected{border:1px solid #65d9b4;background:#203b34;box-shadow:0 0 0 2px #65d9b422}
+    .pin-circle.connection-selected{box-shadow:0 0 0 3px #65d9b4;opacity:1}
+    @media(max-width:1199px){.circuit-wrap{grid-template-columns:1fr}.bb-modules{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:480px){.bb-modules{grid-template-columns:1fr}.header-stats{flex-wrap:wrap}.pin-label{font-size:10px}}
+    .motion-history{margin-top:16px;border-top:1px solid #303640;padding-top:12px}
+    .motion-history summary{cursor:pointer;font-size:13px;font-weight:600}.motion-history summary span{color:var(--text-dim);font-weight:400;font-size:11px;margin-left:6px}
+    #pir-history{max-height:170px;overflow:auto;list-style:none;padding:0;margin:10px 0 0;font-size:12px;font-variant-numeric:tabular-nums}
+    #pir-history li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #252b33;color:var(--text-dim)}
+    #pir-history li span{color:var(--text)}
+    .led-overview{display:flex;align-items:center;gap:14px;margin:16px 0}.led-overview p{font-size:12px;color:var(--text-dim);margin:6px 0}
+    .led-preview{width:42px;height:42px;border-radius:12px;background:#15191f;border:1px solid #414957;flex-shrink:0}
+    .led-preview.rainbow{background:conic-gradient(#d96868,#d7bb6b,#72b68b,#6e9bd1,#b480c2,#d96868)}
+    .led-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .led-presets button{background:#242a33;color:#e0e5ed;border:1px solid #3b4350;box-shadow:none;font-weight:500;min-height:38px}
+    .led-presets button:hover{background:#303844}.led-presets button[aria-pressed="true"]{background:#3b4655;border-color:#a9b7ca;color:#fff}
+    .fan-power{display:flex;justify-content:space-between;gap:10px;padding:12px;border:1px solid #354238;border-radius:8px;background:#1b2822;font-size:13px}
+    .power-note{font-size:11px;color:var(--text-dim);margin:8px 0 0}
+    .history-tools{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;font-size:12px}
+    .history-tools select{background:#242a33;color:#e0e5ed;border:1px solid #414957;border-radius:6px;padding:6px}
+    #motion-chart{display:flex;align-items:flex-end;gap:3px;height:65px;margin:10px 0;border-bottom:1px solid #414957}
+    .chart-bar{flex:1;background:#303943;border-radius:3px 3px 0 0}.chart-bar.active{background:#79aa99}
+    .data-stale .stat-val,.data-stale .pir-banner,.data-stale .pinout-board,.data-stale .led-overview,.data-stale .fan-power{opacity:.4}
+    .data-stale #connection-status{background:#493030;border-color:#925959;color:#f1baba}
+    .module-select{width:100%;text-align:left;background:none;border:0;margin:0;padding:3px 0;box-shadow:none;color:var(--text);font-size:12px}
+    .module-details{font-size:11px;margin-top:8px;color:var(--text-dim)}.module-details summary{cursor:pointer;margin-bottom:8px}
+    .pin-tag{white-space:normal}
+    .brightness-control{display:flex;justify-content:space-between;font-size:12px;margin:12px 0 8px;color:var(--text-dim)}
+    #led-brightness{width:100%;accent-color:#a9b7ca;margin-bottom:12px}
+    #led-control-status{color:#e7aeae;font-size:12px;margin:6px 0}
   </style>
 </head>
 <body>
 
   <header>
     <div class="header-title">
-      <h1>🍓 Raspberry Pi 5 • Лабораторія</h1>
-      <span class="badge">Online</span>
+      <h1>Raspberry Pi 5 • Лабораторія</h1>
+      <span class="badge" id="connection-status" role="status">Оновлення…</span>
     </div>
-    <div class="header-stats">
-      <span>CPU: <b id="stat-temp">-</b></span>
-      <span>Uptime: <b id="stat-uptime">-</b></span>
-      <span>Throttled: <b id="stat-throttled">-</b></span>
-    </div>
+
   </header>
 
   <div class="main-grid">
@@ -766,7 +856,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <!-- Датчик руху HC-SR505 -->
       <div class="card">
         <div class="card-head">
-          <h2>👁️ Датчик руху HC-SR505</h2>
+          <h2>Датчик руху HC-SR505</h2>
           <label class="switch-label">
             <span>Авто-тривога</span>
             <label class="switch">
@@ -786,7 +876,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         <div class="stat-grid">
           <div class="stat-box">
-            <span class="stat-label">Спрацьовувань</span>
+            <span class="stat-label">За цей запуск</span>
             <span class="stat-val" id="stat-pir-count">0</span>
           </div>
           <div class="stat-box">
@@ -794,34 +884,42 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <span class="stat-val" id="stat-pir-last" style="font-size:14px">-</span>
           </div>
         </div>
+        <details class="motion-history" open>
+          <summary>Історія спрацювань</summary>
+          <div class="history-tools"><label>Період <select id="history-period" onchange="loadMotionHistory()"><option value="hour">Остання година</option><option value="today">Сьогодні</option></select></label><span id="history-count"></span></div>
+          <div id="motion-chart" role="img" aria-label="Активність руху"></div>
+          <p class="power-note">Збережені події · останні 20 у списку · архів до 1000</p>
+          <ol id="pir-history"><li>Завантаження історії…</li></ol>
+        </details>
       </div>
 
-      <!-- Адресні діоди WS2813 -->
-      <div class="card">
-        <div class="card-head">
-          <h2>💡 Адресні світлодіоди WS2813-2</h2>
-          <span style="font-size:12px; color:var(--text-dim)">SPI MOSI (Pin 19)</span>
-        </div>
-        <p style="font-size:12.5px; color:var(--text-dim); margin-bottom:10px;">Керування 2x RGB NeoPixel діодами через апаратний SPI на 6.4 МГц:</p>
-        <div class="btn-row">
-          <button class="btn-rainbow" onclick="setLedMode('rainbow')">🌈 Веселка (Rainbow)</button>
-          <button class="btn-green" onclick="setLedColor(0, 255, 0)">🟢 Зелений</button>
-          <button class="btn-blue" onclick="setLedColor(0, 120, 255)">🔵 Синій</button>
-          <button class="btn-red" onclick="setLedColor(255, 0, 0)">🔴 Червоний</button>
-          <button style="background:#fbc02d; color:#000;" onclick="setLedColor(255, 180, 0)">🟡 Жовтий</button>
-          <button style="background:#ab47bc;" onclick="setLedColor(200, 0, 255)">🟣 Фіолетовий</button>
-          <button style="background:#ffffff; color:#000;" onclick="setLedColor(200, 200, 200)">⚪ Білий</button>
-          <button class="btn-red" onclick="setLedMode('off')">⏹ Вимкнути</button>
+      <div class="card led-card">
+        <div class="card-head"><h2>Адресні світлодіоди WS2813-2</h2></div>
+        <p class="power-note" id="led-hardware-status"></p>
+        <div class="led-overview"><div class="led-preview" id="led-preview"></div>
+          <div><strong id="led-mode-label">Вимкнено</strong><p>2 світлодіоди · SPI / Pin 19</p></div></div>
+        <label class="brightness-control" for="led-brightness">Яскравість <output id="brightness-value">100%</output></label>
+        <input type="range" id="led-brightness" min="0" max="100" value="100" oninput="document.getElementById('brightness-value').textContent=this.value+'%'" onchange="setBrightness(Number(this.value))">
+        <div id="led-control-status" role="status"></div>
+        <div class="led-presets" aria-label="Режими світлодіодів">
+          <button data-led-mode="rainbow" onclick="setLedMode('rainbow')">Веселка</button>
+          <button data-led-color="0,255,0" onclick="setLedColor(0,255,0)">Зелений</button>
+          <button data-led-color="0,120,255" onclick="setLedColor(0,120,255)">Синій</button>
+          <button data-led-color="255,0,0" onclick="setLedColor(255,0,0)">Червоний</button>
+          <button data-led-color="255,180,0" onclick="setLedColor(255,180,0)">Жовтий</button>
+          <button data-led-color="200,0,255" onclick="setLedColor(200,0,255)">Фіолетовий</button>
+          <button data-led-color="200,200,200" onclick="setLedColor(200,200,200)">Білий</button>
+          <button data-led-mode="off" onclick="setLedMode('off')">Вимкнути</button>
         </div>
       </div>
 
       <!-- Зумер MH-FMD -->
       <div class="card">
         <div class="card-head">
-          <h2>🔔 Зумер (MH-FMD Buzzer)</h2>
+          <h2>Зумер (MH-FMD Buzzer)</h2>
           <span style="font-size:12px; color:var(--text-dim)">Pin 18 (GPIO 24)</span>
         </div>
-        <p style="font-size:12.5px; color:var(--text-dim); margin-bottom:10px;">Генерація звукових попереджень:</p>
+        <p class="power-note" id="buzzer-hardware-status"></p>
         <div class="btn-row">
           <button class="btn-green" onclick="triggerBuzzer('beep')">🔔 Короткий сигнал</button>
           <button class="btn-red" onclick="triggerBuzzer('alarm')">🚨 Сирена тривоги</button>
@@ -831,9 +929,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <!-- Вентилятор SC1148 Active Cooler -->
       <div class="card">
         <div class="card-head">
-          <h2>🌀 Active Cooler SC1148</h2>
+          <h2>Active Cooler SC1148</h2>
           <span style="font-size:12px; color:var(--text-dim)">ШІМ Pin 12 (GPIO 18)</span>
         </div>
+        <div class="fan-power"><span>Стан кулера</span><strong id="fan-power-state">Невідомо</strong></div>
+        <p class="power-note">За тахометром і ШІМ · напруга живлення не вимірюється</p>
         <div class="stat-grid">
           <div class="stat-box">
             <span class="stat-label">Температура CPU</span>
@@ -853,9 +953,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
         </div>
         <div class="btn-row">
+          <button id="fan-auto" onclick="setFan('auto')" disabled>Авто</button>
           <button id="fan-on" class="btn-green" onclick="setFan(true)" disabled>Максимальні оберти</button>
           <button id="fan-off" class="btn-red" onclick="setFan(false)" disabled>Вимкнути кулер</button>
         </div>
+        <p class="power-note">Авто — крива температури ОС. Ручні команди тимчасові: тепловий захист залишається активним.</p>
         <div id="fan-control-status" role="status"></div>
       </div>
 
@@ -865,63 +967,49 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div class="col">
       <div class="card" style="padding: 14px;">
 
-        <!-- Tab bar -->
-        <div class="tab-bar">
-          <button class="tab-btn active" onclick="switchTab('circuit', this)">🔌 Схема: Pi 5 + Макетка</button>
-          <button class="tab-btn" onclick="switchTab('pinout', this)">📌 40-Pin GPIO Pinout</button>
-        </div>
-
-        <!-- Tab: Circuit Diagram -->
-        <div class="tab-panel active" id="tab-circuit">
+        <div class="wiring-heading"><div><h2>Підключення та GPIO</h2>
+          <p>Оберіть модуль або пін — побачите пов’язані з’єднання</p></div>
+          <label><input type="checkbox" id="show-all-pins" onchange="renderPinout()"> Усі 40 пінів</label></div>
+        <div class="wiring-panel">
           <div class="circuit-wrap">
 
-            <!-- Pi 5 Pins -->
-            <div class="pi5-box">
-              <div class="pi5-box-title">🍓 Raspberry Pi 5</div>
-
-              <div class="pi5-pin-row">
-                <div class="pi5-pin-num">12</div>
-                <div class="pi5-wire wire-orange"></div>
-                <div class="pi5-pin-label">GPIO 18 • PWM Кулер</div>
+          <div class="pinout-container">
+            <div class="pinout-header">
+              <div class="pinout-logo">
+                <span style="background:#00e676"></span><span style="background:#00e676"></span><span style="background:#00e676"></span>
+                <span style="background:#d50000"></span><span style="background:#d50000"></span><span style="background:#d50000"></span>
+                <span style="background:#d50000"></span><span style="background:#d50000"></span><span style="background:#d50000"></span>
               </div>
-              <div class="pi5-pin-row">
-                <div class="pi5-pin-num">16</div>
-                <div class="pi5-wire wire-yellow"></div>
-                <div class="pi5-pin-label">GPIO 23 • Tach кулера</div>
-              </div>
-              <div class="pi5-pin-row">
-                <div class="pi5-pin-num">18</div>
-                <div class="pi5-wire wire-blue"></div>
-                <div class="pi5-pin-label">GPIO 24 • Зумер</div>
-              </div>
-              <div class="pi5-pin-row">
-                <div class="pi5-pin-num">19</div>
-                <div class="pi5-wire wire-purple"></div>
-                <div class="pi5-pin-label">GPIO 10 • SPI MOSI LED</div>
-              </div>
-              <div class="pi5-pin-row">
-                <div class="pi5-pin-num">20</div>
-                <div class="pi5-wire wire-black"></div>
-                <div class="pi5-pin-label">GND • Спільна земля макетки</div>
-              </div>
-              <div class="pi5-pin-row">
-                <div class="pi5-pin-num">22</div>
-                <div class="pi5-wire wire-green"></div>
-                <div class="pi5-pin-label">GPIO 25 • PIR OUT</div>
+              <div>
+                <div class="pinout-title">Raspberry Pi 5</div>
+                <div class="pinout-subtitle">Фізичний пін · BCM GPIO · стан</div>
               </div>
             </div>
 
-            <div class="circuit-arrow">➜</div>
+            <div class="pinout-board" id="pinout-board">
+              <!-- Rendered by JavaScript -->
+            </div>
+
+            <div id="pin-info-bar">
+              <span id="pin-info-text">💡 Наведіть курсор або натисніть на пін для перегляду деталей</span>
+              <span id="pin-legend" style="font-size:10px;opacity:0.8;display:flex;gap:6px">
+                <span style="color:#ff8a80">● 5V</span>
+                <span style="color:#ffb74d">● 3.3V</span>
+                <span style="color:#81c784">● GPIO</span>
+                <span style="color:#90caf9">● I2C/UART/PCM</span>
+              </span>
+            </div>
+          </div>
 
             <!-- Breadboard + Modules -->
             <div class="breadboard-wrap">
               <div class="breadboard">
-                <div class="bb-title">📋 MB-102 Breadboard</div>
+                <div class="bb-title">MB-102 Breadboard</div>
 
                 <!-- YwRobot Power Module (spans full width) -->
                 <div class="ywrobot-card">
                   <div class="ywrobot-title">
-                    ⚡ YwRobot 545043 Power Module
+                    YwRobot 545043 Power Module
                   </div>
                   <div class="ywrobot-rails">
                     <div class="ywrobot-rail r5v">
@@ -957,8 +1045,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <div class="bb-modules">
 
                   <!-- SC1148 Active Cooler -->
-                  <div class="bb-module">
-                    <div class="bb-mod-title">🌀 SC1148 Active Cooler</div>
+                  <div class="bb-module" data-device="fan">
+                    <button class="bb-mod-title module-select" type="button" onclick="selectModule('fan')">SC1148 Active Cooler</button>
+                    <details class="module-details"><summary>Живлення та підключення</summary>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-red"></div>
                       <span>+5V ← рейка +5V</span>
@@ -975,11 +1064,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                       <div class="bb-mod-dot dot-yellow"></div>
                       <span>Tach → пін 16 (GPIO 23)</span>
                     </div>
+                    </details>
                   </div>
 
                   <!-- MH-FMD Buzzer -->
-                  <div class="bb-module">
-                    <div class="bb-mod-title">🔔 MH-FMD Зумер</div>
+                  <div class="bb-module" data-device="buzzer">
+                    <button class="bb-mod-title module-select" type="button" onclick="selectModule('buzzer')">MH-FMD Зумер</button>
+                    <details class="module-details"><summary>Живлення та підключення</summary>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-red"></div>
                       <span>+ ← рейка +5V</span>
@@ -992,11 +1083,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                       <div class="bb-mod-dot dot-blue"></div>
                       <span>I/O ← Pin 18 (GPIO 24)</span>
                     </div>
+                    </details>
                   </div>
 
                   <!-- WS2813-2 LEDs -->
-                  <div class="bb-module">
-                    <div class="bb-mod-title">💡 WS2813-2 LED × 2</div>
+                  <div class="bb-module" data-device="led">
+                    <button class="bb-mod-title module-select" type="button" onclick="selectModule('led')">WS2813-2 LED × 2</button>
+                    <details class="module-details"><summary>Живлення та підключення</summary>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-red"></div>
                       <span>+5V ← рейка +5V</span>
@@ -1013,11 +1106,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                       <div class="vled" id="vled-0" title="LED 1"></div>
                       <div class="vled" id="vled-1" title="LED 2"></div>
                     </div>
+                    </details>
                   </div>
 
                   <!-- HC-SR505 PIR -->
-                  <div class="bb-module" id="pir-module-card">
-                    <div class="bb-mod-title">👁️ HC-SR505 PIR</div>
+                  <div class="bb-module" data-device="pir" id="pir-module-card">
+                    <button class="bb-mod-title module-select" type="button" onclick="selectModule('pir')">HC-SR505 PIR</button>
+                    <details class="module-details"><summary>Живлення та підключення</summary>
                     <div class="bb-mod-row">
                       <div class="bb-mod-dot dot-red"></div>
                       <span>+ ← рейка +5V</span>
@@ -1033,58 +1128,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                     <div style="margin-top:5px; font-size:9px; color:var(--text-dim);" id="pir-module-status">
                       ⬤ Очікування...
                     </div>
+                    </details>
                   </div>
 
                 </div><!-- /bb-modules -->
               </div><!-- /breadboard -->
+              <p style="font-size:12px;color:var(--text-dim)">🔋 RTC батарейка → окремий роз’єм J5 / BAT</p>
             </div><!-- /breadboard-wrap -->
           </div><!-- /circuit-wrap -->
-        </div><!-- /tab-circuit -->
+        </div><!-- /wiring-panel -->
 
-        <!-- Tab: 40-pin Pinout -->
-        <div class="tab-panel" id="tab-pinout">
-          <div class="pinout-container">
-            <div class="pinout-header">
-              <div class="pinout-logo">
-                <span style="background:#00e676"></span><span style="background:#00e676"></span><span style="background:#00e676"></span>
-                <span style="background:#d50000"></span><span style="background:#d50000"></span><span style="background:#d50000"></span>
-                <span style="background:#d50000"></span><span style="background:#d50000"></span><span style="background:#d50000"></span>
-              </div>
-              <div>
-                <div class="pinout-title">Raspberry Pi 5 Pinout</div>
-                <div class="pinout-subtitle">40-Pin GPIO Real-Time Status & Devices</div>
-              </div>
-            </div>
 
-            <div class="pinout-board" id="pinout-board">
-              <!-- Rendered by JavaScript -->
-            </div>
-
-            <div id="pin-info-bar">
-              <span id="pin-info-text">💡 Наведіть курсор або натисніть на пін для перегляду деталей</span>
-              <span id="pin-legend" style="font-size:10px;opacity:0.8;display:flex;gap:6px">
-                <span style="color:#ff8a80">● 5V</span>
-                <span style="color:#ffb74d">● 3.3V</span>
-                <span style="color:#81c784">● GPIO</span>
-                <span style="color:#90caf9">● I2C/UART/PCM</span>
-              </span>
-            </div>
-          </div>
-        </div><!-- /tab-pinout -->
 
       </div><!-- /card -->
     </div><!-- /right col -->
   </div><!-- /main-grid -->
 
   <script>
-    // ===== TABS =====
-    function switchTab(id, btn) {
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('tab-' + id).classList.add('active');
-      btn.classList.add('active');
-      if (id === 'pinout' && !pinoutRendered) renderPinout();
-    }
     let pinoutRendered = false;
 
     // ===== PINOUT =====
@@ -1154,12 +1214,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let gpioState = {};
     let selectedPin;
 
+    const MODULE_PINS = {fan: [12,16], buzzer: [18], led: [19], pir: [22]};
+    function highlightConnections(pins) {
+      document.querySelectorAll('[data-pin]').forEach(el => el.classList.toggle('connection-selected', pins.includes(Number(el.dataset.pin))));
+      document.querySelectorAll('[data-device]').forEach(el => {
+        const active = MODULE_PINS[el.dataset.device].some(pin => pins.includes(pin));
+        el.classList.toggle('connection-selected', active);
+        el.querySelector('.module-select').setAttribute('aria-pressed', String(active));
+      });
+    }
+    function selectModule(key) {
+      showPinInfo(MODULE_PINS[key][0]);
+      highlightConnections(MODULE_PINS[key]);
+    }
     function renderPinout() {
       const board = document.getElementById('pinout-board');
       let html = '';
       for (let i = 0; i < PINOUT_DEFS.length; i += 2) {
         const left = PINOUT_DEFS[i];
         const right = PINOUT_DEFS[i + 1];
+        if (!document.getElementById('show-all-pins').checked && !left.device && !right.device) continue;
         html += `
           <div class="pin-row">
             <div class="pin-label left">
@@ -1183,23 +1257,24 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function renderPinButton(pin) {
-      return `<button type="button" class="pin-circle p-${pin.type} ${pin.pin === 1 ? 'rect' : ''}"
+      return `<button type="button" data-pin="${pin.pin}" class="pin-circle p-${pin.type} ${pin.pin === 1 ? 'rect' : ''}"
         aria-label="Pin ${pin.pin} ${pin.name}" onmouseover="showPinInfo(${pin.pin})"
         onfocus="showPinInfo(${pin.pin})" onclick="showPinInfo(${pin.pin})">
-        <span class="pin-dot"></span>
+        ${pin.pin}
       </button>`;
     }
 
-    function showPinInfo(pinNum) {
+    function showPinInfo(pinNum, highlight = true) {
       selectedPin = pinNum;
+      if (highlight) highlightConnections([pinNum]);
       const pin = PINOUT_DEFS[pinNum - 1];
       const state = gpioState[pin.gpio];
       let info = `<b>Pin ${pin.pin}</b>`;
       if (pin.name) info += `: ${pin.name} (${pin.sub})`;
       if (pin.device) info += ` • <span style="color:#ffeb3b">Підключено за схемою: ${pin.device}</span>`;
       if (state) {
-        const level = { hi: 'HIGH (1)', lo: 'LOW (0)' }[state.level] || '—';
-        info += ` • Mode: <b>${state.mode.toUpperCase()}</b> • Level: <b>${level}</b>`;
+        const level = { hi: 'Високий (1)', lo: 'Низький (0)' }[state.level] || 'Невідомо';
+        info += ` • Режим: <b>${gpioModeLabel(state.mode)}</b> • Рівень: <b>${level}</b>`;
       } else if (pin.isPwr) {
         info += ' • Живлення';
       } else if (pin.isGnd) {
@@ -1208,26 +1283,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById('pin-info-text').innerHTML = info;
     }
 
+    function gpioModeLabel(mode) {
+      const labels = {ip: 'Вхід', op: 'Вихід', no: 'Не налаштовано'};
+      return labels[mode] || (/^a[0-9]+$/i.test(mode) ? 'Альт. функція ' + mode.slice(1) : 'Невідомо');
+    }
     function updatePinoutState(states) {
       gpioState = states;
       if (!pinoutRendered) return;
 
       for (const pin of PINOUT_DEFS) {
         const tag = document.getElementById(`pin-tag-${pin.pin}`);
+        if (!tag) continue;
         const state = gpioState[pin.gpio];
         if (pin.device) {
           tag.className = 'pin-tag active-dev';
           tag.textContent = pin.device;
         } else if (state) {
           tag.className = 'pin-tag ' + (state.level === 'hi' ? 'hi' : 'lo');
-          tag.textContent = `${state.mode.toUpperCase()}:${state.level === '--' ? '—' : state.level.toUpperCase()}`;
+          tag.textContent = `${gpioModeLabel(state.mode)}:${({hi: '1', lo: '0'})[state.level] || '—'}`;
         } else {
           tag.className = '';
           tag.textContent = '';
         }
       }
-      if (selectedPin !== undefined) showPinInfo(selectedPin);
+      if (selectedPin !== undefined) showPinInfo(selectedPin, false);
     }
+
+    renderPinout();
 
     // ===== VIRTUAL LEDS =====
     let _rainbowStep = 0;
@@ -1267,22 +1349,73 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     // ===== STATUS POLL =====
-    async function updateStatus() {
+    let statusBusy = false;
+    let lastHistoryKey, lastHistoryFetch = 0, historyRequest = 0;
+    async function loadMotionHistory() {
+      const request = ++historyRequest;
+      const period = document.getElementById('history-period').value;
       try {
-        const res  = await fetch('/api/status');
+        const response = await fetch('/api/motion?period=' + period, {signal: AbortSignal.timeout(5000)});
+        if (!response.ok) throw new Error('Історія недоступна');
+        const report = await response.json();
+        if (request !== historyRequest) return;
+        lastHistoryFetch = Date.now();
+        document.getElementById('history-count').textContent = report.count + ' спрацювань';
+        const chart = document.getElementById('motion-chart');
+        chart.replaceChildren();
+        chart.setAttribute('aria-label', report.count + ' спрацювань за вибраний період');
+        const max = Math.max(1, ...report.buckets);
+        report.buckets.forEach((count, index) => {
+          const bar = document.createElement('div');
+          bar.style.height = (3 + count / max * 57) + 'px';
+          bar.className = count ? 'chart-bar active' : 'chart-bar';
+          const date = new Date((report.start + index * report.bucket_seconds) * 1000);
+          bar.title = date.toLocaleTimeString('uk-UA', {hour:'2-digit',minute:'2-digit'}) + ': ' + count;
+          chart.append(bar);
+        });
+        const history = document.getElementById('pir-history');
+        history.replaceChildren();
+        for (const timestamp of report.events) {
+          const row = document.createElement('li');
+          const label = document.createElement('span'); label.textContent = 'Виявлено рух';
+          const date = document.createElement('time');
+          date.dateTime = new Date(timestamp * 1000).toISOString();
+          date.textContent = new Date(timestamp * 1000).toLocaleString('uk-UA');
+          row.append(label, date); history.append(row);
+        }
+        if (!report.events.length) {
+          const row = document.createElement('li'); row.textContent = 'За цей період спрацювань немає'; history.append(row);
+        }
+      } catch (error) {
+        if (request === historyRequest) document.getElementById('history-count').textContent = 'Не вдалося оновити історію';
+      }
+    }
+    async function updateStatus() {
+      if (statusBusy) return;
+      statusBusy = true;
+      const badge = document.getElementById('connection-status');
+      try {
+        const res = await fetch('/api/status', {signal: AbortSignal.timeout(5000)});
+        if (!res.ok) throw new Error('Status unavailable');
         const data = await res.json();
+        document.body.classList.remove('data-stale');
+        badge.textContent = 'Підключено';
+        badge.title = 'Оновлено: ' + new Date().toLocaleTimeString('uk-UA');
 
         // System stats
-        document.getElementById('stat-temp').textContent      = data.cpu_temp ? data.cpu_temp + '°C' : '-';
-        document.getElementById('stat-uptime').textContent    = data.uptime   || '-';
-        document.getElementById('stat-throttled').textContent = data.throttled || '-';
 
+        const hardware = data.hardware || {};
         // PIR banner
         const pirBanner = document.getElementById('pir-banner');
         const pirText   = document.getElementById('pir-text');
         const pirCard   = document.getElementById('pir-module-card');
         const pirStatus = document.getElementById('pir-module-status');
-        if (data.pir_state) {
+        if (hardware.pir) {
+          pirBanner.classList.remove('active');
+          pirCard.classList.remove('pir-highlight');
+          pirText.textContent = hardware.pir;
+          pirStatus.textContent = hardware.pir;
+        } else if (data.pir_state) {
           pirBanner.classList.add('active');
           pirText.textContent   = '🟢 РУХ ВИЯВЛЕНО!';
           pirCard.classList.add('pir-highlight');
@@ -1299,9 +1432,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('stat-pir-last').textContent  = data.pir_last;
         document.getElementById('chk-auto-alarm').checked     = data.auto_alarm;
 
+        const historyKey = JSON.stringify(data.pir_history || []);
+        if (historyKey !== lastHistoryKey || Date.now() - lastHistoryFetch > 30000) {
+          lastHistoryKey = historyKey;
+          loadMotionHistory();
+        }
+        document.getElementById('fan-power-state').textContent =
+          hardware.tachometer ? hardware.tachometer : data.fan_rpm > 0 ? 'Працює' :
+          data.fan_rpm === 0 && data.fan_pwm > 0 ? 'Немає обертів' :
+          data.fan_rpm === 0 && data.fan_pwm === 0 ? 'Зупинений' : 'Невідомо';
+
         // Fan stats
         document.getElementById('fan-temp').textContent  = data.cpu_temp ? data.cpu_temp + '°C' : '-';
         document.getElementById('fan-state').textContent = data.fan_state === null ? '-' : 'Рівень ' + data.fan_state + '/4';
+        document.getElementById('fan-auto').disabled = data.fan_state === null;
         document.getElementById('fan-on').disabled = data.fan_state === null;
         document.getElementById('fan-off').disabled = data.fan_state === null;
         document.getElementById('fan-pwm').textContent = data.fan_pwm ?? '-';
@@ -1309,7 +1453,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         updatePinoutState(data.gpio || {});
 
         // Virtual LEDs
-        const mode = data.led_mode;
+        const mode = hardware.spi ? 'unknown' : data.led_mode;
+        const slider = document.getElementById('led-brightness');
+        if (document.activeElement !== slider) {
+          slider.value = data.led_brightness;
+          document.getElementById('brightness-value').textContent = data.led_brightness + '%';
+        }
+        slider.disabled = Boolean(hardware.spi && hardware.spi === 'SPI недоступний');
+        document.getElementById('led-hardware-status').textContent = hardware.spi || 'SPI доступний · підтверджується передача команди';
+        document.getElementById('buzzer-hardware-status').textContent = hardware.buzzer || 'GPIO доступний';
+        document.querySelectorAll('[onclick^="triggerBuzzer"]').forEach(button => button.disabled = Boolean(hardware.buzzer));
+        document.getElementById('chk-auto-alarm').disabled = Boolean(hardware.pir);
+        const color = (data.led_color || []).join(',');
+        let ledLabel = mode === 'unknown' ? 'Стан не підтверджено' : mode === 'rainbow' ? 'Веселка' : mode === 'off' ? 'Вимкнено' : 'Власний колір';
+        document.querySelectorAll('.led-presets button').forEach(button => {
+          const active = button.dataset.ledMode === mode || (mode === 'color' && button.dataset.ledColor === color);
+          button.setAttribute('aria-pressed', String(active));
+          if (active && mode === 'color') ledLabel = button.textContent;
+        });
+        document.getElementById('led-mode-label').textContent = ledLabel;
+        const preview = document.getElementById('led-preview');
+        preview.classList.toggle('rainbow', mode === 'rainbow');
+        preview.style.backgroundColor = mode === 'color' ? `rgb(${color})` : '';
+
         if (mode === 'rainbow') {
           startVledRainbow();
         } else {
@@ -1325,8 +1491,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
 
       } catch (e) {
+        badge.textContent = 'Немає зв’язку';
+        document.body.classList.add('data-stale');
         console.error('Update error:', e);
-      }
+      } finally { statusBusy = false; }
     }
 
     async function sendControl(path, payload, statusId = 'control-status') {
@@ -1348,7 +1516,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     async function setFan(enabled) {
-      await sendControl('/api/fan', { enabled }, 'fan-control-status');
+      await sendControl('/api/fan', enabled === 'auto' ? {mode:'auto'} : { enabled }, 'fan-control-status');
       await updateStatus();
     }
 
@@ -1357,13 +1525,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function setLedMode(mode) {
-      return sendControl('/api/leds/' + mode);
+      return sendControl('/api/leds/' + mode, undefined, 'led-control-status');
     }
 
     function setLedColor(r, g, b) {
-      return sendControl('/api/leds/color', { r, g, b });
+      return sendControl('/api/leds/color', { r, g, b }, 'led-control-status');
     }
 
+    async function setBrightness(value) {
+      await sendControl('/api/leds/brightness', {value}, 'led-control-status');
+      await updateStatus();
+    }
     async function toggleAutoAlarm(enabled) {
       if (!await sendControl('/api/alarm_mode', { enabled })) {
         updateStatus();
@@ -1389,6 +1561,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
+        elif parsed.path == "/api/motion":
+            period = parse_qs(parsed.query).get("period", ["hour"])[0]
+            try:
+                self._json(motion_report(period))
+            except ValueError:
+                self._json({"error": "Некоректний період"}, status=400)
         elif parsed.path == "/api/status":
             status = get_system_status()
             self.send_response(200)
@@ -1422,18 +1600,14 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/fan":
             enabled = payload.get("enabled")
-            if self.headers.get_content_type() != "application/json" or not isinstance(enabled, bool):
+            automatic = payload == {"mode": "auto"}
+            if self.headers.get_content_type() != "application/json" or not (automatic or isinstance(enabled, bool)):
                 self._json({"ok": False, "error": "Некоректний стан кулера"}, status=400)
                 return
+            mode = "auto" if automatic else "on" if enabled else "off"
             try:
-                result = subprocess.run(
-                    ["/usr/bin/sudo", "-n", "/usr/local/sbin/pi5-fan-control", "on" if enabled else "off"],
-                    timeout=3, check=False,
-                )
-            except (OSError, subprocess.TimeoutExpired):
-                self._json({"ok": False, "error": "Керування кулером недоступне"}, status=503)
-                return
-            if result.returncode:
+                host_request("POST", "/fan", {"mode": mode})
+            except (OSError, ValueError, http.client.HTTPException):
                 self._json({"ok": False, "error": "Керування кулером недоступне"}, status=503)
             else:
                 self._json({"ok": True})
@@ -1443,19 +1617,11 @@ class DashboardHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/buzzer/alarm":
             play_buzzer_alarm()
             self._json({"ok": True})
-        elif parsed.path == "/api/leds/rainbow":
-            start_rainbow()
-            self._json({"ok": True})
-        elif parsed.path == "/api/leds/off":
-            turn_leds_off()
-            self._json({"ok": True})
-        elif parsed.path == "/api/leds/color":
-            color = [payload.get(channel) for channel in ("r", "g", "b")]
-            if any(type(value) is not int or not 0 <= value <= 255 for value in color):
-                self._json({"ok": False, "error": "Компоненти RGB мають бути цілими числами від 0 до 255"}, status=400)
-                return
-            set_led_solid_color(*color)
-            self._json({"ok": True})
+        elif parsed.path.startswith("/api/leds/"):
+            try:
+                self._handle_led(parsed.path, payload)
+            except OSError as error:
+                self._json({"ok": False, "error": str(error)}, status=503)
         elif parsed.path == "/api/alarm_mode":
             global auto_alarm_enabled
             enabled = payload.get("enabled")
@@ -1468,6 +1634,30 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+    def _handle_led(self, path, payload):
+        if path == "/api/leds/brightness":
+            value = payload.get("value")
+            if type(value) is not int or not 0 <= value <= 100:
+                self._json({"ok": False, "error": "Яскравість має бути від 0 до 100"}, status=400)
+                return
+            set_led_brightness(value)
+            self._json({"ok": True})
+        elif path == "/api/leds/rainbow":
+            start_rainbow()
+            self._json({"ok": True})
+        elif path == "/api/leds/off":
+            turn_leds_off()
+            self._json({"ok": True})
+        elif path == "/api/leds/color":
+            color = [payload.get(channel) for channel in ("r", "g", "b")]
+            if any(type(value) is not int or not 0 <= value <= 255 for value in color):
+                self._json({"ok": False, "error": "Компоненти RGB мають бути цілими числами від 0 до 255"}, status=400)
+                return
+            set_led_solid_color(*color)
+            self._json({"ok": True})
+        else:
+            self._json({"ok": False, "error": "Невідома команда LED"}, status=404)
+
     def _json(self, data, status=200):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -1478,6 +1668,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         pass
 
 def main():
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     server = HTTPServer(("0.0.0.0", PORT), DashboardHandler)
     print(f"[Dashboard] Starting Pi 5 Sensor & Pinout Dashboard on http://0.0.0.0:{PORT}")
     try:
@@ -1486,7 +1677,10 @@ def main():
         pass
     finally:
         server.server_close()
-        turn_leds_off()
+        try:
+            turn_leds_off()
+        except OSError:
+            pass
 
 if __name__ == "__main__":
     main()

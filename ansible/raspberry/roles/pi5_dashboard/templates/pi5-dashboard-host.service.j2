@@ -1,0 +1,21 @@
+[Unit]
+Description=Pi 5 dashboard host telemetry and fan helper
+
+[Service]
+Type=simple
+User=root
+Group={{ ansible_user | default('pi') }}
+RuntimeDirectory=pi5-dashboard-host
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+Environment=PYTHONDONTWRITEBYTECODE=1
+WorkingDirectory=/opt/pi5-dashboard-host
+ExecStart=/usr/bin/python3 /opt/pi5-dashboard-host/pi5_host_helper.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

@@ -15,6 +15,27 @@ case "${1:-}" in
     on)
         state=$(cat "$fan/max_state")
         ;;
+    auto)
+        # Match active CPU trip points to the fan's configured cooling levels.
+        zone=
+        for device in /sys/class/thermal/thermal_zone*; do
+            [ "$(cat "$device/type")" = cpu-thermal ] || continue
+            zone=$device
+        done
+        [ -n "$zone" ] || exit 1
+        [ "$(cat "$zone/policy")" = step_wise ] || exit 1
+        temperature=$(cat "$zone/temp")
+        state=0
+        level=0
+        for trip in "$zone"/trip_point_*_temp; do
+            [ -r "$trip" ] || continue
+            [ "$(cat "${trip%_temp}_type")" = active ] || continue
+            level=$((level + 1))
+            [ "$temperature" -lt "$(cat "$trip")" ] || state=$level
+        done
+        maximum=$(cat "$fan/max_state")
+        [ "$state" -le "$maximum" ] || state=$maximum
+        ;;
     off)
         state=0
         ;;

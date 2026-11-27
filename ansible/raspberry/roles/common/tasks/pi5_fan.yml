@@ -1,19 +1,21 @@
----
-- name: Remove legacy dtparam fan curve lines if using GPIO overlay
-  ansible.builtin.lineinfile:
-    path: "{{ boot_dir }}/config.txt"
-    regexp: '^dtparam=fan_temp'
-    state: absent
-  when: pi5_fan_gpio is defined
-  notify: Reboot Pi
-
 - name: Configure PWM fan overlay for GPIO pin
   ansible.builtin.lineinfile:
     path: "{{ boot_dir }}/config.txt"
     regexp: '^dtoverlay=pwm-fan'
-    line: >-
-      dtoverlay=pwm-fan,fan_gpio_{{ pi5_fan_gpio }},fan_temp0={{ pi5_fan_curve.fan_temp0 }},fan_temp0_hyst={{ pi5_fan_curve.fan_temp0_hyst }},fan_temp0_speed={{ pi5_fan_curve.fan_temp0_speed }},fan_temp1={{ pi5_fan_curve.fan_temp1 }},fan_temp1_hyst={{ pi5_fan_curve.fan_temp1_hyst }},fan_temp1_speed={{ pi5_fan_curve.fan_temp1_speed }},fan_temp2={{ pi5_fan_curve.fan_temp2 }},fan_temp2_hyst={{ pi5_fan_curve.fan_temp2_hyst }},fan_temp2_speed={{ pi5_fan_curve.fan_temp2_speed }},fan_temp3={{ pi5_fan_curve.fan_temp3 }},fan_temp3_hyst={{ pi5_fan_curve.fan_temp3_hyst }},fan_temp3_speed={{ pi5_fan_curve.fan_temp3_speed }}
+    line: "dtoverlay=pwm-fan,fan_gpio_{{ pi5_fan_gpio }}"
     insertafter: EOF
+  when: pi5_fan_gpio is defined
+  notify: Reboot Pi
+
+- name: Configure PWM fan parameters on separate firmware-safe lines
+  ansible.builtin.blockinfile:
+    path: "{{ boot_dir }}/config.txt"
+    marker: "# {mark} ANSIBLE GPIO FAN CURVE"
+    insertafter: '^dtoverlay=pwm-fan,'
+    block: |
+      {% for key, value in pi5_fan_curve.items() %}
+      dtparam={{ key }}={{ value }}
+      {% endfor %}
   when: pi5_fan_gpio is defined
   notify: Reboot Pi
 

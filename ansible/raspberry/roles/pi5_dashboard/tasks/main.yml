@@ -7,7 +7,6 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
-  notify: Restart pi5-dashboard
 
 - name: Determine Pi boot directory
   ansible.builtin.include_role:
@@ -32,37 +31,196 @@
     group: root
     mode: "0755"
 
-- name: Allow the dashboard user to set the SC1148 fan state
-  ansible.builtin.copy:
-    dest: /etc/sudoers.d/pi5-fan-control
-    owner: root
-    group: root
-    mode: "0440"
-    validate: /usr/sbin/visudo -cf %s
-    content: |
-      {{ ansible_user | default('pi') }} ALL=(root) NOPASSWD: /usr/local/sbin/pi5-fan-control on, /usr/local/sbin/pi5-fan-control off
-
-- name: Deploy Pi 5 dashboard script
-  ansible.builtin.copy:
-    src: pi5_dashboard.py
-    dest: "/home/{{ ansible_user | default('pi') }}/pi5_dashboard.py"
-    owner: "{{ ansible_user | default('pi') }}"
-    group: "{{ ansible_user | default('pi') }}"
+- name: Create dashboard build, helper and persistent data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
     mode: "0755"
-  notify: Restart pi5-dashboard
+  loop:
+    - /opt/pi5-dashboard
+    - /opt/pi5-dashboard-host
+    - /home/{{ ansible_user | default('pi') }}/docker/pi5-dashboard
 
-- name: Deploy Pi 5 dashboard systemd service
-  ansible.builtin.template:
-    src: pi5-dashboard.service.j2
-    dest: /etc/systemd/system/pi5-dashboard.service
-    owner: root
-    group: root
+- name: Copy container build sources
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/opt/pi5-dashboard/{{ item }}"
     mode: "0644"
-  notify: Restart pi5-dashboard
+  loop: [Dockerfile, pi5_dashboard.py]
 
-- name: Ensure Pi 5 dashboard service is enabled and started
+- name: Copy host helper sources
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/opt/pi5-dashboard-host/{{ item }}"
+    mode: "0644"
+  loop: [pi5_host_helper.py, pi5_host_metrics.py]
+  notify: Restart pi5-dashboard-host
+
+- name: Deploy host helper service
+  ansible.builtin.template:
+    src: pi5-dashboard-host.service.j2
+    dest: /etc/systemd/system/pi5-dashboard-host.service
+    mode: "0644"
+  notify: Restart pi5-dashboard-host
+
+- name: Start host helper
+  ansible.builtin.systemd:
+    name: pi5-dashboard-host
+    daemon_reload: true
+    enabled: true
+    state: started
+
+- name: Build dashboard container image
+  community.docker.docker_image:
+    name: local/pi5-dashboard
+    tag: latest
+    source: build
+    force_source: true
+    build:
+      path: /opt/pi5-dashboard
+      pull: false
+
+- name: Find RP1 device without acquiring GPIO lines
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - |
+        import gpiod
+        from pathlib import Path
+        devices = []
+        for path in Path('/dev').glob('gpiochip*'):
+            with gpiod.Chip(str(path)) as chip:
+                if chip.get_info().label == 'pinctrl-rp1':
+                    devices.append(str(path.resolve()))
+        devices = sorted(set(devices))
+        assert len(devices) == 1, devices
+        print(devices[0])
+  register: dashboard_gpio_device
+  changed_when: false
+  check_mode: false
+
+- name: Read dashboard user identity
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ ansible_user | default('pi') }}"
+
+- name: Inspect device group permissions
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ dashboard_gpio_device.stdout }}"
+    - /dev/spidev0.0
+  register: dashboard_devices
+
+- name: Gather services before retiring the legacy dashboard
+  ansible.builtin.service_facts:
+
+- name: Stop and disable legacy dashboard before acquiring hardware in Docker
   ansible.builtin.systemd:
     name: pi5-dashboard
-    daemon_reload: true
+    state: stopped
+    enabled: false
+  when: "'pi5-dashboard.service' in ansible_facts.services"
+
+- name: Check original PIR database
+  ansible.builtin.stat:
+    path: "/home/{{ ansible_user | default('pi') }}/.local/state/pi5-dashboard/motion.sqlite3"
+  register: dashboard_legacy_db
+
+- name: Preserve existing history during first migration
+  ansible.builtin.copy:
+    remote_src: true
+    src: "/home/{{ ansible_user | default('pi') }}/.local/state/pi5-dashboard/motion.sqlite3"
+    dest: "/home/{{ ansible_user | default('pi') }}/docker/pi5-dashboard/motion.sqlite3"
+    force: false
+    owner: "{{ ansible_user | default('pi') }}"
+    group: "{{ ansible_user | default('pi') }}"
+    mode: "0600"
+  when: dashboard_legacy_db.stat.exists
+
+- name: Set ownership of the persistent data directory
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user | default('pi') }}/docker/pi5-dashboard"
+    owner: "{{ ansible_user | default('pi') }}"
+    group: "{{ ansible_user | default('pi') }}"
+    state: directory
+    mode: "0700"
+
+- name: Run hardware dashboard container
+  community.docker.docker_container:
+    name: pi5-dashboard
+    image: local/pi5-dashboard:latest
     state: started
-    enabled: true
+    restart_policy: unless-stopped
+    stop_timeout: 10
+    user: "{{ ansible_facts.getent_passwd[ansible_user | default('pi')][1] }}:{{ ansible_facts.getent_passwd[ansible_user | default('pi')][2] }}"
+    groups: "{{ dashboard_devices.results | map(attribute='stat.gid') | map('string') | unique | list }}"
+    devices:
+      - "{{ dashboard_gpio_device.stdout }}:{{ dashboard_gpio_device.stdout }}:rw"
+      - /dev/spidev0.0:/dev/spidev0.0:rw
+    cap_drop: [ALL]
+    security_opts: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=16m]
+    volumes:
+      - "/home/{{ ansible_user | default('pi') }}/docker/pi5-dashboard:/data:rw"
+      - /run/pi5-dashboard-host:/run/pi5-dashboard-host:ro
+    env:
+      TZ: Europe/Kyiv
+    published_ports:
+      - "{{ pi5_dashboard_port | default(8080) }}:8080"
+    log_driver: json-file
+    log_options:
+      max-size: 10m
+      max-file: "3"
+
+- name: Wait for dashboard HTTP
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ pi5_dashboard_port | default(8080) }}/api/status"
+    status_code: 200
+  register: dashboard_http
+  retries: 10
+  delay: 3
+  until:
+    - dashboard_http.status == 200
+    - dashboard_http.json.hardware.pir == none
+    - dashboard_http.json.hardware.spi == none
+    - dashboard_http.json.hardware.tachometer == none
+  when: not ansible_check_mode
+
+- name: Remove retired dashboard unit, script and sudo permissions after Docker is ready
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/pi5-dashboard.service
+    - /etc/sudoers.d/pi5-fan-control
+    - /home/{{ ansible_user | default('pi') }}/pi5_dashboard.py
+    - /opt/pi5-dashboard/pi5_host_metrics.py
+  notify: Reload dashboard units
+  when: not ansible_check_mode
+
+- name: Remove migrated original history only after verifying every retained record
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - |
+        from contextlib import closing
+        from pathlib import Path
+        import sqlite3
+        source = Path('/home/{{ ansible_user | default("pi") }}/.local/state/pi5-dashboard/motion.sqlite3')
+        target = Path('/home/{{ ansible_user | default("pi") }}/docker/pi5-dashboard/motion.sqlite3')
+        if source.exists():
+            with closing(sqlite3.connect(source.as_uri() + '?mode=ro', uri=True)) as old:
+                records = set(old.execute('SELECT id, ts FROM motion'))
+            with closing(sqlite3.connect(target.as_uri() + '?mode=ro', uri=True)) as current:
+                assert records <= set(current.execute('SELECT id, ts FROM motion')), 'Unmigrated history: preserving source'
+            source.unlink()
+            if not any(source.parent.iterdir()):
+                source.parent.rmdir()
+            print('removed migrated source')
+  register: dashboard_history_cleanup
+  changed_when: "'removed migrated source' in dashboard_history_cleanup.stdout"
+  when: not ansible_check_mode

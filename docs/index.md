@@ -13,6 +13,7 @@
 ## Services and monitoring
 
 - [Glance](glance.md) — Pi 5 dashboard.
+- [Pi 5 hardware app](pi5-dashboard.md) — Docker, GPIO/SPI, sensors, fan control and history.
 - [Hermes](hermes.md) — assistant and personal Telegram integration.
 - [Wishlist monitoring](wishlist.md) — Changedetection.io and price synchronization.
 - [Thermal camera](thermal-camera.md) — streaming, sensors and telemetry.

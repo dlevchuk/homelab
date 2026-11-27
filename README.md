@@ -27,7 +27,7 @@ Other hosts are managed manually; see the [deployment guide](docs/deployment.md#
 | Pi 5 dashboard | [Glance: configuration and rollback](docs/glance.md) |
 | Pi 5 assistant | [Hermes: setup and personal Telegram integration](docs/hermes.md) |
 | Wishlist monitoring | [Changedetection.io and price synchronization](docs/wishlist.md) |
-| Pi 5 dashboard | [Sensors, GPIO pinout and hardware controls](docs/pi5-dashboard.md) |
+| Pi 5 hardware app (Docker) | [Sensors, GPIO pinout and hardware controls](docs/pi5-dashboard.md) |
 | Thermal camera | [MLX90640 dashboard, BME280 telemetry and cloud sync](docs/thermal-camera.md) |
 | Power and internet recovery | [Reboot alerts, delivery behavior and limitations](docs/outage-notify.md) |
 | Scheduled power outages | [Power alerts](docs/power-alerts.md) |
