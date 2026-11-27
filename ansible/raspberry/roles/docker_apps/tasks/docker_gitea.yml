@@ -1,4 +1,14 @@
 ---
+- name: Read Gitea Tailscale address
+  ansible.builtin.command: tailscale ip -4
+  register: gitea_tailscale_ip
+  changed_when: false
+  check_mode: false
+
+- name: Verify Gitea Tailscale address
+  ansible.builtin.assert:
+    that: gitea_tailscale_ip.stdout | trim is match('^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.([0-9]{1,3})\.([0-9]{1,3})$')
+
 - name: Create private Gitea directories
   ansible.builtin.file:
     path: "{{ docker_dir }}/gitea/{{ item }}"
@@ -20,10 +30,10 @@
       - "{{ docker_dir }}/gitea/data:/var/lib/gitea"
       - "{{ docker_dir }}/gitea/config:/etc/gitea"
     published_ports:
-      - "127.0.0.1:{{ gitea_port }}:3000"
+      - "{{ gitea_tailscale_ip.stdout | trim }}:{{ gitea_port }}:3000"
     env:
       GITEA__database__DB_TYPE: sqlite3
-      GITEA__server__ROOT_URL: "http://localhost:{{ gitea_port }}/"
+      GITEA__server__ROOT_URL: "http://{{ ansible_host }}:{{ gitea_port }}/"
       GITEA__server__DISABLE_SSH: "true"
       GITEA__service__DISABLE_REGISTRATION: "true"
       GITEA__service__REQUIRE_SIGNIN_VIEW: "true"
@@ -31,7 +41,7 @@
 
 - name: Check Gitea web interface
   ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ gitea_port }}/"
+    url: "http://{{ ansible_host }}:{{ gitea_port }}/"
     follow_redirects: none
     status_code: [200, 302, 303]
   register: gitea_http

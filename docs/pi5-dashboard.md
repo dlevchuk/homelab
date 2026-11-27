@@ -5,7 +5,7 @@ The `pi5_dashboard` Ansible role runs the ARM64 Docker container `pi5-dashboard`
 ## Runtime and data
 
 - Image: `local/pi5-dashboard:latest`, built on the Pi from `/opt/pi5-dashboard/Dockerfile` and the role's Python files. Debian Trixie supplies Python, libgpiod v2 and spidev. Ansible uses `docker build` with BuildKit, sharing the cache with manual builds; registry failures are retried three times. `--pull=false` avoids forcing a base-image refresh, but an uncached build still needs network access. The legacy Docker API builder is not used.
-- Non-root: host user's UID/GID, supplementary gpio/spi device groups, no added capabilities, no-new-privileges, read-only root filesystem, small `/tmp` tmpfs. No privileged mode, host root, Docker socket or writable `/sys` mount.
+- Non-root: host user's UID/GID, supplementary gpio/spi device groups, no added capabilities, no-new-privileges, read-only root filesystem, small `/tmp` tmpfs. No privileged mode, host root, Docker socket or writable `/sys` mount. In Ansible, keep the tmpfs specification as one quoted list item (`"/tmp:rw,noexec,nosuid,size=16m"`); an unquoted YAML flow list splits it at commas and Docker rejects `noexec` as a mount path.
 - Devices: only the RP1 gpiochip and `/dev/spidev0.0`. Ansible discovers the chip by `pinctrl-rp1` label and resolves its real path; on the migrated Pi it is `/dev/gpiochip0`. Reapply the role if OS updates renumber GPIO devices.
 - History: `/home/pi/docker/pi5-dashboard/motion.sqlite3`, mounted at `/data/motion.sqlite3`. This is the active history database. The native database was removed only after verifying that all its records existed in this database.
 - Timezone: `TZ=Europe/Kyiv` inside the container, matching the host’s Kyiv time.

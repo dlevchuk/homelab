@@ -44,13 +44,9 @@ Do not leave a freshly deployed empty stack running unattended for weeks: the ne
 
 ## GitHub mirrors on Pi 4
 
-Gitea runs on Pi 4 with SQLite. Open an SSH tunnel from your computer,
-then select **Gitea** under **Applications** in Homepage or open
-[Gitea](http://localhost:3030/) directly.
-
-```sh
-ssh -N -L 3030:127.0.0.1:3030 -i ~/.ssh/raspberry -p 7722 pi@raspberrypi.tail72e9f.ts.net
-```
+Gitea runs on Pi 4 with SQLite. Connect to Tailscale and select
+**Gitea** under **Applications** in Homepage or open
+[Gitea directly](http://raspberrypi.tail72e9f.ts.net:3030/).
 
 On the initial setup screen, keep SQLite and create the administrator
 account. For each GitHub repository use **New Migration → GitHub** and

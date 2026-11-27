@@ -89,8 +89,8 @@
 {% if 'raspberry_pi4' in group_names and enable_gitea | bool %}
     - Gitea:
         icon: gitea
-        href: http://localhost:{{ gitea_port }}/
-        description: GitHub mirrors · SSH tunnel
+        href: http://{{ ansible_host }}:{{ gitea_port }}/
+        description: GitHub mirrors · Tailscale
         server: my-docker
         container: gitea
         showStats: true

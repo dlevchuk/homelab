@@ -175,7 +175,8 @@
     cap_drop: [ALL]
     security_opts: [no-new-privileges:true]
     read_only: true
-    tmpfs: [/tmp:rw,noexec,nosuid,size=16m]
+    tmpfs:
+      - "/tmp:rw,noexec,nosuid,size=16m"
     volumes:
       - "/home/{{ ansible_user | default('pi') }}/docker/pi5-dashboard:/data:rw"
       - /run/pi5-dashboard-host:/run/pi5-dashboard-host:ro
