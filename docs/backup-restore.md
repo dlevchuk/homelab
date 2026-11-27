@@ -41,3 +41,27 @@ Main variables (`ansible/raspberry/roles/docker_apps/defaults/main.yml`): `enabl
 After a restore the Syncthing folder `sync` is empty and has no `.stfolder` marker, so Syncthing reports a folder error. This is a safeguard against propagating "deletions" to other devices. The safest fix is to remove the folder in the Syncthing UI and add it again.
 
 Do not leave a freshly deployed empty stack running unattended for weeks: the next weekly backups would push the good archives out of the 3 kept ones.
+
+## GitHub mirrors on Pi 4
+
+Gitea runs on Pi 4 with SQLite. Open an SSH tunnel from your computer,
+then select **Gitea** under **Applications** in Homepage or open
+[Gitea](http://localhost:3030/) directly.
+
+```sh
+ssh -N -L 3030:127.0.0.1:3030 -i ~/.ssh/raspberry -p 7722 pi@raspberrypi.tail72e9f.ts.net
+```
+
+On the initial setup screen, keep SQLite and create the administrator
+account. For each GitHub repository use **New Migration → GitHub** and
+select **This repository will be a mirror**. Mark private repositories
+private and use a token restricted to read access on the selected
+repositories. Pull mirrors sync Git history, branches and tags.
+Issues, PR discussions and release assets require separate exports
+for ongoing backups.
+
+The existing Pi 4 Docker backup includes both Gitea bind mounts under
+`/home/pi/docker/gitea`, including SQLite, repositories and configuration.
+It stops Gitea while archiving. The archive can contain private source
+and credentials, so share the backup folder only with trusted Syncthing
+devices. Check that a separate device receives a completed archive.

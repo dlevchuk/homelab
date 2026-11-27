@@ -6,6 +6,9 @@
     state: absent
     keep_volumes: true
   loop:
+    - name: gitea
+      enabled: "{{ enable_gitea | bool }}"
+      managed: "{{ 'raspberry_pi4' in group_names }}"
     - name: changedetection
       enabled: "{{ enable_changedetection | bool }}"
     - name: homepage
@@ -54,4 +57,6 @@
       enabled: "{{ (enable_beszel_agent | bool) or (enable_beszel | bool) }}"
   loop_control:
     label: "{{ item.name }}"
-  when: not (item.enabled | bool)
+  when:
+    - item.managed | default(true) | bool
+    - not (item.enabled | bool)

@@ -86,6 +86,15 @@
 {% endif %}
 
 - Applications:
+{% if 'raspberry_pi4' in group_names and enable_gitea | bool %}
+    - Gitea:
+        icon: gitea
+        href: http://localhost:{{ gitea_port }}/
+        description: GitHub mirrors · SSH tunnel
+        server: my-docker
+        container: gitea
+        showStats: true
+{% endif %}
 {% if enable_changedetection | default(false) | bool %}
     - Changedetection:
         icon: changedetection

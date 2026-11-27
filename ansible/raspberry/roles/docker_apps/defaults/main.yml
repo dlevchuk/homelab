@@ -132,3 +132,8 @@ wishlist_repository: git@github.com:dlevchuk/OneMoreThing.git
 wishlist_branch: main
 wishlist_sync_dir: /home/pi/wishlist-price-sync
 wishlist_deploy_key: /home/pi/.ssh/wishlist_prices
+
+# GitHub repository mirrors
+enable_gitea: false
+gitea_image: docker.gitea.com/gitea:1.27.3-rootless
+gitea_port: 3030

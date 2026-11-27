@@ -1,0 +1,41 @@
+---
+- name: Create private Gitea directories
+  ansible.builtin.file:
+    path: "{{ docker_dir }}/gitea/{{ item }}"
+    state: directory
+    owner: "{{ docker_uid }}"
+    group: "{{ docker_gid }}"
+    mode: "0700"
+  loop: [data, config]
+
+- name: Start Gitea
+  community.docker.docker_container:
+    name: gitea
+    image: "{{ gitea_image }}"
+    state: started
+    restart_policy: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
+    volumes:
+      - "{{ docker_dir }}/gitea/data:/var/lib/gitea"
+      - "{{ docker_dir }}/gitea/config:/etc/gitea"
+    published_ports:
+      - "127.0.0.1:{{ gitea_port }}:3000"
+    env:
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__ROOT_URL: "http://localhost:{{ gitea_port }}/"
+      GITEA__server__DISABLE_SSH: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__service__REQUIRE_SIGNIN_VIEW: "true"
+      GITEA__actions__ENABLED: "false"
+
+- name: Check Gitea web interface
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ gitea_port }}/"
+    follow_redirects: none
+    status_code: [200, 302, 303]
+  register: gitea_http
+  until: gitea_http is succeeded
+  retries: 12
+  delay: 5
+  when: not ansible_check_mode

@@ -125,3 +125,13 @@
 # Always included: tasks inside switch cron to present/absent by flags
 - name: Manage backups (cron)
   ansible.builtin.include_tasks: docker_backup.yml
+
+- name: Manage Gitea
+  ansible.builtin.include_tasks:
+    file: docker_gitea.yml
+    apply:
+      tags: [gitea]
+  when:
+    - "'raspberry_pi4' in group_names"
+    - enable_gitea | bool
+  tags: [gitea]

@@ -23,3 +23,6 @@ enable_changedetection: true
 changedetection_tailscale_enabled: true
 changedetection_public_url: "http://raspberrypi.tail72e9f.ts.net:5000"
 enable_wishlist_price_sync: true
+
+# GitHub repository mirrors live on Pi 4.
+enable_gitea: true
